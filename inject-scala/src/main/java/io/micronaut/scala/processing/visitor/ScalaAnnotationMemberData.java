@@ -26,12 +26,22 @@ import java.util.List;
  * @param name The member name
  * @param annotations The annotations declared on the member
  * @param defaultValue The member default value, if available
+ * @param typeName The member type name
+ * @param array Whether the member type is an array
+ * @param classType Whether the member type is a class literal
+ * @param enumType Whether the member type is an enum
+ * @param annotationType Whether the member type is an annotation
  * @param nativeType The native Scala compiler object
  */
 public record ScalaAnnotationMemberData(
     String name,
     List<ScalaAnnotationData> annotations,
     @Nullable Object defaultValue,
+    String typeName,
+    boolean array,
+    boolean classType,
+    boolean enumType,
+    boolean annotationType,
     Object nativeType
 ) {
 

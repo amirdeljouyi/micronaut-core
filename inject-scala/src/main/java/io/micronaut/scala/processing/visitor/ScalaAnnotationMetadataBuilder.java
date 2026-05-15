@@ -286,7 +286,7 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
 
     @Override
     protected @Nullable String getRepeatableName(ScalaAnnotationData annotationMirror) {
-        return repeatableContainerName(annotationType(annotationMirror.name()));
+        return repeatableContainerName(annotationType(annotationMirror));
     }
 
     @Override
@@ -380,10 +380,55 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
         String memberName,
         Object value,
         Map<String, Map<CharSequence, Object>> resolvedDefaults) {
+        if (member instanceof AnnotationMemberElement memberElement && memberElement.nativeMember() != null) {
+            return normalizeNativeValue(originatingElement, memberElement.nativeMember(), value, resolvedDefaults);
+        }
         Method method = member instanceof AnnotationMemberElement memberElement ? memberElement.method() : null;
         Class<?> expectedType = method == null ? null : method.getReturnType();
         Object resolvedValue = normalizeValue(originatingElement, expectedType, annotationName, memberName, value, resolvedDefaults);
         return resolvedValue == null ? value : resolvedValue;
+    }
+
+    private Object normalizeNativeValue(
+        Object originatingElement,
+        ScalaAnnotationMemberData nativeMember,
+        Object value,
+        Map<String, Map<CharSequence, Object>> resolvedDefaults) {
+        if (nativeMember.array()) {
+            List<Object> values = arrayValues(value);
+            if (nativeMember.classType()) {
+                AnnotationClassValue<?>[] converted = new AnnotationClassValue<?>[values.size()];
+                for (int i = 0; i < values.size(); i++) {
+                    converted[i] = annotationClassValue(values.get(i));
+                }
+                return converted;
+            }
+            if (nativeMember.enumType()) {
+                String[] converted = new String[values.size()];
+                for (int i = 0; i < values.size(); i++) {
+                    converted[i] = enumValue(values.get(i));
+                }
+                return converted;
+            }
+            if (nativeMember.annotationType()) {
+                AnnotationValue<?>[] converted = new AnnotationValue<?>[values.size()];
+                for (int i = 0; i < values.size(); i++) {
+                    converted[i] = nestedAnnotationValue(originatingElement, nativeMember.typeName(), values.get(i), resolvedDefaults);
+                }
+                return converted;
+            }
+            return value;
+        }
+        if (nativeMember.classType()) {
+            return annotationClassValue(value);
+        }
+        if (nativeMember.enumType()) {
+            return enumValue(value);
+        }
+        if (nativeMember.annotationType()) {
+            return nestedAnnotationValue(originatingElement, nativeMember.typeName(), value, resolvedDefaults);
+        }
+        return value;
     }
 
     @Nullable
@@ -520,6 +565,14 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
         Class<?> expectedType,
         Object value,
         Map<String, Map<CharSequence, Object>> resolvedDefaults) {
+        return nestedAnnotationValue(originatingElement, expectedType.getName(), value, resolvedDefaults);
+    }
+
+    private AnnotationValue<?> nestedAnnotationValue(
+        Object originatingElement,
+        String expectedTypeName,
+        Object value,
+        Map<String, Map<CharSequence, Object>> resolvedDefaults) {
         if (value instanceof Annotation annotation) {
             return readNestedAnnotationValue(originatingElement, runtimeAnnotation(annotation), resolvedDefaults);
         }
@@ -529,7 +582,7 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
         if (value instanceof ScalaAnnotationData annotationData) {
             return readNestedAnnotationValue(originatingElement, annotationData, resolvedDefaults);
         }
-        return AnnotationValue.builder(expectedType.getName()).build();
+        return AnnotationValue.builder(expectedTypeName).build();
     }
 
     private AnnotationValue<?> nestedAnnotationValue(
@@ -613,7 +666,8 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
     }
 
     private AnnotationTypeElement annotationType(ScalaAnnotationData annotation) {
-        return new AnnotationTypeElement(annotation.name(), loadClass(annotation.name()), annotation.annotationType());
+        ScalaAnnotationTypeData nativeType = annotation.annotationType();
+        return new AnnotationTypeElement(annotation.name(), nativeType == null ? loadClass(annotation.name()) : null, nativeType);
     }
 
     private AnnotationTypeElement annotationType(String annotationName) {

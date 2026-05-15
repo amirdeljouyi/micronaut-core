@@ -263,6 +263,14 @@ private object ScalaModelExtractor:
     "Unit" -> "void"
   )
 
+  private case class AnnotationMemberType(
+      name: String,
+      array: Boolean,
+      classType: Boolean,
+      enumType: Boolean,
+      annotationType: Boolean
+  )
+
   def collect(unit: CompilationUnit)(using Context): List[ScalaClassData] =
     val classes = ListBuffer.empty[ScalaClassData]
     collectTree(unit.tpdTree, classes, null)
@@ -594,12 +602,18 @@ private object ScalaModelExtractor:
     symbol.info.decls.toList.foreach { member =>
       val memberName = member.name.toString
       if isAnnotationMember(member, memberName) then
+        val memberType = annotationMemberType(member)
         members.put(
           memberName,
           ScalaAnnotationMemberData(
             memberName,
             annotations(member).asJava,
             null,
+            memberType.name,
+            memberType.array,
+            memberType.classType,
+            memberType.enumType,
+            memberType.annotationType,
             member
           )
         )
@@ -615,6 +629,28 @@ private object ScalaModelExtractor:
       !hasFlag(symbol, Flags.Module) &&
       !hasFlag(symbol, Flags.Synthetic) &&
       !hasFlag(symbol, Flags.Artifact)
+
+  private def annotationMemberType(symbol: Symbol)(using Context): AnnotationMemberType =
+    val resultType = symbol.info match
+      case methodType: MethodType => methodType.resultType
+      case info => info
+    annotationMemberType(resultType, array = false)
+
+  private def annotationMemberType(tpe: Type, array: Boolean)(using Context): AnnotationMemberType =
+    val widened = tpe.widenDealias
+    widened match
+      case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
+        annotationMemberType(applied.args.head, array = true)
+      case _ =>
+        val name = typeName(widened)
+        val symbol = widened.classSymbol
+        AnnotationMemberType(
+          name,
+          array,
+          name == classOf[Class[?]].getName,
+          symbol != Symbols.NoSymbol && hasFlag(symbol, Flags.Enum),
+          symbol != Symbols.NoSymbol && symbol.denot.isAnnotation
+        )
 
   private def retentionPolicyName(annotations: List[ScalaAnnotationData]): Option[String] =
     annotations.find(_.name() == classOf[java.lang.annotation.Retention].getName)
