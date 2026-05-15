@@ -44,6 +44,7 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
 
     private final VisitorContext visitorContext;
     private final ClassLoader classLoader;
+    private final Map<String, ScalaAnnotationTypeData> nativeAnnotationTypes = new LinkedHashMap<>();
 
     public ScalaAnnotationMetadataBuilder(VisitorContext visitorContext, ClassLoader classLoader) {
         this.visitorContext = visitorContext;
@@ -57,6 +58,7 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
      * @return The annotation metadata
      */
     public MutableAnnotationMetadata buildMetadata(ScalaAnnotatedElementData element) {
+        registerAnnotationTypes(element.annotations());
         return MutableAnnotationMetadata.of(buildInternal(element));
     }
 
@@ -667,11 +669,17 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
 
     private AnnotationTypeElement annotationType(ScalaAnnotationData annotation) {
         ScalaAnnotationTypeData nativeType = annotation.annotationType();
+        if (nativeType != null) {
+            registerAnnotationType(nativeType);
+        } else {
+            nativeType = nativeAnnotationTypes.get(annotation.name());
+        }
         return new AnnotationTypeElement(annotation.name(), nativeType == null ? loadClass(annotation.name()) : null, nativeType);
     }
 
     private AnnotationTypeElement annotationType(String annotationName) {
-        return new AnnotationTypeElement(annotationName, loadClass(annotationName), null);
+        ScalaAnnotationTypeData nativeType = nativeAnnotationTypes.get(annotationName);
+        return new AnnotationTypeElement(annotationName, nativeType == null ? loadClass(annotationName) : null, nativeType);
     }
 
     private AnnotationTypeElement annotationType(String annotationName, @Nullable Object annotationType) {
@@ -679,6 +687,22 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
             return annotationTypeElement;
         }
         return annotationType(annotationName);
+    }
+
+    private void registerAnnotationTypes(List<ScalaAnnotationData> annotations) {
+        for (ScalaAnnotationData annotation : annotations) {
+            registerAnnotationType(annotation.annotationType());
+        }
+    }
+
+    private void registerAnnotationType(@Nullable ScalaAnnotationTypeData annotationType) {
+        if (annotationType == null || nativeAnnotationTypes.putIfAbsent(annotationType.name(), annotationType) != null) {
+            return;
+        }
+        registerAnnotationTypes(annotationType.annotations());
+        for (ScalaAnnotationMemberData member : annotationType.members().values()) {
+            registerAnnotationTypes(member.annotations());
+        }
     }
 
     private boolean containsMember(Map<Object, Object> values, String memberName) {
