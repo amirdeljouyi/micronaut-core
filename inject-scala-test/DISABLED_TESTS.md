@@ -14,7 +14,8 @@ methods, mutable `@ConfigurationProperties`, and `@EachProperty`.
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
 repeatable annotations, trait/interface assignability, and Scala inner-class
-enclosing type metadata.
+enclosing type metadata. Source-defined Scala annotation defaults, stereotypes,
+and member aliases are now covered with compiler-symbol/typed-tree metadata.
 
 Known `@PendingFeature` coverage:
 
