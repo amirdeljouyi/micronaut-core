@@ -18,6 +18,7 @@ package io.micronaut.scala.processing.visitor;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +43,6 @@ public record ScalaAnnotationTypeData(
 
     public ScalaAnnotationTypeData {
         annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
-        members = members == null ? Collections.emptyMap() : Map.copyOf(members);
+        members = members == null ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(members));
     }
 }

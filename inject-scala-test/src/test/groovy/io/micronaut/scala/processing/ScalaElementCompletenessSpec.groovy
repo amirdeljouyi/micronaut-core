@@ -190,4 +190,26 @@ class Engine
         element.hasStereotype(Singleton)
         element.hasStereotype('jakarta.inject.Scope')
     }
+
+    void "reads source-defined Scala annotation defaults from compiler symbols"() {
+        when:
+        def element = buildClassElement('example.Engine', '''
+package example
+
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Singleton
+class MySingleton(val value: String = "engine", val enabled: Boolean = true) extends StaticAnnotation
+
+@MySingleton
+class Engine
+''')
+        def annotation = element.getAnnotation('example.MySingleton')
+
+        then:
+        annotation.stringValue().get() == 'engine'
+        annotation.booleanValue('enabled').get()
+        element.hasStereotype(Singleton)
+    }
 }

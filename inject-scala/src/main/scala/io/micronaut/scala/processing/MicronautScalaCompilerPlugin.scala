@@ -271,12 +271,17 @@ private object ScalaModelExtractor:
       annotationType: Boolean
   )
 
+  private case class AnnotationDefaults(values: Map[String, Map[String, Object]])
+
+  private val PositionalAnnotationMemberPrefix = "$micronaut$pos$"
+
   def collect(unit: CompilationUnit)(using Context): List[ScalaClassData] =
+    given AnnotationDefaults = AnnotationDefaults(annotationDefaultValues(unit.tpdTree))
     val classes = ListBuffer.empty[ScalaClassData]
     collectTree(unit.tpdTree, classes, null)
     classes.toList
 
-  private def collectTree(tree: tpd.Tree, classes: ListBuffer[ScalaClassData], enclosingTypeName: String | Null)(using Context): Unit =
+  private def collectTree(tree: tpd.Tree, classes: ListBuffer[ScalaClassData], enclosingTypeName: String | Null)(using Context, AnnotationDefaults): Unit =
     tree match
       case packageDef: tpd.PackageDef =>
         packageDef.stats.foreach(stat => collectTree(stat, classes, null))
@@ -289,7 +294,65 @@ private object ScalaModelExtractor:
           case _ =>
       case _ =>
 
-  private def toClassData(typeDef: tpd.TypeDef, enclosingTypeName: String | Null)(using Context): Option[ScalaClassData] =
+  private def annotationDefaultValues(tree: tpd.Tree)(using Context): Map[String, Map[String, Object]] =
+    val parameterNames = scala.collection.mutable.LinkedHashMap[String, List[String]]()
+    val defaultValues = scala.collection.mutable.LinkedHashMap[String, scala.collection.mutable.LinkedHashMap[String, Object]]()
+    collectAnnotationParameterNames(tree, parameterNames)
+    collectAnnotationDefaultValues(tree, parameterNames.toMap, defaultValues)
+    defaultValues.view.mapValues(_.toMap).toMap
+
+  private def collectAnnotationParameterNames(
+      tree: tpd.Tree,
+      parameterNames: scala.collection.mutable.LinkedHashMap[String, List[String]]
+  )(using Context): Unit =
+    tree match
+      case packageDef: tpd.PackageDef =>
+        packageDef.stats.foreach(collectAnnotationParameterNames(_, parameterNames))
+      case typeDef: tpd.TypeDef if typeDef.isClassDef =>
+        typeDef.rhs match
+          case template: tpd.Template =>
+            val symbol = typeDef.symbol
+            if symbol != Symbols.NoSymbol && symbol.denot.isAnnotation then
+              parameterNames.put(className(symbol), template.constr.termParamss.flatten.map(_.name.toString))
+            template.body.foreach(collectAnnotationParameterNames(_, parameterNames))
+          case _ =>
+      case _ =>
+
+  private def collectAnnotationDefaultValues(
+      tree: tpd.Tree,
+      parameterNames: Map[String, List[String]],
+      defaultValues: scala.collection.mutable.LinkedHashMap[String, scala.collection.mutable.LinkedHashMap[String, Object]]
+  )(using Context): Unit =
+    tree match
+      case packageDef: tpd.PackageDef =>
+        packageDef.stats.foreach(collectAnnotationDefaultValues(_, parameterNames, defaultValues))
+      case typeDef: tpd.TypeDef if typeDef.isClassDef =>
+        typeDef.rhs match
+          case template: tpd.Template =>
+            val ownerName = className(typeDef.symbol).stripSuffix("$")
+            parameterNames.get(ownerName).foreach { names =>
+              template.body.collect { case method: tpd.DefDef => method }.foreach { method =>
+                defaultGetterIndex(method.name.toString).foreach { index =>
+                  if index > 0 && index <= names.size then
+                    val value = annotationValue(method.rhs)
+                    if value != null then
+                      val values = defaultValues.getOrElseUpdate(ownerName, scala.collection.mutable.LinkedHashMap[String, Object]())
+                      values.put(names(index - 1), value)
+                }
+              }
+            }
+            template.body.foreach(collectAnnotationDefaultValues(_, parameterNames, defaultValues))
+          case _ =>
+      case _ =>
+
+  private def defaultGetterIndex(name: String): Option[Int] =
+    val prefix = "$lessinit$greater$default$"
+    if name.startsWith(prefix) then
+      name.stripPrefix(prefix).toIntOption
+    else
+      None
+
+  private def toClassData(typeDef: tpd.TypeDef, enclosingTypeName: String | Null)(using Context, AnnotationDefaults): Option[ScalaClassData] =
     val symbol = typeDef.symbol
     if skipClass(symbol) then
       None
@@ -345,7 +408,7 @@ private object ScalaModelExtractor:
       constructor: tpd.DefDef,
       methods: LinkedHashMap[String, ScalaMethodData],
       fields: List[ScalaFieldData]
-  )(using Context): List[ScalaPropertyData] =
+  )(using Context, AnnotationDefaults): List[ScalaPropertyData] =
     constructor.termParamss.flatten
       .filter { param =>
         val propertyName = param.name.toString
@@ -440,7 +503,7 @@ private object ScalaModelExtractor:
     else
       java.util.Set.of(ElementModifier.PUBLIC)
 
-  private def methodData(method: tpd.DefDef, constructor: Boolean, owner: Symbol)(using Context): ScalaMethodData =
+  private def methodData(method: tpd.DefDef, constructor: Boolean, owner: Symbol)(using Context, AnnotationDefaults): ScalaMethodData =
     val returnType =
       if constructor then
         ScalaTypeData(className(owner), primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
@@ -456,7 +519,7 @@ private object ScalaModelExtractor:
       method
     )
 
-  private def methodData(symbol: Symbol)(using Context): ScalaMethodData =
+  private def methodData(symbol: Symbol)(using Context, AnnotationDefaults): ScalaMethodData =
     symbol.info match
       case methodType: MethodType =>
         ScalaMethodData(
@@ -487,7 +550,7 @@ private object ScalaModelExtractor:
     else
       name
 
-  private def fieldData(field: tpd.ValDef)(using Context): ScalaFieldData =
+  private def fieldData(field: tpd.ValDef)(using Context, AnnotationDefaults): ScalaFieldData =
     ScalaFieldData(
       field.name.toString,
       typeData(field.tpt.tpe),
@@ -496,7 +559,7 @@ private object ScalaModelExtractor:
       field
     )
 
-  private def parameterData(parameter: tpd.ValDef)(using Context): ScalaParameterData =
+  private def parameterData(parameter: tpd.ValDef)(using Context, AnnotationDefaults): ScalaParameterData =
     ScalaParameterData(
       parameter.name.toString,
       typeData(parameter.tpt.tpe),
@@ -557,7 +620,7 @@ private object ScalaModelExtractor:
     else
       binaryName
 
-  private def annotations(symbol: Symbol)(using Context): List[ScalaAnnotationData] =
+  private def annotations(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaAnnotationData] =
     if symbol == Symbols.NoSymbol then
       Nil
     else
@@ -566,16 +629,17 @@ private object ScalaModelExtractor:
   private def annotationData(
       annotation: dotty.tools.dotc.core.Annotations.Annotation,
       visitedAnnotationTypes: Set[String]
-  )(using Context): ScalaAnnotationData =
+  )(using Context, AnnotationDefaults): ScalaAnnotationData =
     val symbol = annotation.symbol
     val name = className(symbol)
+    val annotationType = annotationTypeData(symbol, visitedAnnotationTypes)
     ScalaAnnotationData(
       name,
-      annotationValues(annotation).asInstanceOf[JMap[CharSequence, Object]],
-      annotationTypeData(symbol, visitedAnnotationTypes)
+      annotationValues(annotation, annotationType).asInstanceOf[JMap[CharSequence, Object]],
+      annotationType
     )
 
-  private def annotationTypeData(symbol: Symbol, visitedAnnotationTypes: Set[String])(using Context): ScalaAnnotationTypeData | Null =
+  private def annotationTypeData(symbol: Symbol, visitedAnnotationTypes: Set[String])(using Context, AnnotationDefaults): ScalaAnnotationTypeData | Null =
     if symbol == Symbols.NoSymbol || !symbol.denot.isAnnotation then
       null
     else
@@ -597,8 +661,9 @@ private object ScalaModelExtractor:
           symbol
         )
 
-  private def annotationMembers(symbol: Symbol)(using Context): LinkedHashMap[String, ScalaAnnotationMemberData] =
+  private def annotationMembers(symbol: Symbol)(using Context, AnnotationDefaults): LinkedHashMap[String, ScalaAnnotationMemberData] =
     val members = LinkedHashMap[String, ScalaAnnotationMemberData]()
+    val defaults = summon[AnnotationDefaults].values.getOrElse(className(symbol), Map.empty)
     symbol.info.decls.toList.foreach { member =>
       val memberName = member.name.toString
       if isAnnotationMember(member, memberName) then
@@ -608,7 +673,7 @@ private object ScalaModelExtractor:
           ScalaAnnotationMemberData(
             memberName,
             annotations(member).asJava,
-            null,
+            defaults.getOrElse(memberName, null),
             memberType.name,
             memberType.array,
             memberType.classType,
@@ -667,8 +732,11 @@ private object ScalaModelExtractor:
       case (key, value) if memberName.contentEquals(key) => value
     }
 
-  private def annotationValues(annotation: dotty.tools.dotc.core.Annotations.Annotation)(using Context): JMap[String, Object] =
-    annotationArgumentValues(annotation.arguments)
+  private def annotationValues(
+      annotation: dotty.tools.dotc.core.Annotations.Annotation,
+      annotationType: ScalaAnnotationTypeData | Null
+  )(using Context): JMap[String, Object] =
+    normalizeAnnotationArgumentValues(annotationArgumentValues(annotation.arguments), annotationType)
 
   private def annotationArgumentValues(arguments: List[tpd.Tree])(using Context): JMap[String, Object] =
     val values = LinkedHashMap[String, Object]()
@@ -679,13 +747,70 @@ private object ScalaModelExtractor:
         if value != null then
           values.put(named.name.toString, value)
       case tree =>
-        val memberName = if positionalIndex == 0 then "value" else "value" + positionalIndex
+        val memberName = PositionalAnnotationMemberPrefix + positionalIndex
         val value = annotationValue(tree)
         if value != null then
           values.put(memberName, value)
         positionalIndex += 1
     }
     values
+
+  private def normalizeAnnotationArgumentValues(
+      values: JMap[String, Object],
+      annotationType: ScalaAnnotationTypeData | Null
+  ): JMap[String, Object] =
+    if values.isEmpty then
+      values
+    else if annotationType == null then
+      val normalized = LinkedHashMap[String, Object]()
+      values.asScala.foreach { case (key, value) =>
+        normalized.put(legacyPositionalAnnotationMemberName(key).getOrElse(key), value)
+      }
+      normalized
+    else
+      val normalized = LinkedHashMap[String, Object]()
+      val memberNames = annotationType.members().keySet().asScala.toList
+      values.asScala.foreach { case (key, value) =>
+        val defaultIndex = defaultGetterReferenceIndex(value, annotationType.name())
+        val memberName = defaultIndex
+          .flatMap(index => memberNames.lift(index - 1))
+          .orElse(positionalAnnotationMemberName(key, memberNames))
+          .getOrElse(key)
+        val memberValue = defaultIndex
+          .map(_ => annotationType.members().get(memberName))
+          .filter(_ != null)
+          .map(_.defaultValue())
+          .filter(_ != null)
+          .getOrElse(value)
+        normalized.put(memberName, memberValue)
+      }
+      normalized
+
+  private def positionalAnnotationMemberName(key: String, memberNames: List[String]): Option[String] =
+    if memberNames.isEmpty || !key.startsWith(PositionalAnnotationMemberPrefix) then
+      None
+    else
+      key.stripPrefix(PositionalAnnotationMemberPrefix).toIntOption.flatMap(index => memberNames.lift(index))
+
+  private def legacyPositionalAnnotationMemberName(key: String): Option[String] =
+    if !key.startsWith(PositionalAnnotationMemberPrefix) then
+      None
+    else
+      key.stripPrefix(PositionalAnnotationMemberPrefix).toIntOption.map {
+        case 0 => "value"
+        case index => "value" + index
+      }
+
+  private def defaultGetterReferenceIndex(value: Object, annotationName: String): Option[Int] =
+    value match
+      case rendered: String =>
+        val prefix = annotationName + ".$lessinit$greater$default$"
+        if rendered.startsWith(prefix) then
+          rendered.stripPrefix(prefix).toIntOption
+        else
+          None
+      case _ =>
+        None
 
   private def annotationValue(tree: tpd.Tree)(using Context): Object | Null =
     arrayLiteralValues(tree) match
