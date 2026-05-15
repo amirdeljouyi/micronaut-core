@@ -1,4 +1,5 @@
 plugins {
+    id "idea"
     id "io.micronaut.build.internal.parent"
     id "io.micronaut.build.internal.dependency-updates"
     id "io.micronaut.build.internal.version-catalog-updates"

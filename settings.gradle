@@ -52,6 +52,8 @@ include "inject-java-helper"
 include "inject-java-helper2"
 include 'inject-kotlin'
 include 'inject-kotlin-test'
+include 'inject-scala'
+include 'inject-scala-test'
 include "inject-test-utils"
 include "jackson-core"
 include "jackson-databind"
@@ -80,6 +82,7 @@ include "test-suite-http2-server-tck-netty"
 include "test-suite-kotlin"
 include "test-suite-kotlin-ksp-all-open"
 include "test-suite-groovy"
+include "test-suite-scala"
 include "test-suite-logback"
 include "test-suite-logback-external-configuration"
 include "test-suite-logback-graalvm"

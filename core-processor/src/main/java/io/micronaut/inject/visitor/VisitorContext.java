@@ -340,7 +340,8 @@ public interface VisitorContext extends MutableConvertibleValues<Object>, ClassW
     enum Language {
         JAVA("Java"),
         GROOVY("Groovy"),
-        KOTLIN("Kotlin");
+        KOTLIN("Kotlin"),
+        SCALA("Scala");
 
         private final String displayName;
 
