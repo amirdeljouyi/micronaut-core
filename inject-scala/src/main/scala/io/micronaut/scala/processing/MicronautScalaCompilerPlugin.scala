@@ -839,7 +839,7 @@ private object ScalaModelExtractor:
                   case ident: tpd.Ident if isEnumConstant(ident.symbol) =>
                     ident.name.toString
                   case _ =>
-                    tree.show
+                    renderedClassLiteralValue(tree.show).getOrElse(tree.show)
 
   private def arrayLiteralValues(tree: tpd.Tree)(using Context): Option[Object] =
     tree match
@@ -926,6 +926,7 @@ private object ScalaModelExtractor:
       val name = rawName
         .replaceAll("\u001B\\[[;\\d]*m", "")
         .replaceAll("\\[[;\\d]*m", "")
+        .replace('/', '.')
         .replaceAll("[^A-Za-z0-9_.$]", "")
       Some(ScalaClassLiteralAliases.getOrElse(name, name))
     else

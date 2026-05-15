@@ -132,6 +132,42 @@ class EngineFactory:
         context?.close()
     }
 
+    void "supports source-defined annotation aliases on Scala annotation members"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.AliasFor
+import io.micronaut.context.annotation.Executable
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+import scala.annotation.meta.getter
+
+@Singleton
+@Executable
+class TestAnnotation(
+  @(AliasFor @getter)(annotation = classOf[Named], member = "value")
+  val value: String = ""
+) extends StaticAnnotation
+
+@Factory
+class Test:
+  @TestAnnotation("foo")
+  def myFunc(): java.util.function.Function[String, java.lang.Integer] =
+    (value: String) => java.lang.Integer.valueOf(10)
+''', true)
+        def definition = context.getBeanDefinition(java.util.function.Function, Qualifiers.byName('foo'))
+
+        then:
+        definition.getValue('jakarta.inject.Named', String).get() == 'foo'
+        context.getBean(java.util.function.Function, Qualifiers.byName('foo')).apply('test') == 10
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports executable methods"() {
         when:
         def definition = buildBeanDefinition('example.Calculator', '''
