@@ -7,16 +7,21 @@ This file tracks Scala documentation examples that are not yet ported to
 
 - `io.micronaut.docs.basics.HelloControllerSpec` verifies the initial HTTP
   controller docs smoke test.
+- `io.micronaut.docs.inject.intro.VehicleSpec` verifies basic IOC constructor
+  injection with a Scala trait and implementation.
+- `io.micronaut.docs.core.beans.UserSpec` verifies `@Introspected` on a Scala
+  case class.
+- `io.micronaut.docs.config.properties.EngineConfigSpec` verifies mutable
+  `@ConfigurationProperties` binding.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- IOC examples: constructor injection, qualifiers, factories, scopes, and
-  lifecycle examples once the Scala adapter supports the matching feature.
-- Introspection examples: case classes and property metadata beyond the basic
-  proof of concept.
-- Configuration examples: `@ConfigurationProperties`, `@EachProperty`, and
-  validation metadata.
+- IOC examples: qualifiers, factories, scopes, and lifecycle examples once the
+  Scala adapter supports the matching feature.
+- Introspection examples: property metadata beyond the basic case class proof
+  of concept.
+- Configuration examples: `@EachProperty` and validation metadata.
 - HTTP examples: controllers, clients, filters, and executable methods.
 - AOP examples: around advice, introduction advice, and proxy generation.
 
