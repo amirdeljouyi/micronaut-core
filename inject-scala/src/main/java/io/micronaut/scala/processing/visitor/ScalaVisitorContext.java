@@ -81,7 +81,7 @@ public final class ScalaVisitorContext implements VisitorContext {
         this.warningReporter = warningReporter;
         this.errorReporter = errorReporter;
         this.classLoader = createClassLoader(classpath);
-        this.annotationMetadataBuilder = new ScalaAnnotationMetadataBuilder(this, classLoader);
+        this.annotationMetadataBuilder = new ScalaAnnotationMetadataBuilder(this);
         for (ScalaClassData sourceClass : sourceClasses) {
             this.sourceClasses.put(sourceClass.name(), sourceClass);
         }

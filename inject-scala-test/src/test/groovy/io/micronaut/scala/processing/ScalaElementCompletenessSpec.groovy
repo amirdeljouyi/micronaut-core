@@ -21,6 +21,8 @@ import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+import jakarta.inject.Named
+import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
 
 class ScalaElementCompletenessSpec extends AbstractScalaTypeElementSpec {
@@ -211,5 +213,32 @@ class Engine
         annotation.stringValue().get() == 'engine'
         annotation.booleanValue('enabled').get()
         element.hasStereotype(Singleton)
+    }
+
+    void "resolves alias target annotation stereotypes from class literal symbols"() {
+        when:
+        def element = buildClassElement('example.Engine', '''
+package example
+
+import io.micronaut.context.annotation.AliasFor
+import jakarta.inject.Named
+import scala.annotation.StaticAnnotation
+import scala.annotation.meta.getter
+
+class NamedAlias(
+  @(AliasFor @getter)(annotation = classOf[Named], member = "value")
+  val value: String = ""
+) extends StaticAnnotation
+
+@NamedAlias("main")
+class Engine
+''')
+
+        then:
+        element.hasStereotype(Named)
+        element.hasStereotype(Qualifier)
+        element.getAnnotationValuesByStereotype(Named.name).find {
+            it.annotationName == 'example.NamedAlias'
+        }.stringValue().get() == 'main'
     }
 }

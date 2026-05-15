@@ -29,11 +29,11 @@ import dotty.tools.dotc.plugins.StandardPlugin
 import dotty.tools.dotc.report
 import dotty.tools.dotc.transform.Pickler
 import dotty.tools.dotc.transform.PostTyper
-import io.micronaut.core.annotation.AnnotationValue
 import io.micronaut.inject.ast.ElementModifier
 import io.micronaut.scala.processing.visitor.ScalaAnnotationData
 import io.micronaut.scala.processing.visitor.ScalaAnnotationMemberData
 import io.micronaut.scala.processing.visitor.ScalaAnnotationTypeData
+import io.micronaut.scala.processing.visitor.ScalaClassValueData
 import io.micronaut.scala.processing.visitor.ScalaClassData
 import io.micronaut.scala.processing.visitor.ScalaFieldData
 import io.micronaut.scala.processing.visitor.ScalaMethodData
@@ -295,6 +295,7 @@ private object ScalaModelExtractor:
       case _ =>
 
   private def annotationDefaultValues(tree: tpd.Tree)(using Context): Map[String, Map[String, Object]] =
+    given AnnotationDefaults = AnnotationDefaults(Map.empty)
     val parameterNames = scala.collection.mutable.LinkedHashMap[String, List[String]]()
     val defaultValues = scala.collection.mutable.LinkedHashMap[String, scala.collection.mutable.LinkedHashMap[String, Object]]()
     collectAnnotationParameterNames(tree, parameterNames)
@@ -312,7 +313,7 @@ private object ScalaModelExtractor:
         typeDef.rhs match
           case template: tpd.Template =>
             val symbol = typeDef.symbol
-            if symbol != Symbols.NoSymbol && symbol.denot.isAnnotation then
+            if isAnnotationSymbol(symbol) then
               parameterNames.put(className(symbol), template.constr.termParamss.flatten.map(_.name.toString))
             template.body.foreach(collectAnnotationParameterNames(_, parameterNames))
           case _ =>
@@ -322,7 +323,7 @@ private object ScalaModelExtractor:
       tree: tpd.Tree,
       parameterNames: Map[String, List[String]],
       defaultValues: scala.collection.mutable.LinkedHashMap[String, scala.collection.mutable.LinkedHashMap[String, Object]]
-  )(using Context): Unit =
+  )(using Context, AnnotationDefaults): Unit =
     tree match
       case packageDef: tpd.PackageDef =>
         packageDef.stats.foreach(collectAnnotationDefaultValues(_, parameterNames, defaultValues))
@@ -640,7 +641,7 @@ private object ScalaModelExtractor:
     )
 
   private def annotationTypeData(symbol: Symbol, visitedAnnotationTypes: Set[String])(using Context, AnnotationDefaults): ScalaAnnotationTypeData | Null =
-    if symbol == Symbols.NoSymbol || !symbol.denot.isAnnotation then
+    if !isAnnotationSymbol(symbol) then
       null
     else
       val name = className(symbol)
@@ -714,7 +715,7 @@ private object ScalaModelExtractor:
           array,
           name == classOf[Class[?]].getName,
           symbol != Symbols.NoSymbol && hasFlag(symbol, Flags.Enum),
-          symbol != Symbols.NoSymbol && symbol.denot.isAnnotation
+          isAnnotationSymbol(symbol)
         )
 
   private def retentionPolicyName(annotations: List[ScalaAnnotationData]): Option[String] =
@@ -725,20 +726,25 @@ private object ScalaModelExtractor:
   private def repeatableContainerName(annotations: List[ScalaAnnotationData]): Option[String] =
     annotations.find(_.name() == classOf[java.lang.annotation.Repeatable].getName)
       .flatMap(annotation => annotationValue(annotation, "value"))
-      .map(_.toString)
+      .map(classValueName)
 
   private def annotationValue(annotation: ScalaAnnotationData, memberName: String): Option[Object] =
     annotation.values().asScala.collectFirst {
       case (key, value) if memberName.contentEquals(key) => value
     }
 
+  private def classValueName(value: Object): String =
+    value match
+      case classValueData: ScalaClassValueData => classValueData.name()
+      case other => other.toString
+
   private def annotationValues(
       annotation: dotty.tools.dotc.core.Annotations.Annotation,
       annotationType: ScalaAnnotationTypeData | Null
-  )(using Context): JMap[String, Object] =
+  )(using Context, AnnotationDefaults): JMap[String, Object] =
     normalizeAnnotationArgumentValues(annotationArgumentValues(annotation.arguments), annotationType)
 
-  private def annotationArgumentValues(arguments: List[tpd.Tree])(using Context): JMap[String, Object] =
+  private def annotationArgumentValues(arguments: List[tpd.Tree])(using Context, AnnotationDefaults): JMap[String, Object] =
     val values = LinkedHashMap[String, Object]()
     var positionalIndex = 0
     arguments.foreach {
@@ -812,14 +818,14 @@ private object ScalaModelExtractor:
       case _ =>
         None
 
-  private def annotationValue(tree: tpd.Tree)(using Context): Object | Null =
+  private def annotationValue(tree: tpd.Tree)(using Context, AnnotationDefaults): Object | Null =
     arrayLiteralValues(tree) match
       case Some(values) =>
         values
       case None =>
         classLiteralValue(tree) match
-          case Some(name) =>
-            name
+          case Some(value) =>
+            value
           case None =>
             nestedAnnotationValue(tree) match
               case Some(value) =>
@@ -831,7 +837,7 @@ private object ScalaModelExtractor:
                     if value == null then
                       null
                     else
-                      renderedClassLiteralValue(value.toString).getOrElse(value.asInstanceOf[Object])
+                      renderedClassLiteralValue(value.toString).map(name => classValueData(name)).getOrElse(value.asInstanceOf[Object])
                   case select: tpd.Select if isEnumConstant(select.symbol) =>
                     select.name.toString
                   case ident: tpd.Ident if ident.name.toString == "_" =>
@@ -839,9 +845,9 @@ private object ScalaModelExtractor:
                   case ident: tpd.Ident if isEnumConstant(ident.symbol) =>
                     ident.name.toString
                   case _ =>
-                    renderedClassLiteralValue(tree.show).getOrElse(tree.show)
+                    renderedClassLiteralValue(tree.show).map(name => classValueData(name)).getOrElse(tree.show)
 
-  private def arrayLiteralValues(tree: tpd.Tree)(using Context): Option[Object] =
+  private def arrayLiteralValues(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[Object] =
     tree match
       case seq: tpd.SeqLiteral =>
         Some(annotationArray(seq.elems.map(annotationValue).filter(_ != null)))
@@ -855,29 +861,32 @@ private object ScalaModelExtractor:
       case _ =>
         None
 
-  private def annotationArray(values: List[Object]): Object =
+  private def annotationArray(values: List[Object])(using Context, AnnotationDefaults): Object =
     val normalized = values.map {
-      case value: String => renderedClassLiteralValue(value).getOrElse(value)
+      case value: String => renderedClassLiteralValue(value).map(name => classValueData(name)).getOrElse(value)
       case value => value
     }
     if normalized.forall(_.isInstanceOf[String]) then
       normalized.map(_.asInstanceOf[String]).toArray[String]
-    else if normalized.forall(_.isInstanceOf[AnnotationValue[?]]) then
-      normalized.map(_.asInstanceOf[AnnotationValue[?]]).toArray[AnnotationValue[?]]
+    else if normalized.forall(_.isInstanceOf[ScalaAnnotationData]) then
+      normalized.map(_.asInstanceOf[ScalaAnnotationData]).toArray[ScalaAnnotationData]
     else
       normalized.toArray
 
-  private def nestedAnnotationValue(tree: tpd.Tree)(using Context): Option[AnnotationValue[?]] =
+  private def nestedAnnotationValue(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[ScalaAnnotationData] =
     tree match
       case typed: tpd.Typed =>
         nestedAnnotationValue(typed.expr)
       case apply: tpd.Apply =>
         val symbol = annotationClassSymbol(apply)
-        if symbol != Symbols.NoSymbol && symbol.denot.isAnnotation then
+        if isAnnotationSymbol(symbol) then
+          val annotationType = annotationTypeData(symbol, Set.empty)
           Some(
-            AnnotationValue.builder(className(symbol))
-              .members(annotationArgumentValues(apply.args).asInstanceOf[JMap[CharSequence, Object]])
-              .build()
+            ScalaAnnotationData(
+              className(symbol),
+              annotationValuesFromArguments(apply.args, annotationType).asInstanceOf[JMap[CharSequence, Object]],
+              annotationType
+            )
           )
         else
           nestedAnnotationValue(apply.fun)
@@ -904,10 +913,17 @@ private object ScalaModelExtractor:
   private def isClassOf(typeApply: tpd.TypeApply)(using Context): Boolean =
     typeApply.args.nonEmpty && typeApply.fun.symbol != Symbols.NoSymbol && typeApply.fun.symbol.showFullName == "scala.Predef.classOf"
 
-  private def classLiteralValue(tree: tpd.Tree)(using Context): Option[String] =
+  private def annotationValuesFromArguments(
+      arguments: List[tpd.Tree],
+      annotationType: ScalaAnnotationTypeData | Null
+  )(using Context, AnnotationDefaults): JMap[String, Object] =
+    normalizeAnnotationArgumentValues(annotationArgumentValues(arguments), annotationType)
+
+  private def classLiteralValue(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[ScalaClassValueData] =
     tree match
       case typeApply: tpd.TypeApply if isClassOf(typeApply) =>
-        Some(typeName(typeApply.args.head.tpe))
+        val name = typeName(typeApply.args.head.tpe)
+        Some(classValueData(name, typeApply.args.head.tpe.classSymbol))
       case typed: tpd.Typed =>
         classLiteralValue(typed.expr)
       case apply: tpd.Apply =>
@@ -915,7 +931,16 @@ private object ScalaModelExtractor:
       case typeApply: tpd.TypeApply =>
         classLiteralValue(typeApply.fun)
       case _ =>
-        renderedClassLiteralValue(tree.show)
+        renderedClassLiteralValue(tree.show).map(name => classValueData(name))
+
+  private def classValueData(name: String, fallback: Symbol = Symbols.NoSymbol)(using Context, AnnotationDefaults): ScalaClassValueData =
+    val classSymbol =
+      if isAnnotationSymbol(fallback) then fallback
+      else classSymbolForName(name)
+    val annotationType =
+      if isAnnotationSymbol(classSymbol) then annotationTypeData(classSymbol, Set.empty)
+      else null
+    ScalaClassValueData(name, annotationType)
 
   private def renderedClassLiteralValue(rendered: String): Option[String] =
     val start = rendered.indexOf("classOf")
@@ -947,6 +972,17 @@ private object ScalaModelExtractor:
     if hasFlag(symbol, Flags.JavaStatic) || hasFlag(symbol, Flags.Module) then modifiers.add(ElementModifier.STATIC)
     if !modifiers.contains(ElementModifier.PRIVATE) && !modifiers.contains(ElementModifier.PROTECTED) then modifiers.add(ElementModifier.PUBLIC)
     modifiers.asScala.toSet
+
+  private def isAnnotationSymbol(symbol: Symbol)(using Context): Boolean =
+    symbol != Symbols.NoSymbol &&
+      (symbol.denot.isAnnotation || hasFlag(symbol, Flags.JavaAnnotation))
+
+  private def classSymbolForName(name: String)(using Context): Symbol =
+    val symbol = Symbols.getClassIfDefined(name)
+    if symbol != Symbols.NoSymbol then
+      symbol
+    else
+      Symbols.getClassIfDefined(name.replace('$', '.'))
 
   private def skipClass(symbol: Symbol)(using Context): Boolean =
     symbol == Symbols.NoSymbol ||
