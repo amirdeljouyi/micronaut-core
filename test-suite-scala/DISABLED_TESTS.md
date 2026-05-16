@@ -19,12 +19,13 @@ This file tracks Scala documentation examples that are not yet ported to
   `@ConfigurationProperties` binding.
 - `io.micronaut.docs.config.env.EachPropertyTest` verifies map-style and
   list-style `@EachProperty` binding.
+- `io.micronaut.docs.events.factory.VehicleSpec` verifies factory-created
+  beans and bean-initialization listeners.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- IOC examples: factories and scopes once the Scala adapter supports the
-  matching feature.
+- IOC examples: scopes once the Scala adapter supports the matching feature.
 - Introspection examples: property metadata beyond the basic case class proof
   of concept.
 - Configuration examples: validation metadata.
