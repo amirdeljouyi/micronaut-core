@@ -21,6 +21,14 @@ dependencies {
     api(libs.spock) {
         exclude(module = "groovy-all")
     }
+
+    testImplementation(platform(libs.test.boms.micronaut.validation))
+    testImplementation(libs.micronaut.validation) {
+        exclude(group = "io.micronaut")
+    }
+    testImplementation(libs.micronaut.validation.processor) {
+        exclude(group = "io.micronaut")
+    }
 }
 
 tasks.withType<Test>().configureEach {

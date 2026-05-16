@@ -33,7 +33,7 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     private ParameterElement[] parameters;
 
     ScalaMethodElement(ScalaClassElement declaringType, ScalaMethodData methodData, ScalaVisitorContext visitorContext) {
-        this(declaringType, methodData, visitorContext, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(methodData));
+        this(declaringType, methodData, visitorContext, visitorContext.annotationMetadata(methodData));
     }
 
     ScalaMethodElement(ScalaClassElement declaringType, ScalaMethodData methodData, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
@@ -54,10 +54,7 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
 
     @Override
     public MutableAnnotationMetadataDelegate<AnnotationMetadata> getMethodAnnotationMetadata() {
-        return new SimpleElementAnnotationMetadata(
-            io.micronaut.inject.annotation.MutableAnnotationMetadata.of(getAnnotationMetadata()),
-            false
-        );
+        return getElementAnnotationMetadata();
     }
 
     @Override

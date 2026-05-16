@@ -22,6 +22,13 @@ dependencies {
     testImplementation(projects.micronautRuntime)
     testImplementation(projects.micronautInject)
     testImplementation(projects.micronautJacksonDatabind)
+    testImplementation(platform(libs.test.boms.micronaut.validation))
+    testImplementation(libs.micronaut.validation) {
+        exclude(group = "io.micronaut")
+    }
+    testImplementation(libs.micronaut.validation.processor) {
+        exclude(group = "io.micronaut")
+    }
 }
 
 tasks.withType<ScalaCompile>().configureEach {

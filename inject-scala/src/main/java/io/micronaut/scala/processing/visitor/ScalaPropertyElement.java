@@ -21,6 +21,10 @@ import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
+import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
+import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
+import io.micronaut.inject.ast.annotation.PropertyElementAnnotationMetadata;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -32,26 +36,39 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
     private final ScalaClassElement declaringType;
     private final ScalaVisitorContext visitorContext;
     private final ScalaPropertyData propertyData;
+    private final ElementAnnotationMetadata annotationMetadata;
 
     ScalaPropertyElement(ScalaClassElement declaringType, ScalaPropertyData propertyData, ScalaVisitorContext visitorContext) {
-        this(declaringType, propertyData, visitorContext, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(propertyData));
+        this(declaringType, propertyData, visitorContext, null);
     }
 
     private ScalaPropertyElement(
         ScalaClassElement declaringType,
         ScalaPropertyData propertyData,
         ScalaVisitorContext visitorContext,
+        @Nullable
         AnnotationMetadata annotationMetadata) {
         super(
             declaringType,
             propertyData.name(),
             propertyData.nativeType(),
             propertyData.modifiers(),
-            MutableAnnotationMetadata.of(annotationMetadata)
+            annotationMetadata == null ? visitorContext.annotationMetadata(propertyData) : MutableAnnotationMetadata.of(annotationMetadata)
         );
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;
         this.propertyData = propertyData;
+        this.annotationMetadata = annotationMetadata == null
+            ? new PropertyElementAnnotationMetadata(
+                this,
+                getReadMethod().orElse(null),
+                getWriteMethod().orElse(null),
+                getField().orElse(null),
+                null,
+                visitorContext.annotationMetadata(propertyData),
+                true
+            )
+            : new SimpleElementAnnotationMetadata(MutableAnnotationMetadata.of(annotationMetadata), false);
     }
 
     @Override
@@ -64,7 +81,7 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
         if (propertyData.field() == null) {
             return Optional.empty();
         }
-        return Optional.of(new ScalaFieldElement(declaringType, propertyData.field(), visitorContext));
+        return Optional.of(declaringType.fieldElement(propertyData.field()));
     }
 
     @Override
@@ -72,7 +89,7 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
         if (propertyData.writeMethod() == null) {
             return Optional.empty();
         }
-        return Optional.of(new ScalaMethodElement(declaringType, propertyData.writeMethod(), visitorContext));
+        return Optional.of(declaringType.methodElement(propertyData.writeMethod()));
     }
 
     @Override
@@ -80,7 +97,17 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
         if (propertyData.readMethod() == null) {
             return Optional.empty();
         }
-        return Optional.of(new ScalaMethodElement(declaringType, propertyData.readMethod(), visitorContext));
+        return Optional.of(declaringType.methodElement(propertyData.readMethod()));
+    }
+
+    @Override
+    public AnnotationMetadata getAnnotationMetadata() {
+        return annotationMetadata.getAnnotationMetadata();
+    }
+
+    @Override
+    protected MutableAnnotationMetadataDelegate<?> getAnnotationMetadataToWrite() {
+        return annotationMetadata;
     }
 
     @Override

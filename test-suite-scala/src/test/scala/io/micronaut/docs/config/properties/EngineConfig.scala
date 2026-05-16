@@ -16,9 +16,15 @@
 package io.micronaut.docs.config.properties
 
 import io.micronaut.context.annotation.ConfigurationProperties
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotBlank
+import scala.annotation.meta.field
 import scala.compiletime.uninitialized
 
 @ConfigurationProperties("engine")
 class EngineConfig:
+  @(Min @field)(value = 1L)
   var cylinders: Int = 0
+
+  @(NotBlank @field)
   var manufacturer: String = uninitialized

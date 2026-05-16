@@ -263,6 +263,8 @@ private object ScalaModelExtractor:
     "Unit" -> "void"
   )
 
+  private val VoidTypeData = ScalaTypeData("void", primitive = true, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
+
   private case class AnnotationMemberType(
       name: String,
       array: Boolean,
@@ -517,7 +519,7 @@ private object ScalaModelExtractor:
       if constructor then
         ScalaTypeData(className(owner), primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
       else
-        typeData(method.tpt.tpe)
+        methodReturnType(method.name.toString, method.tpt.tpe)
     ScalaMethodData(
       if constructor then "<init>" else methodName(method.name.toString),
       returnType,
@@ -533,7 +535,7 @@ private object ScalaModelExtractor:
       case methodType: MethodType =>
         ScalaMethodData(
           methodName(symbol.name.toString),
-          typeData(methodType.resultType),
+          methodReturnType(symbol.name.toString, methodType.resultType),
           methodType.paramNames.zip(methodType.paramInfos)
             .map { case (name, info) => parameterData(name.toString, info, symbol) }
             .asJava,
@@ -545,7 +547,7 @@ private object ScalaModelExtractor:
       case info =>
         ScalaMethodData(
           methodName(symbol.name.toString),
-          typeData(info),
+          methodReturnType(symbol.name.toString, info),
           java.util.List.of(),
           annotations(symbol).asJava,
           modifiers(symbol).asJava,
@@ -558,6 +560,12 @@ private object ScalaModelExtractor:
       name.stripSuffix("_=") + "_$eq"
     else
       name
+
+  private def methodReturnType(name: String, tpe: Type)(using Context): ScalaTypeData =
+    if name.endsWith("_=") then
+      VoidTypeData
+    else
+      typeData(tpe)
 
   private def fieldData(field: tpd.ValDef)(using Context, AnnotationDefaults): ScalaFieldData =
     ScalaFieldData(

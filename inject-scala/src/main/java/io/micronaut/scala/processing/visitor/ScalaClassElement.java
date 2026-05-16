@@ -33,6 +33,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,9 +49,14 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
     private final ScalaTypeData typeData;
     private final @Nullable ScalaClassData classData;
     private final ScalaElementFactory elementFactory;
+    private final IdentityHashMap<ScalaMethodData, ScalaConstructorElement> constructorElements = new IdentityHashMap<>();
+    private final IdentityHashMap<ScalaMethodData, ScalaMethodElement> methodElements = new IdentityHashMap<>();
+    private final IdentityHashMap<ScalaFieldData, ScalaFieldElement> fieldElements = new IdentityHashMap<>();
+    private final IdentityHashMap<ScalaFieldData, ScalaEnumConstantElement> enumConstantElements = new IdentityHashMap<>();
+    private final IdentityHashMap<ScalaPropertyData, ScalaPropertyElement> propertyElements = new IdentityHashMap<>();
 
     ScalaClassElement(ScalaClassData classData, ScalaVisitorContext visitorContext) {
-        this(classData, visitorContext, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(classData));
+        this(classData, visitorContext, visitorContext.annotationMetadata(classData));
     }
 
     ScalaClassElement(ScalaClassData classData, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
@@ -182,7 +188,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             return List.of();
         }
         return classData.properties().stream()
-            .map(property -> new ScalaPropertyElement(this, property, visitorContext))
+            .map(this::propertyElement)
             .map(PropertyElement.class::cast)
             .toList();
     }
@@ -192,7 +198,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (classData == null || classData.constructors().isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new ScalaConstructorElement(this, classData.constructors().get(0), visitorContext));
+        return Optional.of(constructorElement(classData.constructors().get(0)));
     }
 
     @Override
@@ -203,7 +209,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         return classData.constructors().stream()
             .filter(constructor -> constructor.parameters().isEmpty())
             .findFirst()
-            .map(constructor -> new ScalaConstructorElement(this, constructor, visitorContext));
+            .map(this::constructorElement);
     }
 
     @Override
@@ -215,20 +221,20 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         List<Element> elements = new ArrayList<>();
         Class<T> elementType = result.getElementType();
         if (elementType == ConstructorElement.class) {
-            classData.constructors().forEach(constructor -> elements.add(new ScalaConstructorElement(this, constructor, visitorContext)));
+            classData.constructors().forEach(constructor -> elements.add(constructorElement(constructor)));
         } else if (elementType == MethodElement.class) {
-            classData.methods().forEach(method -> elements.add(new ScalaMethodElement(this, method, visitorContext)));
+            classData.methods().forEach(method -> elements.add(methodElement(method)));
         } else if (elementType == FieldElement.class) {
             addFieldElements(result, elements);
         } else if (elementType == PropertyElement.class) {
-            classData.properties().forEach(property -> elements.add(new ScalaPropertyElement(this, property, visitorContext)));
+            classData.properties().forEach(property -> elements.add(propertyElement(property)));
         } else if (elementType == ClassElement.class) {
             elements.addAll(visitorContext.sourceClassElementsEnclosedBy(getName()));
         } else if (elementType == MemberElement.class) {
             addFieldElements(result, elements);
-            classData.methods().forEach(method -> elements.add(new ScalaMethodElement(this, method, visitorContext)));
+            classData.methods().forEach(method -> elements.add(methodElement(method)));
             if (!result.isExcludePropertyElements()) {
-                classData.properties().forEach(property -> elements.add(new ScalaPropertyElement(this, property, visitorContext)));
+                classData.properties().forEach(property -> elements.add(propertyElement(property)));
             }
         }
         return elements.stream()
@@ -245,12 +251,35 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         data.fields().forEach(field -> {
             if (field.enumConstant()) {
                 if (result.isIncludeEnumConstants() && this instanceof ScalaEnumElement enumElement) {
-                    elements.add(new ScalaEnumConstantElement(enumElement, field, visitorContext));
+                    elements.add(enumElement.enumConstantElement(field));
                 }
             } else {
-                elements.add(new ScalaFieldElement(this, field, visitorContext));
+                elements.add(fieldElement(field));
             }
         });
+    }
+
+    ScalaConstructorElement constructorElement(ScalaMethodData constructor) {
+        return constructorElements.computeIfAbsent(constructor, ignored -> new ScalaConstructorElement(this, constructor, visitorContext));
+    }
+
+    ScalaMethodElement methodElement(ScalaMethodData method) {
+        return methodElements.computeIfAbsent(method, ignored -> new ScalaMethodElement(this, method, visitorContext));
+    }
+
+    ScalaFieldElement fieldElement(ScalaFieldData field) {
+        return fieldElements.computeIfAbsent(field, ignored -> new ScalaFieldElement(this, field, visitorContext));
+    }
+
+    ScalaEnumConstantElement enumConstantElement(ScalaFieldData field) {
+        if (this instanceof ScalaEnumElement enumElement) {
+            return enumConstantElements.computeIfAbsent(field, ignored -> new ScalaEnumConstantElement(enumElement, field, visitorContext));
+        }
+        throw new IllegalStateException("Declaring class must be a ScalaEnumElement");
+    }
+
+    ScalaPropertyElement propertyElement(ScalaPropertyData property) {
+        return propertyElements.computeIfAbsent(property, ignored -> new ScalaPropertyElement(this, property, visitorContext));
     }
 
     private <T extends Element> boolean matches(ElementQuery.Result<T> result, Element element) {

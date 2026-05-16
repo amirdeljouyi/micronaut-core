@@ -15,6 +15,8 @@
  */
 package io.micronaut.scala.processing
 
+import io.micronaut.context.exceptions.BeanInstantiationException
+import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 
@@ -230,6 +232,36 @@ class AppConfig:
         then:
         config.name() == 'demo'
         config.port() == 8080
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports validation on mutable configuration properties"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.ConfigurationProperties
+import jakarta.validation.constraints.Min
+import scala.annotation.meta.field
+
+@ConfigurationProperties("app")
+class AppConfig:
+  @(Min @field)(1L)
+  var port: Int = 0
+''', ['app.port': 0], true)
+        def configType = context.classLoader.loadClass('example.AppConfig')
+        def definition = context.getBeanDefinition(configType)
+
+        then:
+        definition instanceof ValidatedBeanDefinition
+
+        when:
+        context.getBean(configType)
+
+        then:
+        thrown(BeanInstantiationException)
 
         cleanup:
         context?.close()

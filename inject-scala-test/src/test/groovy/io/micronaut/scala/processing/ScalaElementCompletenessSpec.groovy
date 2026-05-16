@@ -21,11 +21,14 @@ import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.inject.ast.EnumElement
+import io.micronaut.inject.validation.RequiresValidation
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaEnumConstantCaptureVisitor
 import jakarta.inject.Named
 import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
+import jakarta.validation.Constraint
+import jakarta.validation.constraints.Min
 
 class ScalaElementCompletenessSpec extends AbstractScalaTypeElementSpec {
 
@@ -47,7 +50,34 @@ class Worker:
         !properties.name.writeMethod.present
         properties.started.type.name == Boolean.TYPE.name
         properties.started.readMethod.present
+        !properties.started.readMethod.get().returnType.isVoid()
         properties.started.writeMethod.present
+        properties.started.writeMethod.get().returnType.isVoid()
+    }
+
+    void "propagates field-targeted validation annotations to Scala properties"() {
+        when:
+        def element = buildClassElement('example.EngineConfig', '''
+package example
+
+import jakarta.validation.constraints.Min
+import scala.annotation.meta.field
+
+class EngineConfig:
+  @(Min @field)(1L)
+  var cylinders: Int = 0
+''')
+        def property = element.getBeanProperties().find { it.name == 'cylinders' }
+
+        then:
+        property != null
+        property.field.present
+        property.field.get().hasAnnotation(Min)
+        property.field.get().hasStereotype(Constraint)
+        property.field.get().hasAnnotation(RequiresValidation)
+        property.hasAnnotation(Min)
+        property.hasStereotype(Constraint)
+        property.hasAnnotation(RequiresValidation)
     }
 
     void "exposes generic property type arguments"() {

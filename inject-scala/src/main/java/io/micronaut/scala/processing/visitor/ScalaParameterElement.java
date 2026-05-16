@@ -34,7 +34,7 @@ public final class ScalaParameterElement extends AbstractScalaElement implements
     private final ScalaVisitorContext visitorContext;
 
     ScalaParameterElement(MethodElement methodElement, ScalaParameterData parameterData, ScalaVisitorContext visitorContext) {
-        this(methodElement, parameterData, visitorContext, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(parameterData));
+        this(methodElement, parameterData, visitorContext, visitorContext.annotationMetadata(parameterData));
     }
 
     private ScalaParameterElement(

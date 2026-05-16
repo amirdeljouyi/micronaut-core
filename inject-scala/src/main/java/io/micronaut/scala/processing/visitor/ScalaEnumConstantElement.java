@@ -30,7 +30,7 @@ final class ScalaEnumConstantElement extends AbstractScalaMemberElement implemen
     private final ScalaFieldData fieldData;
 
     ScalaEnumConstantElement(ScalaEnumElement declaringEnum, ScalaFieldData fieldData, ScalaVisitorContext visitorContext) {
-        this(declaringEnum, fieldData, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(fieldData));
+        this(declaringEnum, fieldData, visitorContext.annotationMetadata(fieldData));
     }
 
     private ScalaEnumConstantElement(ScalaEnumElement declaringEnum, ScalaFieldData fieldData, AnnotationMetadata annotationMetadata) {

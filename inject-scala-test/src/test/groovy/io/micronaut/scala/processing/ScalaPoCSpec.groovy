@@ -69,6 +69,30 @@ case class Person(name: String, age: Int)
         introspection.getRequiredProperty('age', Integer.TYPE)
     }
 
+    void "builds bean introspection for mutable var properties"() {
+        when:
+        def introspection = buildBeanIntrospection('example.AppConfig', '''
+package example
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class AppConfig:
+  var port: Int = 0
+''')
+        def bean = introspection.instantiate()
+        def property = introspection.getRequiredProperty('port', Integer.TYPE)
+
+        then:
+        property.get(bean) == 0
+
+        when:
+        property.set(bean, 8080)
+
+        then:
+        property.get(bean) == 8080
+    }
+
     void "loads generated bean definition"() {
         when:
         def definition = buildBeanDefinition('example.Engine', '''

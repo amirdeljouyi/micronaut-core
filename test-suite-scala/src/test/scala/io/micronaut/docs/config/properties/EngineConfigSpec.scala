@@ -16,7 +16,11 @@
 package io.micronaut.docs.config.properties
 
 import io.micronaut.context.ApplicationContext
+import io.micronaut.context.exceptions.BeanInstantiationException
+import io.micronaut.inject.ValidatedBeanDefinition
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 import scala.jdk.CollectionConverters.*
@@ -35,5 +39,24 @@ class EngineConfigSpec:
       val config = context.getBean(classOf[EngineConfig])
       assertEquals(8, config.cylinders)
       assertEquals("Ford", config.manufacturer)
+    finally
+      context.close()
+
+  @Test
+  def validatesMutableConfigurationProperties(): Unit =
+    val context = ApplicationContext.run(
+      Map[String, Object](
+        "engine.cylinders" -> Integer.valueOf(0),
+        "engine.manufacturer" -> "Ford"
+      ).asJava
+    )
+    try
+      val definition = context.getBeanDefinition(classOf[EngineConfig])
+      assertTrue(definition.isInstanceOf[ValidatedBeanDefinition[?]])
+      val error = assertThrows(
+        classOf[BeanInstantiationException],
+        () => context.getBean(classOf[EngineConfig])
+      )
+      assertTrue(error.getMessage.contains("must be greater than or equal to 1"))
     finally
       context.close()

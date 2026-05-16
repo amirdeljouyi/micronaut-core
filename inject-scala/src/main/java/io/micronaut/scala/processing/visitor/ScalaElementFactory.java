@@ -63,21 +63,25 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
     ClassElement newClassElement(ScalaTypeData type) {
         if (type.primitive()) {
             return switch (type.name()) {
-                case "boolean" -> PrimitiveElement.BOOLEAN.withArrayDimensions(type.arrayDimensions());
-                case "byte" -> PrimitiveElement.BYTE.withArrayDimensions(type.arrayDimensions());
-                case "char" -> PrimitiveElement.CHAR.withArrayDimensions(type.arrayDimensions());
-                case "double" -> PrimitiveElement.DOUBLE.withArrayDimensions(type.arrayDimensions());
-                case "float" -> PrimitiveElement.FLOAT.withArrayDimensions(type.arrayDimensions());
-                case "int" -> PrimitiveElement.INT.withArrayDimensions(type.arrayDimensions());
-                case "long" -> PrimitiveElement.LONG.withArrayDimensions(type.arrayDimensions());
-                case "short" -> PrimitiveElement.SHORT.withArrayDimensions(type.arrayDimensions());
-                case "void" -> PrimitiveElement.VOID.withArrayDimensions(type.arrayDimensions());
+                case "boolean" -> primitiveElement(PrimitiveElement.BOOLEAN, type.arrayDimensions());
+                case "byte" -> primitiveElement(PrimitiveElement.BYTE, type.arrayDimensions());
+                case "char" -> primitiveElement(PrimitiveElement.CHAR, type.arrayDimensions());
+                case "double" -> primitiveElement(PrimitiveElement.DOUBLE, type.arrayDimensions());
+                case "float" -> primitiveElement(PrimitiveElement.FLOAT, type.arrayDimensions());
+                case "int" -> primitiveElement(PrimitiveElement.INT, type.arrayDimensions());
+                case "long" -> primitiveElement(PrimitiveElement.LONG, type.arrayDimensions());
+                case "short" -> primitiveElement(PrimitiveElement.SHORT, type.arrayDimensions());
+                case "void" -> primitiveElement(PrimitiveElement.VOID, type.arrayDimensions());
                 default -> new ScalaClassElement(type, visitorContext, AnnotationMetadata.EMPTY_METADATA);
             };
         }
         return visitorContext.sourceClassElement(type.name())
             .map(classElement -> type.arrayDimensions() == 0 ? classElement : classElement.withArrayDimensions(type.arrayDimensions()))
             .orElseGet(() -> new ScalaClassElement(type, visitorContext, AnnotationMetadata.EMPTY_METADATA));
+    }
+
+    private ClassElement primitiveElement(PrimitiveElement element, int arrayDimensions) {
+        return arrayDimensions == 0 ? element : element.withArrayDimensions(arrayDimensions);
     }
 
     Map<String, ClassElement> typeArguments(ScalaTypeData type) {
@@ -96,18 +100,18 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
 
     @Override
     public MethodElement newMethodElement(ClassElement owningClass, ScalaMethodData method, ElementAnnotationMetadataFactory elementAnnotationMetadataFactory) {
-        return new ScalaMethodElement((ScalaClassElement) owningClass, method, visitorContext);
+        return ((ScalaClassElement) owningClass).methodElement(method);
     }
 
     @Override
     public ConstructorElement newConstructorElement(ClassElement owningClass, ScalaMethodData constructor, ElementAnnotationMetadataFactory elementAnnotationMetadataFactory) {
-        return new ScalaConstructorElement((ScalaClassElement) owningClass, constructor, visitorContext);
+        return ((ScalaClassElement) owningClass).constructorElement(constructor);
     }
 
     @Override
     public io.micronaut.inject.ast.EnumConstantElement newEnumConstantElement(ClassElement owningClass, ScalaFieldData enumConstant, ElementAnnotationMetadataFactory elementAnnotationMetadataFactory) {
         if (owningClass instanceof ScalaEnumElement scalaEnumElement) {
-            return new ScalaEnumConstantElement(scalaEnumElement, enumConstant, visitorContext);
+            return scalaEnumElement.enumConstantElement(enumConstant);
         }
         throw new IllegalArgumentException("Declaring class must be a ScalaEnumElement");
     }
@@ -117,6 +121,6 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
         if (field.enumConstant()) {
             return newEnumConstantElement(owningClass, field, elementAnnotationMetadataFactory);
         }
-        return new ScalaFieldElement((ScalaClassElement) owningClass, field, visitorContext);
+        return ((ScalaClassElement) owningClass).fieldElement(field);
     }
 }

@@ -19,6 +19,7 @@ import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.AnnotationValueBuilder;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
+import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.ElementModifier;
 
@@ -33,12 +34,14 @@ abstract class AbstractScalaElement implements Element {
     private final Object nativeType;
     private final Set<ElementModifier> modifiers;
     private final MutableAnnotationMetadata annotationMetadata;
+    private final SimpleElementAnnotationMetadata elementAnnotationMetadata;
 
     AbstractScalaElement(String name, Object nativeType, Set<ElementModifier> modifiers, MutableAnnotationMetadata annotationMetadata) {
         this.name = name;
         this.nativeType = nativeType;
         this.modifiers = modifiers == null ? Set.of() : Set.copyOf(modifiers);
         this.annotationMetadata = annotationMetadata == null ? new MutableAnnotationMetadata() : annotationMetadata;
+        this.elementAnnotationMetadata = new SimpleElementAnnotationMetadata(this.annotationMetadata, false);
     }
 
     @Override
@@ -88,37 +91,44 @@ abstract class AbstractScalaElement implements Element {
 
     @Override
     public AnnotationMetadata getAnnotationMetadata() {
-        return annotationMetadata;
+        return elementAnnotationMetadata.getAnnotationMetadata();
+    }
+
+    protected SimpleElementAnnotationMetadata getElementAnnotationMetadata() {
+        return elementAnnotationMetadata;
+    }
+
+    protected MutableAnnotationMetadataDelegate<?> getAnnotationMetadataToWrite() {
+        return elementAnnotationMetadata;
     }
 
     @Override
     public <T extends Annotation> Element annotate(String annotationType, Consumer<AnnotationValueBuilder<T>> consumer) {
-        AnnotationValueBuilder<T> builder = AnnotationValue.builder(annotationType);
-        consumer.accept(builder);
-        return annotate(builder.build());
+        getAnnotationMetadataToWrite().annotate(annotationType, consumer);
+        return this;
     }
 
     @Override
     public <T extends Annotation> Element annotate(AnnotationValue<T> annotationValue) {
-        annotationMetadata.addDeclaredAnnotation(annotationValue.getAnnotationName(), annotationValue.getValues(), annotationValue.getRetentionPolicy());
+        getAnnotationMetadataToWrite().annotate(annotationValue);
         return this;
     }
 
     @Override
     public Element removeAnnotation(String annotationType) {
-        annotationMetadata.removeAnnotation(annotationType);
+        getAnnotationMetadataToWrite().removeAnnotation(annotationType);
         return this;
     }
 
     @Override
     public <T extends Annotation> Element removeAnnotationIf(Predicate<AnnotationValue<T>> predicate) {
-        annotationMetadata.removeAnnotationIf(predicate);
+        getAnnotationMetadataToWrite().removeAnnotationIf(predicate);
         return this;
     }
 
     @Override
     public Element removeStereotype(String annotationType) {
-        annotationMetadata.removeStereotype(annotationType);
+        getAnnotationMetadataToWrite().removeStereotype(annotationType);
         return this;
     }
 }

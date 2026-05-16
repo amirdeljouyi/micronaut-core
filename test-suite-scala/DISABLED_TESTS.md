@@ -16,7 +16,7 @@ This file tracks Scala documentation examples that are not yet ported to
 - `io.micronaut.docs.core.beans.UserSpec` verifies `@Introspected` on a Scala
   case class, including construction and property metadata.
 - `io.micronaut.docs.config.properties.EngineConfigSpec` verifies mutable
-  `@ConfigurationProperties` binding.
+  `@ConfigurationProperties` binding and validation metadata.
 - `io.micronaut.docs.config.env.EachPropertyTest` verifies map-style and
   list-style `@EachProperty` binding.
 - `io.micronaut.docs.events.factory.VehicleSpec` verifies factory-created
@@ -29,7 +29,6 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- Configuration examples: validation metadata.
 - HTTP examples: controllers, clients, filters, and executable methods.
 - AOP examples: introduction advice and proxy generation.
 

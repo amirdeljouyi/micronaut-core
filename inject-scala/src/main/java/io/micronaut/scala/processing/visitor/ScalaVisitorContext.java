@@ -21,6 +21,7 @@ import io.micronaut.core.convert.value.MutableConvertibleValuesMap;
 import io.micronaut.expressions.context.DefaultExpressionCompilationContextFactory;
 import io.micronaut.expressions.context.ExpressionCompilationContextFactory;
 import io.micronaut.inject.annotation.AbstractAnnotationMetadataBuilder;
+import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.annotation.ElementAnnotationMetadataFactory;
@@ -38,6 +39,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +62,7 @@ public final class ScalaVisitorContext implements VisitorContext {
     private final ExpressionCompilationContextFactory expressionCompilationContextFactory = new DefaultExpressionCompilationContextFactory(this);
     private final Map<String, ScalaClassData> sourceClasses = new LinkedHashMap<>();
     private final Map<String, ScalaClassElement> sourceElements = new LinkedHashMap<>();
+    private final IdentityHashMap<Object, MutableAnnotationMetadata> elementAnnotationMetadata = new IdentityHashMap<>();
     private final Map<String, String> options;
     private final Consumer<String> infoReporter;
     private final Consumer<String> warningReporter;
@@ -149,6 +152,18 @@ public final class ScalaVisitorContext implements VisitorContext {
 
     public ScalaAnnotationMetadataBuilder getScalaAnnotationMetadataBuilder() {
         return annotationMetadataBuilder;
+    }
+
+    MutableAnnotationMetadata annotationMetadata(ScalaAnnotatedElementData element) {
+        return elementAnnotationMetadata.computeIfAbsent(
+            annotationMetadataKey(element),
+            ignored -> annotationMetadataBuilder.buildMetadata(element)
+        );
+    }
+
+    private Object annotationMetadataKey(ScalaAnnotatedElementData element) {
+        Object nativeType = element.nativeType();
+        return nativeType == null ? element : nativeType;
     }
 
     ClassLoader getProcessingClassLoader() {

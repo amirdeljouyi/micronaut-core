@@ -30,7 +30,7 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
     private final ScalaFieldData fieldData;
 
     ScalaFieldElement(ScalaClassElement declaringType, ScalaFieldData fieldData, ScalaVisitorContext visitorContext) {
-        this(declaringType, fieldData, visitorContext, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(fieldData));
+        this(declaringType, fieldData, visitorContext, visitorContext.annotationMetadata(fieldData));
     }
 
     private ScalaFieldElement(
