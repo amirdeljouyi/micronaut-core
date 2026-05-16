@@ -9,6 +9,10 @@ This file tracks Scala documentation examples that are not yet ported to
   controller docs smoke test.
 - `io.micronaut.docs.inject.intro.VehicleSpec` verifies basic IOC constructor
   injection with a Scala trait and implementation.
+- `io.micronaut.docs.inject.qualifiers.named.VehicleSpec` verifies named
+  qualifier constructor injection.
+- `io.micronaut.docs.lifecycle.VehicleSpec` verifies post-construct lifecycle
+  initialization.
 - `io.micronaut.docs.core.beans.UserSpec` verifies `@Introspected` on a Scala
   case class.
 - `io.micronaut.docs.config.properties.EngineConfigSpec` verifies mutable
@@ -19,8 +23,8 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- IOC examples: qualifiers, factories, scopes, and lifecycle examples once the
-  Scala adapter supports the matching feature.
+- IOC examples: factories and scopes once the Scala adapter supports the
+  matching feature.
 - Introspection examples: property metadata beyond the basic case class proof
   of concept.
 - Configuration examples: validation metadata.
