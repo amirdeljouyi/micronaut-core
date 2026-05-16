@@ -15,6 +15,7 @@
  */
 package io.micronaut.scala.processing
 
+import io.micronaut.aop.Intercepted
 import io.micronaut.context.exceptions.BeanInstantiationException
 import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.qualifiers.Qualifiers
@@ -210,6 +211,52 @@ class FlakyService:
         then:
         service.call() == 'ok'
         service.attempts() == 2
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports introduction advice on Scala traits"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.aop.Interceptor
+import io.micronaut.aop.Introduction
+import io.micronaut.aop.InvocationContext
+import io.micronaut.context.annotation.Type
+import jakarta.inject.Singleton
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Singleton
+class StubIntroduction extends Interceptor[AnyRef, Object]:
+  var invoked: Int = 0
+
+  override def intercept(context: InvocationContext[AnyRef, Object]): Object =
+    invoked = invoked + 1
+    Integer.valueOf(context.getParameterValues()(0).asInstanceOf[String].length)
+
+@Introduction
+@Type(Array(classOf[StubIntroduction]))
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE))
+class Stub extends StaticAnnotation
+
+@Stub
+trait TextService:
+  def length(value: String): Int
+''')
+        def service = getBean(context, 'example.TextService')
+        def interceptor = getBean(context, 'example.StubIntroduction')
+
+        then:
+        service instanceof Intercepted
+        service.length('test') == 4
+        interceptor.invoked() == 1
 
         cleanup:
         context?.close()

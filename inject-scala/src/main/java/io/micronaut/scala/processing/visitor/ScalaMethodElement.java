@@ -20,6 +20,7 @@ import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
+import io.micronaut.inject.ast.annotation.MethodElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 
 /**
@@ -30,6 +31,7 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     protected final ScalaClassElement declaringType;
     protected final ScalaVisitorContext visitorContext;
     protected final ScalaMethodData methodData;
+    private final MethodElementAnnotationMetadata elementAnnotationMetadata;
     private ParameterElement[] parameters;
 
     ScalaMethodElement(ScalaClassElement declaringType, ScalaMethodData methodData, ScalaVisitorContext visitorContext) {
@@ -47,9 +49,20 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;
         this.methodData = methodData;
+        this.elementAnnotationMetadata = new MethodElementAnnotationMetadata(this);
         this.parameters = methodData.parameters().stream()
             .map(parameter -> new ScalaParameterElement(this, parameter, visitorContext))
             .toArray(ParameterElement[]::new);
+    }
+
+    @Override
+    public AnnotationMetadata getAnnotationMetadata() {
+        return elementAnnotationMetadata.getAnnotationMetadata();
+    }
+
+    @Override
+    protected MutableAnnotationMetadataDelegate<?> getAnnotationMetadataToWrite() {
+        return elementAnnotationMetadata;
     }
 
     @Override
@@ -69,7 +82,7 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
 
     @Override
     public MethodElement withParameters(ParameterElement... newParameters) {
-        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, methodData, visitorContext, getAnnotationMetadata());
+        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, methodData, visitorContext, getElementAnnotationMetadata().getAnnotationMetadata());
         methodElement.parameters = newParameters;
         return methodElement;
     }

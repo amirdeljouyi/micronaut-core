@@ -160,7 +160,7 @@ public final class ScalaProcessingEngine {
         ScalaVisitorContext context = visitorContext();
         startBeanElementVisitors(context);
         for (ScalaClassData classData : new LinkedHashSet<>(sourceClasses.values())) {
-            if (classData.interfaceType() || classData.name().endsWith(BeanDefinitionVisitor.PROXY_SUFFIX)) {
+            if (classData.name().endsWith(BeanDefinitionVisitor.PROXY_SUFFIX)) {
                 continue;
             }
             ClassElement classElement = context.sourceClassElement(classData.name()).orElseThrow();
