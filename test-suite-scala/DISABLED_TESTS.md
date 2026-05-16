@@ -13,6 +13,8 @@ This file tracks Scala documentation examples that are not yet ported to
   case class.
 - `io.micronaut.docs.config.properties.EngineConfigSpec` verifies mutable
   `@ConfigurationProperties` binding.
+- `io.micronaut.docs.config.env.EachPropertyTest` verifies map-style and
+  list-style `@EachProperty` binding.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
@@ -21,7 +23,7 @@ This file tracks Scala documentation examples that are not yet ported to
   Scala adapter supports the matching feature.
 - Introspection examples: property metadata beyond the basic case class proof
   of concept.
-- Configuration examples: `@EachProperty` and validation metadata.
+- Configuration examples: validation metadata.
 - HTTP examples: controllers, clients, filters, and executable methods.
 - AOP examples: around advice, introduction advice, and proxy generation.
 
