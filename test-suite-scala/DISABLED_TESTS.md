@@ -21,11 +21,12 @@ This file tracks Scala documentation examples that are not yet ported to
   list-style `@EachProperty` binding.
 - `io.micronaut.docs.events.factory.VehicleSpec` verifies factory-created
   beans and bean-initialization listeners.
+- `io.micronaut.docs.ioc.scopes.DriverSpec` verifies a Scala custom annotation
+  carrying scope stereotypes.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- IOC examples: scopes once the Scala adapter supports the matching feature.
 - Introspection examples: property metadata beyond the basic case class proof
   of concept.
 - Configuration examples: validation metadata.
