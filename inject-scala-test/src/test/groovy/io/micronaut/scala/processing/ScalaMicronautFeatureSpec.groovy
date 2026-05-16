@@ -17,7 +17,6 @@ package io.micronaut.scala.processing
 
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
-import spock.lang.PendingFeature
 
 class ScalaMicronautFeatureSpec extends AbstractScalaTypeElementSpec {
 
@@ -236,7 +235,6 @@ class AppConfig:
         context?.close()
     }
 
-    @PendingFeature(reason = "Nested Scala configuration properties still need Scala-specific binding semantics.")
     void "supports nested configuration properties"() {
         when:
         def context = buildContext('''
@@ -247,12 +245,12 @@ import io.micronaut.context.annotation.ConfigurationProperties
 @ConfigurationProperties("app")
 class AppConfig:
   var name: String = _
+  var engine: AppConfig.EngineConfig = AppConfig.EngineConfig()
 
+object AppConfig:
   @ConfigurationProperties("engine")
-  var engine: EngineConfig = EngineConfig()
-
-class EngineConfig:
-  var cylinders: Int = 0
+  class EngineConfig:
+    var cylinders: Int = 0
 ''', ['app.name': 'demo', 'app.engine.cylinders': 6], true)
         def config = getBean(context, 'example.AppConfig')
 

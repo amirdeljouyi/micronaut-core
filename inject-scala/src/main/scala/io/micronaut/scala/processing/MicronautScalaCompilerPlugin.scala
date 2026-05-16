@@ -290,7 +290,12 @@ private object ScalaModelExtractor:
         classData.foreach(classes += _)
         typeDef.rhs match
           case template: tpd.Template =>
-            classData.foreach(data => template.body.foreach(stat => collectTree(stat, classes, data.name())))
+            val nestedEnclosingTypeName = classData
+              .map(_.name())
+              .orElse(companionClassName(typeDef.symbol))
+              .orNull
+            if nestedEnclosingTypeName != null then
+              template.body.foreach(stat => collectTree(stat, classes, nestedEnclosingTypeName))
           case _ =>
       case _ =>
 
@@ -620,6 +625,13 @@ private object ScalaModelExtractor:
       symbol.showFullName
     else
       binaryName
+
+  private def companionClassName(symbol: Symbol)(using Context): Option[String] =
+    if hasFlag(symbol, Flags.ModuleClass) then
+      val name = className(symbol)
+      if name.endsWith("$") then Some(name.stripSuffix("$")) else None
+    else
+      None
 
   private def annotations(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaAnnotationData] =
     if symbol == Symbols.NoSymbol then

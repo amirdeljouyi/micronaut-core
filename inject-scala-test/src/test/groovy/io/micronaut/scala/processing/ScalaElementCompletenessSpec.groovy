@@ -103,6 +103,23 @@ class Outer:
         inner.enclosingType.get().name == 'example.Outer'
     }
 
+    void "exposes companion object nested classes through companion enclosed elements"() {
+        when:
+        def element = buildClassElement('example.Outer', '''
+package example
+
+class Outer
+object Outer:
+  class Nested
+''')
+        def nested = element.getEnclosedElements(ElementQuery.of(ClassElement)).first()
+
+        then:
+        nested.name == 'example.Outer$Nested'
+        nested.inner
+        nested.enclosingType.get().name == 'example.Outer'
+    }
+
     void "exposes array class literal and enum annotation values"() {
         when:
         def element = buildClassElement('example.Hints', '''

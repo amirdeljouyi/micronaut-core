@@ -10,18 +10,15 @@ Wave 1 covers simple Scala classes, primary constructors, methods, constructor `
 Additional Wave 4 smoke coverage now exists for named qualifiers, `@Requires`,
 post-construct lifecycle methods, simple `@Factory` methods, and executable
 methods, mutable `@ConfigurationProperties`, and `@EachProperty`.
+Nested `@ConfigurationProperties` are covered for Scala companion-object
+nested classes.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
 repeatable annotations, trait/interface assignability, and Scala inner-class
-enclosing type metadata. Source-defined Scala annotation defaults, stereotypes,
-and member aliases are now covered with compiler-symbol/typed-tree metadata.
-
-Known `@PendingFeature` coverage:
-
-- `ScalaMicronautFeatureSpec.supports nested configuration properties`:
-  nested Scala configuration binding still needs Scala-specific binding
-  semantics beyond the current Element API metadata.
+and companion-object nested-class enclosing type metadata. Source-defined Scala
+annotation defaults, stereotypes, and member aliases are now covered with
+compiler-symbol/typed-tree metadata.
 
 ## Classification Rules
 
