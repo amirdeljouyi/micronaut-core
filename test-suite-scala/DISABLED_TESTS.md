@@ -23,6 +23,8 @@ This file tracks Scala documentation examples that are not yet ported to
   beans and bean-initialization listeners.
 - `io.micronaut.docs.ioc.scopes.DriverSpec` verifies a Scala custom annotation
   carrying scope stereotypes.
+- `io.micronaut.docs.aop.retry.RetrySpec` verifies around advice through
+  retry interception.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
@@ -31,7 +33,7 @@ This file tracks Scala documentation examples that are not yet ported to
   of concept.
 - Configuration examples: validation metadata.
 - HTTP examples: controllers, clients, filters, and executable methods.
-- AOP examples: around advice, introduction advice, and proxy generation.
+- AOP examples: introduction advice and proxy generation.
 
 Scala examples should stay idiomatic: primary constructors, case classes,
 traits, `val`, and `var` should be preferred over JavaBean-style code unless
