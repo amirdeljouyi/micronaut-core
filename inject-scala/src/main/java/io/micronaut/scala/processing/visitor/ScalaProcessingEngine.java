@@ -27,6 +27,7 @@ import io.micronaut.core.version.VersionUtils;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.ConstructorElement;
 import io.micronaut.inject.ast.ElementQuery;
+import io.micronaut.inject.ast.EnumConstantElement;
 import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
@@ -226,22 +227,32 @@ public final class ScalaProcessingEngine {
                 }
             }
         }
-        if (query.includesFields() || query.includesMethods()) {
+        if (query.includesFields() || query.includesEnumConstants() || query.includesMethods()) {
             ElementQuery<? extends MemberElement> memberQuery;
-            if (query.includesFields() && query.includesMethods()) {
+            boolean includesFields = query.includesFields() || query.includesEnumConstants();
+            if (includesFields && query.includesMethods()) {
                 memberQuery = ElementQuery.ALL_FIELD_AND_METHODS;
-            } else if (query.includesFields()) {
+            } else if (includesFields) {
                 memberQuery = ElementQuery.ALL_FIELDS;
             } else {
                 memberQuery = ElementQuery.ALL_METHODS;
+            }
+            if (query.includesEnumConstants()) {
+                memberQuery = memberQuery.includeEnumConstants();
             }
             for (MemberElement memberElement : classElement.getEnclosedElements(memberQuery)) {
                 if (!loadedVisitor.matchesElement(memberElement.getAnnotationMetadata())) {
                     continue;
                 }
                 try {
-                    if (memberElement instanceof FieldElement fieldElement) {
-                        loadedVisitor.getVisitor().visitField(fieldElement, context);
+                    if (memberElement instanceof EnumConstantElement enumConstantElement) {
+                        if (query.includesEnumConstants()) {
+                            loadedVisitor.getVisitor().visitEnumConstant(enumConstantElement, context);
+                        }
+                    } else if (memberElement instanceof FieldElement fieldElement) {
+                        if (query.includesFields()) {
+                            loadedVisitor.getVisitor().visitField(fieldElement, context);
+                        }
                     } else if (memberElement instanceof MethodElement methodElement) {
                         loadedVisitor.getVisitor().visitMethod(methodElement, context);
                     }

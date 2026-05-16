@@ -20,7 +20,9 @@ import io.micronaut.context.annotation.Requirements
 import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
+import io.micronaut.inject.ast.EnumElement
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+import io.micronaut.scala.processing.test.ScalaEnumConstantCaptureVisitor
 import jakarta.inject.Named
 import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
@@ -118,6 +120,41 @@ object Outer:
         nested.name == 'example.Outer$Nested'
         nested.inner
         nested.enclosingType.get().name == 'example.Outer'
+    }
+
+    void "exposes Scala enum constants through enum elements"() {
+        when:
+        def element = buildClassElement('example.Color', '''
+package example
+
+enum Color:
+  case Red, Blue
+''')
+        def enumElement = (EnumElement) element
+
+        then:
+        element.enum
+        enumElement.values() == ['Red', 'Blue']
+        enumElement.elements()*.name == ['Red', 'Blue']
+        enumElement.elements()*.type*.name == ['example.Color', 'example.Color']
+    }
+
+    void "type element visitors see Scala enum constants"() {
+        given:
+        def constants = []
+
+        when:
+        ScalaEnumConstantCaptureVisitor.withConsumer(constants::add, {
+            buildClassLoader('example.Color', '''
+package example
+
+enum Color:
+  case Red, Blue
+''')
+        })
+
+        then:
+        constants*.name == ['Red', 'Blue']
     }
 
     void "exposes array class literal and enum annotation values"() {

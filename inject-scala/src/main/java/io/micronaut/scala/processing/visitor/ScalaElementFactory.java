@@ -50,7 +50,14 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
 
     ClassElement newClassElement(ScalaClassData type) {
         return visitorContext.sourceClassElement(type.name())
-            .orElseGet(() -> new ScalaClassElement(type, visitorContext));
+            .orElseGet(() -> newClassElementForData(type));
+    }
+
+    ScalaClassElement newClassElementForData(ScalaClassData type) {
+        if (type.enumType()) {
+            return new ScalaEnumElement(type, visitorContext);
+        }
+        return new ScalaClassElement(type, visitorContext);
     }
 
     ClassElement newClassElement(ScalaTypeData type) {
@@ -99,11 +106,17 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
 
     @Override
     public io.micronaut.inject.ast.EnumConstantElement newEnumConstantElement(ClassElement owningClass, ScalaFieldData enumConstant, ElementAnnotationMetadataFactory elementAnnotationMetadataFactory) {
-        throw new UnsupportedOperationException("Scala enum constants are not implemented yet");
+        if (owningClass instanceof ScalaEnumElement scalaEnumElement) {
+            return new ScalaEnumConstantElement(scalaEnumElement, enumConstant, visitorContext);
+        }
+        throw new IllegalArgumentException("Declaring class must be a ScalaEnumElement");
     }
 
     @Override
     public FieldElement newFieldElement(ClassElement owningClass, ScalaFieldData field, ElementAnnotationMetadataFactory elementAnnotationMetadataFactory) {
+        if (field.enumConstant()) {
+            return newEnumConstantElement(owningClass, field, elementAnnotationMetadataFactory);
+        }
         return new ScalaFieldElement((ScalaClassElement) owningClass, field, visitorContext);
     }
 }

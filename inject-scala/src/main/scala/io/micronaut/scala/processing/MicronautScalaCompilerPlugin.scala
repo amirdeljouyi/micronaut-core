@@ -384,9 +384,12 @@ private object ScalaModelExtractor:
           val fields = template.body.collect {
             case field: tpd.ValDef if !skipField(field.symbol) => fieldData(field)
           }
+          val enumConstants = enumConstantSymbols(symbol)
+            .map(enumConstantFieldData(_, symbol))
+          val allFields = (fields ++ enumConstants).distinctBy(_.name())
           val constructors = List(methodData(template.constr, constructor = true, owner = symbol))
-          val constructorProps = constructorProperties(template.constr, methodByName, fields)
-          val properties = constructorProps ++ bodyProperties(declarations, methodByName, fields, constructorProps.map(_.name).toSet)
+          val constructorProps = constructorProperties(template.constr, methodByName, allFields)
+          val properties = constructorProps ++ bodyProperties(declarations, methodByName, allFields, constructorProps.map(_.name).toSet)
           val parents = symbol.info.parents
             .filterNot(parent => typeName(parent) == classOf[Object].getName)
             .map(typeData)
@@ -402,7 +405,7 @@ private object ScalaModelExtractor:
             interfaces.asJava,
             constructors.asJava,
             methods.asJava,
-            fields.asJava,
+            allFields.asJava,
             properties.asJava,
             enclosingTypeName,
             typeDef
@@ -562,8 +565,34 @@ private object ScalaModelExtractor:
       typeData(field.tpt.tpe),
       annotations(field.symbol).asJava,
       modifiers(field.symbol).asJava,
+      isEnumConstant(field.symbol),
       field
     )
+
+  private def enumConstantFieldData(symbol: Symbol, owner: Symbol)(using Context, AnnotationDefaults): ScalaFieldData =
+    ScalaFieldData(
+      symbol.name.toString,
+      ScalaTypeData(className(owner), primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of()),
+      annotations(symbol).asJava,
+      java.util.Set.of(ElementModifier.PUBLIC, ElementModifier.STATIC, ElementModifier.FINAL),
+      true,
+      symbol
+    )
+
+  private def enumConstantSymbols(symbol: Symbol)(using Context): List[Symbol] =
+    val symbols = if hasFlag(symbol, Flags.Enum) then
+      val companion = symbol.companionModule
+      if companion == Symbols.NoSymbol then symbol.info.decls.toList else companion.info.decls.toList
+    else
+      symbol.info.decls.toList
+    symbols.filter(isEnumConstantField)
+
+  private def isEnumConstantField(symbol: Symbol)(using Context): Boolean =
+    isEnumConstant(symbol) &&
+      symbol.isTerm &&
+      !symbol.denot.isConstructor &&
+      !symbol.name.toString.startsWith("<") &&
+      !hasFlag(symbol, Flags.Method)
 
   private def parameterData(parameter: tpd.ValDef)(using Context, AnnotationDefaults): ScalaParameterData =
     ScalaParameterData(

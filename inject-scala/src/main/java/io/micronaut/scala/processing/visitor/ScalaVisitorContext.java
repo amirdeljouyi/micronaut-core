@@ -112,7 +112,7 @@ public final class ScalaVisitorContext implements VisitorContext {
         if (classData == null) {
             return Optional.empty();
         }
-        return Optional.of(sourceElements.computeIfAbsent(name, ignored -> new ScalaClassElement(classData, this)));
+        return Optional.of(sourceElements.computeIfAbsent(name, ignored -> elementFactory.newClassElementForData(classData)));
     }
 
     List<ScalaClassElement> sourceClassElementsEnclosedBy(String name) {

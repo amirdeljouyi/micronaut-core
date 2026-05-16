@@ -28,6 +28,7 @@ import java.util.Set;
  * @param type The field type
  * @param annotations The annotations
  * @param modifiers The modifiers
+ * @param enumConstant Whether this field is an enum constant
  * @param nativeType The native Scala compiler object
  */
 public record ScalaFieldData(
@@ -35,6 +36,7 @@ public record ScalaFieldData(
     ScalaTypeData type,
     List<ScalaAnnotationData> annotations,
     Set<ElementModifier> modifiers,
+    boolean enumConstant,
     Object nativeType
 ) implements ScalaAnnotatedElementData {
 

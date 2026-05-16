@@ -53,7 +53,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         this(classData, visitorContext, visitorContext.getScalaAnnotationMetadataBuilder().buildMetadata(classData));
     }
 
-    private ScalaClassElement(ScalaClassData classData, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
+    ScalaClassElement(ScalaClassData classData, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
         super(
             classData.name(),
             classData.nativeType(),
@@ -219,13 +219,13 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         } else if (elementType == MethodElement.class) {
             classData.methods().forEach(method -> elements.add(new ScalaMethodElement(this, method, visitorContext)));
         } else if (elementType == FieldElement.class) {
-            classData.fields().forEach(field -> elements.add(new ScalaFieldElement(this, field, visitorContext)));
+            addFieldElements(result, elements);
         } else if (elementType == PropertyElement.class) {
             classData.properties().forEach(property -> elements.add(new ScalaPropertyElement(this, property, visitorContext)));
         } else if (elementType == ClassElement.class) {
             elements.addAll(visitorContext.sourceClassElementsEnclosedBy(getName()));
         } else if (elementType == MemberElement.class) {
-            classData.fields().forEach(field -> elements.add(new ScalaFieldElement(this, field, visitorContext)));
+            addFieldElements(result, elements);
             classData.methods().forEach(method -> elements.add(new ScalaMethodElement(this, method, visitorContext)));
             if (!result.isExcludePropertyElements()) {
                 classData.properties().forEach(property -> elements.add(new ScalaPropertyElement(this, property, visitorContext)));
@@ -235,6 +235,22 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             .filter(element -> matches(result, element))
             .map(elementType::cast)
             .toList();
+    }
+
+    private <T extends Element> void addFieldElements(ElementQuery.Result<T> result, List<Element> elements) {
+        ScalaClassData data = classData;
+        if (data == null) {
+            return;
+        }
+        data.fields().forEach(field -> {
+            if (field.enumConstant()) {
+                if (result.isIncludeEnumConstants() && this instanceof ScalaEnumElement enumElement) {
+                    elements.add(new ScalaEnumConstantElement(enumElement, field, visitorContext));
+                }
+            } else {
+                elements.add(new ScalaFieldElement(this, field, visitorContext));
+            }
+        });
     }
 
     private <T extends Element> boolean matches(ElementQuery.Result<T> result, Element element) {
