@@ -26,3 +26,14 @@ class UserSpec:
     val introspection = BeanIntrospection.getIntrospection(classOf[User])
     val user = introspection.instantiate("John")
     assertEquals("John", user.name)
+
+  @Test
+  def caseClassExposesBeanPropertyMetadata(): Unit =
+    val introspection = BeanIntrospection.getIntrospection(classOf[User])
+    val user = User("John")
+    val property = introspection.getRequiredProperty("name", classOf[String])
+
+    assertEquals(1, introspection.getBeanProperties.size())
+    assertEquals("name", property.getName)
+    assertEquals(classOf[String], property.getType)
+    assertEquals("John", property.get(user))

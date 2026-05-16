@@ -14,7 +14,7 @@ This file tracks Scala documentation examples that are not yet ported to
 - `io.micronaut.docs.lifecycle.VehicleSpec` verifies post-construct lifecycle
   initialization.
 - `io.micronaut.docs.core.beans.UserSpec` verifies `@Introspected` on a Scala
-  case class.
+  case class, including construction and property metadata.
 - `io.micronaut.docs.config.properties.EngineConfigSpec` verifies mutable
   `@ConfigurationProperties` binding.
 - `io.micronaut.docs.config.env.EachPropertyTest` verifies map-style and
@@ -29,8 +29,6 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- Introspection examples: property metadata beyond the basic case class proof
-  of concept.
 - Configuration examples: validation metadata.
 - HTTP examples: controllers, clients, filters, and executable methods.
 - AOP examples: introduction advice and proxy generation.
