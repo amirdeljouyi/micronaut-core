@@ -19,6 +19,7 @@ import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.FieldElement;
+import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
@@ -98,6 +99,44 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
             return Optional.empty();
         }
         return Optional.of(declaringType.methodElement(propertyData.readMethod()));
+    }
+
+    @Override
+    public Optional<? extends MemberElement> getReadMember() {
+        if (propertyData.readMethod() == null) {
+            return getField();
+        }
+        return getReadMethod()
+            .map(methodElement -> methodElement.withAnnotationMetadata(readMemberAnnotationMetadata()));
+    }
+
+    @Override
+    public Optional<? extends MemberElement> getWriteMember() {
+        if (propertyData.writeMethod() != null) {
+            return getWriteMethod()
+                .map(methodElement -> methodElement.withAnnotationMetadata(writeMemberAnnotationMetadata()));
+        }
+        return PropertyElement.super.getWriteMember();
+    }
+
+    private AnnotationMetadata readMemberAnnotationMetadata() {
+        if (propertyData.readMethod() != null && !propertyData.readMethod().annotations().isEmpty()) {
+            return visitorContext.annotationMetadata(propertyData.readMethod());
+        }
+        if (propertyData.field() != null) {
+            return visitorContext.annotationMetadata(propertyData.field());
+        }
+        return getAnnotationMetadata();
+    }
+
+    private AnnotationMetadata writeMemberAnnotationMetadata() {
+        if (propertyData.writeMethod() != null && !propertyData.writeMethod().annotations().isEmpty()) {
+            return visitorContext.annotationMetadata(propertyData.writeMethod());
+        }
+        if (propertyData.field() != null) {
+            return visitorContext.annotationMetadata(propertyData.field());
+        }
+        return getAnnotationMetadata();
     }
 
     @Override

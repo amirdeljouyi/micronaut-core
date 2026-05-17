@@ -218,6 +218,39 @@ class EngineFactory:
         context?.close()
     }
 
+    void "supports factory val beans"() {
+        when:
+        def source = '''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Singleton
+
+case class Engine(name: String)
+
+@Factory
+class EngineFactory:
+  @Bean
+  @Singleton
+  val engine: Engine = Engine("v8")
+'''
+        def element = buildClassElement('example.EngineFactory', source)
+        def property = element.syntheticBeanProperties.find { it.name == 'engine' }
+        def context = buildContext(source)
+
+        then:
+        property != null
+        property.hasStereotype('jakarta.inject.Singleton')
+        property.readMember.get().hasDeclaredStereotype('jakarta.inject.Scope')
+        property.field.get().hasStereotype('jakarta.inject.Singleton')
+        property.readMember.get().hasDeclaredStereotype('io.micronaut.context.annotation.Bean')
+        getBean(context, 'example.Engine').name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports source-defined annotation aliases on Scala annotation members"() {
         when:
         def context = buildContext('''

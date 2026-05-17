@@ -10,7 +10,7 @@ Wave 1 covers simple Scala classes, primary constructors, methods, constructor `
 Additional Wave 4 smoke coverage now exists for named qualifiers, `@Requires`,
 constructor `@Value` injection, field and method injection, post-construct and
 pre-destroy lifecycle methods, simple `@Factory` methods, and executable methods, mutable
-`@ConfigurationProperties`, and `@EachProperty`.
+`@ConfigurationProperties`, `@EachProperty`, and factory `val` property beans.
 Nested `@ConfigurationProperties` are covered for Scala companion-object
 nested classes.
 

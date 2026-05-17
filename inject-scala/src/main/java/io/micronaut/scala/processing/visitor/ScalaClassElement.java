@@ -187,7 +187,13 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
 
     @Override
     public List<PropertyElement> getSyntheticBeanProperties() {
-        return List.of();
+        if (classData == null) {
+            return List.of();
+        }
+        return classData.properties().stream()
+            .map(this::propertyElement)
+            .map(PropertyElement.class::cast)
+            .toList();
     }
 
     @Override
