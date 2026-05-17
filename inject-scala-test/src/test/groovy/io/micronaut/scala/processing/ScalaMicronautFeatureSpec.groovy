@@ -87,6 +87,25 @@ class FeatureBean
         enabled?.close()
     }
 
+    void "supports value constructor injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.Value
+import jakarta.inject.Singleton
+
+@Singleton
+class Vehicle(@Value("${vehicle.name}") val name: String)
+''', ['vehicle.name': 'roadster'])
+
+        then:
+        getBean(context, 'example.Vehicle').name() == 'roadster'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports post construct lifecycle methods"() {
         when:
         def context = buildContext('''

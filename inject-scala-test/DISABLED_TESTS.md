@@ -8,8 +8,9 @@ It was generated from the current checkout by scanning direct subclasses of Java
 Wave 1 covers simple Scala classes, primary constructors, methods, constructor `val`/`var` properties, Java-visible annotations, basic type resolution, generated bean definitions, generated bean introspections, and a basic `TypeElementVisitor`.
 
 Additional Wave 4 smoke coverage now exists for named qualifiers, `@Requires`,
-post-construct and pre-destroy lifecycle methods, simple `@Factory` methods, and executable
-methods, mutable `@ConfigurationProperties`, and `@EachProperty`.
+constructor `@Value` injection, post-construct and pre-destroy lifecycle methods,
+simple `@Factory` methods, and executable methods, mutable
+`@ConfigurationProperties`, and `@EachProperty`.
 Nested `@ConfigurationProperties` are covered for Scala companion-object
 nested classes.
 
