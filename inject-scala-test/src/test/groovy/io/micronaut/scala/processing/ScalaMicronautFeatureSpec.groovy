@@ -20,6 +20,9 @@ import io.micronaut.context.exceptions.BeanInstantiationException
 import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
+
+import java.util.function.Supplier
 
 class ScalaMicronautFeatureSpec extends AbstractScalaTypeElementSpec {
 
@@ -249,6 +252,48 @@ class EngineFactory:
 
         cleanup:
         context?.close()
+    }
+
+    void "type element visitors can annotate Scala elements"() {
+        when:
+        def definition = ScalaAnnotatingVisitor.withAnnotations({
+            buildBeanDefinition('example.TestListener', '''
+package example
+
+import io.micronaut.context.annotation.Executable
+import jakarta.inject.Singleton
+
+@Singleton
+class TestListener:
+  @Executable
+  def receive(value: String): Unit = ()
+''')
+        } as Supplier)
+        def receiveMethod = definition.findMethod('receive', String).get()
+        def valueArgument = receiveMethod.arguments[0]
+
+        then:
+        definition.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'class'
+        receiveMethod.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'method'
+        valueArgument.annotationMetadata.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'parameter'
+    }
+
+    void "type element visitors can annotate Scala introspection properties"() {
+        when:
+        def introspection = ScalaAnnotatingVisitor.withAnnotations({
+            buildBeanIntrospection('example.Test', '''
+package example
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Test(var name: String)
+''')
+        } as Supplier)
+
+        then:
+        introspection.getRequiredProperty('name', String)
+            .stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'property'
     }
 
     void "supports source-defined annotation aliases on Scala annotation members"() {
