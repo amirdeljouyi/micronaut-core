@@ -119,6 +119,28 @@ class Vehicle extends Engine
         element.isAssignable('example.Machine')
     }
 
+    void "exposes inherited Java interfaces from compiler symbols"() {
+        when:
+        def element = buildClassElement('example.TimingInterceptor', '''
+package example
+
+import io.micronaut.aop.MethodInterceptor
+import io.micronaut.aop.MethodInvocationContext
+
+class TimingInterceptor extends MethodInterceptor[AnyRef, Object]:
+  override def intercept(context: MethodInvocationContext[AnyRef, Object]): Object =
+    context.proceed()
+''')
+        def methodInterceptor = element.interfaces.first()
+
+        then:
+        !element.interface
+        element.interfaces*.name == ['io.micronaut.aop.MethodInterceptor']
+        methodInterceptor.interfaces*.name == ['io.micronaut.aop.Interceptor']
+        element.isAssignable('io.micronaut.aop.MethodInterceptor')
+        element.isAssignable('io.micronaut.aop.Interceptor')
+    }
+
     void "exposes Scala inner classes through enclosed elements"() {
         when:
         def element = buildClassElement('example.Outer', '''

@@ -15,7 +15,10 @@
  */
 package io.micronaut.scala.processing.visitor;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,20 +29,35 @@ import java.util.Map;
  * @param arrayDimensions The array dimensions
  * @param interfaceType Whether the type is an interface
  * @param typeArguments The type arguments
+ * @param superType The compiler-resolved super type
+ * @param interfaces The compiler-resolved interface types
  */
 public record ScalaTypeData(
     String name,
     boolean primitive,
     int arrayDimensions,
     boolean interfaceType,
-    Map<String, ScalaTypeData> typeArguments
+    Map<String, ScalaTypeData> typeArguments,
+    @Nullable ScalaTypeData superType,
+    List<ScalaTypeData> interfaces
 ) {
 
     public ScalaTypeData {
         typeArguments = typeArguments == null ? Collections.emptyMap() : Collections.unmodifiableMap(typeArguments);
+        interfaces = interfaces == null ? Collections.emptyList() : List.copyOf(interfaces);
+    }
+
+    public ScalaTypeData(
+        String name,
+        boolean primitive,
+        int arrayDimensions,
+        boolean interfaceType,
+        Map<String, ScalaTypeData> typeArguments
+    ) {
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, null, Collections.emptyList());
     }
 
     public ScalaTypeData withArrayDimensions(int dimensions) {
-        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments);
+        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces);
     }
 }

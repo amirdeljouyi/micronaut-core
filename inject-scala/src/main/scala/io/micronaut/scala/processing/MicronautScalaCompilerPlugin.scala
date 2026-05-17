@@ -275,6 +275,8 @@ private object ScalaModelExtractor:
 
   private case class AnnotationDefaults(values: Map[String, Map[String, Object]])
 
+  private case class TypeHierarchy(superType: ScalaTypeData | Null, interfaces: List[ScalaTypeData])
+
   private val PositionalAnnotationMemberPrefix = "$micronaut$pos$"
 
   def collect(unit: CompilationUnit)(using Context): List[ScalaClassData] =
@@ -401,7 +403,7 @@ private object ScalaModelExtractor:
             className(symbol),
             annotations(symbol).asJava,
             modifiers(symbol).asJava,
-            hasFlag(symbol, Flags.Trait),
+            isInterfaceSymbol(symbol),
             hasFlag(symbol, Flags.Enum),
             superType,
             interfaces.asJava,
@@ -619,33 +621,51 @@ private object ScalaModelExtractor:
     )
 
   private def typeData(tpe: Type)(using Context): ScalaTypeData =
+    typeData(tpe, Set.empty)
+
+  private def typeData(tpe: Type, visitedTypes: Set[String])(using Context): ScalaTypeData =
     val widened = tpe.widenDealias
     widened match
       case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
-        val componentType = typeData(applied.args.head)
+        val componentType = typeData(applied.args.head, visitedTypes)
         componentType.withArrayDimensions(componentType.arrayDimensions + 1).asInstanceOf[ScalaTypeData]
       case applied: AppliedType =>
         val rawName = typeName(applied.tycon)
         val primitiveName = ScalaPrimitiveNames.get(rawName)
         val name = primitiveName.getOrElse(rawName)
         val symbol = applied.tycon.classSymbol
-        val interfaceType = symbol != Symbols.NoSymbol && hasFlag(symbol, Flags.Trait)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args))
+        val interfaceType = isInterfaceSymbol(symbol)
+        val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes), hierarchy.superType, hierarchy.interfaces.asJava)
       case _ =>
         val rawName = typeName(widened)
         val primitiveName = ScalaPrimitiveNames.get(rawName)
         val name = primitiveName.getOrElse(rawName)
         val symbol = widened.classSymbol
-        val interfaceType = symbol != Symbols.NoSymbol && hasFlag(symbol, Flags.Trait)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of())
+        val interfaceType = isInterfaceSymbol(symbol)
+        val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava)
 
-  private def typeArguments(symbol: Symbol, arguments: List[Type])(using Context): java.util.Map[String, ScalaTypeData] =
+  private def typeHierarchy(symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context): TypeHierarchy =
+    if primitive || symbol == Symbols.NoSymbol || visitedTypes.contains(name) then
+      TypeHierarchy(null, Nil)
+    else
+      val nextVisited = visitedTypes + name
+      val parents = symbol.info.parents
+        .filterNot(parent => typeName(parent) == classOf[Object].getName)
+        .map(parent => typeData(parent, nextVisited))
+      TypeHierarchy(
+        parents.find(parent => !parent.interfaceType()).orNull,
+        parents.filter(_.interfaceType())
+      )
+
+  private def typeArguments(symbol: Symbol, arguments: List[Type], visitedTypes: Set[String])(using Context): java.util.Map[String, ScalaTypeData] =
     if symbol == Symbols.NoSymbol || arguments.isEmpty then
       java.util.Map.of()
     else
       val converted = LinkedHashMap[String, ScalaTypeData]()
       symbol.typeParams.zip(arguments).foreach { case (parameter, argument) =>
-        converted.put(parameter.name.toString, typeData(argument))
+        converted.put(parameter.name.toString, typeData(argument, visitedTypes))
       }
       converted
 
@@ -1025,6 +1045,10 @@ private object ScalaModelExtractor:
   private def isAnnotationSymbol(symbol: Symbol)(using Context): Boolean =
     symbol != Symbols.NoSymbol &&
       (symbol.denot.isAnnotation || hasFlag(symbol, Flags.JavaAnnotation))
+
+  private def isInterfaceSymbol(symbol: Symbol)(using Context): Boolean =
+    symbol != Symbols.NoSymbol &&
+      (hasFlag(symbol, Flags.Trait) || (hasFlag(symbol, Flags.JavaDefined) && hasFlag(symbol, Flags.JavaInterface)))
 
   private def classSymbolForName(name: String)(using Context): Symbol =
     val symbol = Symbols.getClassIfDefined(name)

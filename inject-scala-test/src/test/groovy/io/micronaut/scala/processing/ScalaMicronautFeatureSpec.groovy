@@ -262,6 +262,28 @@ trait TextService:
         context?.close()
     }
 
+    void "exposes inherited Java interfaces for Scala interceptor beans"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.aop.MethodInterceptor
+import io.micronaut.aop.MethodInvocationContext
+import jakarta.inject.Singleton
+
+@Singleton
+class TimingInterceptor extends MethodInterceptor[AnyRef, Object]:
+  override def intercept(context: MethodInvocationContext[AnyRef, Object]): Object =
+    context.proceed()
+''')
+
+        then:
+        context.getBean(io.micronaut.aop.Interceptor)
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports mutable configuration properties"() {
         when:
         def context = buildContext('''

@@ -100,7 +100,10 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (getName().equals(type) || Object.class.getName().equals(type)) {
             return true;
         }
-        return classData != null && isAssignableTo(type, classData, Set.of(getName()));
+        if (classData != null) {
+            return isAssignableTo(type, classData, Set.of(getName()));
+        }
+        return isTypeAssignable(type, typeData, Set.of(getName()));
     }
 
     private boolean isAssignableTo(String type, ScalaClassData data, Set<String> visited) {
@@ -129,26 +132,31 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             if (sourceElement.isPresent()) {
                 return false;
             }
+            if (candidate.superType() != null && isTypeAssignable(type, candidate.superType(), nextVisited)) {
+                return true;
+            }
+            for (ScalaTypeData interfaceType : candidate.interfaces()) {
+                if (isTypeAssignable(type, interfaceType, nextVisited)) {
+                    return true;
+                }
+            }
         }
-        return visitorContext.getClassElement(candidate.name())
-            .filter(classElement -> classElement != this && classElement.isAssignable(type))
-            .isPresent();
+        return false;
     }
 
     @Override
     public Optional<ClassElement> getSuperType() {
-        if (classData == null || classData.superType() == null) {
+        ScalaTypeData superType = classData == null ? typeData.superType() : classData.superType();
+        if (superType == null) {
             return Optional.empty();
         }
-        return Optional.of(elementFactory.newClassElement(classData.superType()));
+        return Optional.of(elementFactory.newClassElement(superType));
     }
 
     @Override
     public Collection<ClassElement> getInterfaces() {
-        if (classData == null) {
-            return List.of();
-        }
-        return classData.interfaces().stream()
+        Collection<ScalaTypeData> interfaces = classData == null ? typeData.interfaces() : classData.interfaces();
+        return interfaces.stream()
             .map(elementFactory::newClassElement)
             .toList();
     }
