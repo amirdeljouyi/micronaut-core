@@ -267,26 +267,26 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         });
     }
 
-    ScalaConstructorElement constructorElement(ScalaMethodData constructor) {
+    final ScalaConstructorElement constructorElement(ScalaMethodData constructor) {
         return constructorElements.computeIfAbsent(constructor, ignored -> new ScalaConstructorElement(this, constructor, visitorContext));
     }
 
-    ScalaMethodElement methodElement(ScalaMethodData method) {
+    final ScalaMethodElement methodElement(ScalaMethodData method) {
         return methodElements.computeIfAbsent(method, ignored -> new ScalaMethodElement(this, method, visitorContext));
     }
 
-    ScalaFieldElement fieldElement(ScalaFieldData field) {
+    final ScalaFieldElement fieldElement(ScalaFieldData field) {
         return fieldElements.computeIfAbsent(field, ignored -> new ScalaFieldElement(this, field, visitorContext));
     }
 
-    ScalaEnumConstantElement enumConstantElement(ScalaFieldData field) {
+    final ScalaEnumConstantElement enumConstantElement(ScalaFieldData field) {
         if (this instanceof ScalaEnumElement enumElement) {
             return enumConstantElements.computeIfAbsent(field, ignored -> new ScalaEnumConstantElement(enumElement, field, visitorContext));
         }
         throw new IllegalStateException("Declaring class must be a ScalaEnumElement");
     }
 
-    ScalaPropertyElement propertyElement(ScalaPropertyData property) {
+    final ScalaPropertyElement propertyElement(ScalaPropertyData property) {
         return propertyElements.computeIfAbsent(property, ignored -> new ScalaPropertyElement(this, property, visitorContext));
     }
 

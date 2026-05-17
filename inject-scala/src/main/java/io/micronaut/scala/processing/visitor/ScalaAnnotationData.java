@@ -23,6 +23,7 @@ import java.util.Map;
  *
  * @param name The annotation type name
  * @param values The annotation member values
+ * @param annotationType The annotation type metadata
  */
 public record ScalaAnnotationData(
     String name,
