@@ -24,6 +24,7 @@ import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.ElementModifier;
 
 import java.lang.annotation.Annotation;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -130,5 +131,30 @@ abstract class AbstractScalaElement implements Element {
     public Element removeStereotype(String annotationType) {
         getAnnotationMetadataToWrite().removeStereotype(annotationType);
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof AbstractScalaElement that)) {
+            return false;
+        }
+        return equalityType().equals(that.equalityType())
+            && Objects.equals(equalityKey(), that.equalityKey());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(equalityType(), equalityKey());
+    }
+
+    protected Class<?> equalityType() {
+        return getClass();
+    }
+
+    protected Object equalityKey() {
+        return nativeType == null ? name : nativeType;
     }
 }

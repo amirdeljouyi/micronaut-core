@@ -424,4 +424,41 @@ class LocalEngine extends ExternalLocalMachine
         !local.hasAnnotation('io.micronaut.scala.processing.fixtures.ExternalLocalSingleton')
         !local.hasStereotype(Singleton)
     }
+
+    void "preserves Scala element equality across metadata wrapper copies"() {
+        when:
+        def element = buildClassElement('example.Vehicle', '''
+package example
+
+class Vehicle(var name: String):
+  val engine: String = "v8"
+  def start(speed: Int): String = name + speed.toString
+''')
+        def classCopy = element.withAnnotationMetadata(element.annotationMetadata)
+        def startMethod = element.getEnclosedElements(ElementQuery.ALL_METHODS).find { it.name == 'start' }
+        def startMethodCopy = startMethod.withAnnotationMetadata(startMethod.annotationMetadata)
+        def engineField = element.getEnclosedElements(ElementQuery.ALL_FIELDS).find { it.name == 'engine' }
+        def engineFieldCopy = engineField.withAnnotationMetadata(engineField.annotationMetadata)
+        def nameProperty = element.beanProperties.find { it.name == 'name' }
+        def namePropertyCopy = nameProperty.withAnnotationMetadata(nameProperty.annotationMetadata)
+        def constructor = element.primaryConstructor.get()
+        def constructorCopy = constructor.withAnnotationMetadata(constructor.annotationMetadata)
+        def nameParameter = constructor.parameters[0]
+        def nameParameterCopy = constructorCopy.parameters[0].withAnnotationMetadata(constructorCopy.parameters[0].annotationMetadata)
+
+        then:
+        element == classCopy
+        element.hashCode() == classCopy.hashCode()
+        startMethod == startMethodCopy
+        startMethod.hashCode() == startMethodCopy.hashCode()
+        engineField == engineFieldCopy
+        engineField.hashCode() == engineFieldCopy.hashCode()
+        nameProperty == namePropertyCopy
+        nameProperty.hashCode() == namePropertyCopy.hashCode()
+        constructor == constructorCopy
+        constructor.hashCode() == constructorCopy.hashCode()
+        nameParameter == nameParameterCopy
+        nameParameter.hashCode() == nameParameterCopy.hashCode()
+        nameProperty != nameParameter
+    }
 }

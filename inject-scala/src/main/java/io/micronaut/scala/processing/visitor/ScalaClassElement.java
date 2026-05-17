@@ -377,4 +377,17 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         }
         return new ScalaClassElement(classData, visitorContext, annotationMetadata);
     }
+
+    @Override
+    protected Class<?> equalityType() {
+        return ScalaClassElement.class;
+    }
+
+    @Override
+    protected Object equalityKey() {
+        return new ClassElementKey(getName(), getArrayDimensions());
+    }
+
+    private record ClassElementKey(String name, int arrayDimensions) {
+    }
 }
