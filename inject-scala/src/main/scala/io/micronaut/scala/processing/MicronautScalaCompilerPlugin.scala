@@ -576,6 +576,7 @@ private object ScalaModelExtractor:
       annotations(field.symbol).asJava,
       modifiers(field.symbol).asJava,
       isEnumConstant(field.symbol),
+      fieldConstantValue(field),
       field
     )
 
@@ -586,8 +587,29 @@ private object ScalaModelExtractor:
       annotations(symbol).asJava,
       java.util.Set.of(ElementModifier.PUBLIC, ElementModifier.STATIC, ElementModifier.FINAL),
       true,
+      null,
       symbol
     )
+
+  private def fieldConstantValue(field: tpd.ValDef)(using Context): Object | Null =
+    if hasFlag(field.symbol, Flags.Mutable) then null else constantValue(field.rhs)
+
+  private def constantValue(tree: tpd.Tree): Object | Null =
+    tree match
+      case literal: tpd.Literal =>
+        literal.const.value match
+          case value: String => value
+          case value: java.lang.Boolean => value
+          case value: java.lang.Byte => value
+          case value: java.lang.Short => value
+          case value: java.lang.Integer => value
+          case value: java.lang.Long => value
+          case value: java.lang.Float => value
+          case value: java.lang.Double => value
+          case value: java.lang.Character => value
+          case _ => null
+      case _ =>
+        null
 
   private def enumConstantSymbols(symbol: Symbol)(using Context): List[Symbol] =
     val symbols = if hasFlag(symbol, Flags.Enum) then

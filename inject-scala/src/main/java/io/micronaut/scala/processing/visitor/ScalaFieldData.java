@@ -16,6 +16,7 @@
 package io.micronaut.scala.processing.visitor;
 
 import io.micronaut.inject.ast.ElementModifier;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Set;
  * @param annotations The annotations
  * @param modifiers The modifiers
  * @param enumConstant Whether this field is an enum constant
+ * @param constantValue The compile-time constant value, if any
  * @param nativeType The native Scala compiler object
  */
 public record ScalaFieldData(
@@ -37,6 +39,7 @@ public record ScalaFieldData(
     List<ScalaAnnotationData> annotations,
     Set<ElementModifier> modifiers,
     boolean enumConstant,
+    @Nullable Object constantValue,
     Object nativeType
 ) implements ScalaAnnotatedElementData {
 

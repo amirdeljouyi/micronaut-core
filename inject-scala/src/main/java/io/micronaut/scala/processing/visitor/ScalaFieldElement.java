@@ -20,6 +20,7 @@ import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.ElementModifier;
 import io.micronaut.inject.ast.FieldElement;
+import org.jspecify.annotations.Nullable;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -57,6 +58,11 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
     @Override
     public ClassElement getType() {
         return visitorContext.getElementFactory().newClassElement(fieldData.type());
+    }
+
+    @Override
+    public @Nullable Object getConstantValue() {
+        return fieldData.constantValue();
     }
 
     @Override

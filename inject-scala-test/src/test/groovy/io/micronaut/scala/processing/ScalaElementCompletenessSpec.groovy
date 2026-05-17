@@ -21,6 +21,7 @@ import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.inject.ast.EnumElement
+import io.micronaut.inject.ast.FieldElement
 import io.micronaut.inject.validation.RequiresValidation
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaEnumConstantCaptureVisitor
@@ -100,6 +101,24 @@ class Holder(
         properties.lookup.type.typeArguments.keySet() == ['K', 'V'] as Set
         properties.lookup.type.typeArguments.K.name == String.name
         properties.lookup.type.typeArguments.V.name == Integer.name
+    }
+
+    void "exposes Scala field constant values"() {
+        when:
+        def element = buildClassElement('example.Constants', '''
+package example
+
+class Constants:
+  final val port: Int = 8080
+  final val name: String = "primary"
+  var mutable: Int = 1
+''')
+        def fields = element.getEnclosedElements(ElementQuery.of(FieldElement)).collectEntries { [(it.name): it] }
+
+        then:
+        fields.port.constantValue == 8080
+        fields.name.constantValue == 'primary'
+        fields.mutable.constantValue == null
     }
 
     void "exposes traits as interfaces and resolves inherited assignability"() {
