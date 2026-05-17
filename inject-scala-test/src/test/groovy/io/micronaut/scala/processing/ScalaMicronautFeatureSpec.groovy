@@ -111,6 +111,34 @@ class Worker:
         context?.close()
     }
 
+    void "supports pre destroy lifecycle methods"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.annotation.PreDestroy
+import jakarta.inject.Singleton
+
+@Singleton
+class Worker:
+  var stopped: Boolean = false
+
+  @PreDestroy
+  def stop(): Unit =
+    stopped = true
+''')
+        def worker = getBean(context, 'example.Worker')
+
+        then:
+        !worker.stopped()
+
+        when:
+        context.close()
+
+        then:
+        worker.stopped()
+    }
+
     void "supports simple factory methods"() {
         when:
         def context = buildContext('''
