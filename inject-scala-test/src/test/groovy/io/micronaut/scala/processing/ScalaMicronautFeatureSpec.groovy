@@ -106,6 +106,43 @@ class Vehicle(@Value("${vehicle.name}") val name: String)
         context?.close()
     }
 
+    void "supports field and method injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Garage:
+  @(Inject @field)
+  var fieldEngine: Engine = _
+
+  var methodEngine: Engine = _
+
+  @Inject
+  def install(engine: Engine): Unit =
+    methodEngine = engine
+''')
+        def garage = getBean(context, 'example.Garage')
+
+        then:
+        garage.fieldEngine().name() == 'v8'
+        garage.methodEngine().name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports post construct lifecycle methods"() {
         when:
         def context = buildContext('''

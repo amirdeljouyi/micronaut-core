@@ -18,7 +18,11 @@ package io.micronaut.scala.processing.visitor;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
+import io.micronaut.inject.ast.ElementModifier;
 import io.micronaut.inject.ast.FieldElement;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * Scala field element.
@@ -42,7 +46,7 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
             declaringType,
             fieldData.name(),
             fieldData.nativeType(),
-            fieldData.modifiers(),
+            fieldModifiers(fieldData.modifiers()),
             MutableAnnotationMetadata.of(annotationMetadata)
         );
         this.declaringType = declaringType;
@@ -56,7 +60,25 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
     }
 
     @Override
+    public boolean isReflectionRequired() {
+        return true;
+    }
+
+    @Override
+    public boolean isReflectionRequired(ClassElement callingType) {
+        return true;
+    }
+
+    @Override
     public FieldElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
         return new ScalaFieldElement(declaringType, fieldData, visitorContext, annotationMetadata);
+    }
+
+    private static Set<ElementModifier> fieldModifiers(Set<ElementModifier> modifiers) {
+        Set<ElementModifier> fieldModifiers = new LinkedHashSet<>(modifiers);
+        fieldModifiers.remove(ElementModifier.PUBLIC);
+        fieldModifiers.remove(ElementModifier.PROTECTED);
+        fieldModifiers.add(ElementModifier.PRIVATE);
+        return fieldModifiers;
     }
 }
