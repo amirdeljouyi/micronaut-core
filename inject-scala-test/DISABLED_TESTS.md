@@ -20,7 +20,7 @@ and companion-object nested-class enclosing type metadata, and Scala enum
 declarations through `EnumElement`. Source-defined Scala annotation defaults,
 stereotypes, and member aliases are now covered with compiler-symbol/typed-tree
 metadata, including inherited source annotations through source class
-hierarchies.
+hierarchies and bean definition processing.
 
 ## Classification Rules
 

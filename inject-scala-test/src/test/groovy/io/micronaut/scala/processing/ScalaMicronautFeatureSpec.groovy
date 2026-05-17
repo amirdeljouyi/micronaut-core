@@ -284,6 +284,51 @@ class TimingInterceptor extends MethodInterceptor[AnyRef, Object]:
         context?.close()
     }
 
+    void "supports inherited source-defined singleton stereotypes"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Singleton
+import java.lang.annotation.ElementType
+import java.lang.annotation.Inherited
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Inherited
+@Singleton
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE))
+class InheritedSingleton extends StaticAnnotation
+
+@Singleton
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE))
+class LocalSingleton extends StaticAnnotation
+
+@InheritedSingleton
+class Machine
+
+@LocalSingleton
+class LocalMachine
+
+class Engine extends Machine
+
+class LocalEngine extends LocalMachine
+''')
+        def engineType = context.classLoader.loadClass('example.Engine')
+        def localEngineType = context.classLoader.loadClass('example.LocalEngine')
+
+        then:
+        context.containsBean(engineType)
+        !context.containsBean(localEngineType)
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports mutable configuration properties"() {
         when:
         def context = buildContext('''
