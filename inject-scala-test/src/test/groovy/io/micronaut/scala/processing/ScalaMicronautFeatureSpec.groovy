@@ -329,6 +329,29 @@ class LocalEngine extends LocalMachine
         context?.close()
     }
 
+    void "supports inherited classpath singleton stereotypes"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.scala.processing.fixtures.ExternalLocalMachine
+import io.micronaut.scala.processing.fixtures.ExternalMachine
+
+class Engine extends ExternalMachine
+
+class LocalEngine extends ExternalLocalMachine
+''')
+        def engineType = context.classLoader.loadClass('example.Engine')
+        def localEngineType = context.classLoader.loadClass('example.LocalEngine')
+
+        then:
+        context.containsBean(engineType)
+        !context.containsBean(localEngineType)
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports mutable configuration properties"() {
         when:
         def context = buildContext('''

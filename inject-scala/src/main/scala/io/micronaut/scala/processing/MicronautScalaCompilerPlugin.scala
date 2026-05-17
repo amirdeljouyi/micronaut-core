@@ -563,7 +563,7 @@ private object ScalaModelExtractor:
     else
       name
 
-  private def methodReturnType(name: String, tpe: Type)(using Context): ScalaTypeData =
+  private def methodReturnType(name: String, tpe: Type)(using Context, AnnotationDefaults): ScalaTypeData =
     if name.endsWith("_=") then
       VoidTypeData
     else
@@ -612,7 +612,7 @@ private object ScalaModelExtractor:
       parameter
     )
 
-  private def parameterData(name: String, tpe: Type, nativeType: Object)(using Context): ScalaParameterData =
+  private def parameterData(name: String, tpe: Type, nativeType: Object)(using Context, AnnotationDefaults): ScalaParameterData =
     ScalaParameterData(
       name,
       typeData(tpe),
@@ -620,10 +620,10 @@ private object ScalaModelExtractor:
       nativeType
     )
 
-  private def typeData(tpe: Type)(using Context): ScalaTypeData =
+  private def typeData(tpe: Type)(using Context, AnnotationDefaults): ScalaTypeData =
     typeData(tpe, Set.empty)
 
-  private def typeData(tpe: Type, visitedTypes: Set[String])(using Context): ScalaTypeData =
+  private def typeData(tpe: Type, visitedTypes: Set[String])(using Context, AnnotationDefaults): ScalaTypeData =
     val widened = tpe.widenDealias
     widened match
       case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
@@ -636,7 +636,7 @@ private object ScalaModelExtractor:
         val symbol = applied.tycon.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
         val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes), hierarchy.superType, hierarchy.interfaces.asJava)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes), hierarchy.superType, hierarchy.interfaces.asJava, annotations(symbol).asJava, symbol)
       case _ =>
         val rawName = typeName(widened)
         val primitiveName = ScalaPrimitiveNames.get(rawName)
@@ -644,9 +644,9 @@ private object ScalaModelExtractor:
         val symbol = widened.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
         val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, annotations(symbol).asJava, symbol)
 
-  private def typeHierarchy(symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context): TypeHierarchy =
+  private def typeHierarchy(symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context, AnnotationDefaults): TypeHierarchy =
     if primitive || symbol == Symbols.NoSymbol || visitedTypes.contains(name) then
       TypeHierarchy(null, Nil)
     else
@@ -659,7 +659,7 @@ private object ScalaModelExtractor:
         parents.filter(_.interfaceType())
       )
 
-  private def typeArguments(symbol: Symbol, arguments: List[Type], visitedTypes: Set[String])(using Context): java.util.Map[String, ScalaTypeData] =
+  private def typeArguments(symbol: Symbol, arguments: List[Type], visitedTypes: Set[String])(using Context, AnnotationDefaults): java.util.Map[String, ScalaTypeData] =
     if symbol == Symbols.NoSymbol || arguments.isEmpty then
       java.util.Map.of()
     else

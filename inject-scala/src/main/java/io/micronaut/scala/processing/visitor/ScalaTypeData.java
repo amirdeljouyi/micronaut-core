@@ -31,6 +31,8 @@ import java.util.Map;
  * @param typeArguments The type arguments
  * @param superType The compiler-resolved super type
  * @param interfaces The compiler-resolved interface types
+ * @param annotations The compiler-resolved annotations
+ * @param nativeType The native Scala compiler object
  */
 public record ScalaTypeData(
     String name,
@@ -39,12 +41,27 @@ public record ScalaTypeData(
     boolean interfaceType,
     Map<String, ScalaTypeData> typeArguments,
     @Nullable ScalaTypeData superType,
-    List<ScalaTypeData> interfaces
-) {
+    List<ScalaTypeData> interfaces,
+    List<ScalaAnnotationData> annotations,
+    @Nullable Object nativeType
+) implements ScalaAnnotatedElementData {
 
     public ScalaTypeData {
         typeArguments = typeArguments == null ? Collections.emptyMap() : Collections.unmodifiableMap(typeArguments);
         interfaces = interfaces == null ? Collections.emptyList() : List.copyOf(interfaces);
+        annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
+    }
+
+    public ScalaTypeData(
+        String name,
+        boolean primitive,
+        int arrayDimensions,
+        boolean interfaceType,
+        Map<String, ScalaTypeData> typeArguments,
+        @Nullable ScalaTypeData superType,
+        List<ScalaTypeData> interfaces
+    ) {
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), null);
     }
 
     public ScalaTypeData(
@@ -58,6 +75,6 @@ public record ScalaTypeData(
     }
 
     public ScalaTypeData withArrayDimensions(int dimensions) {
-        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces);
+        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, nativeType);
     }
 }

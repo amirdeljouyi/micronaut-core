@@ -588,6 +588,7 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
             populateTypeHierarchy(interfaceType, hierarchy, visited);
         }
         populateTypeHierarchy(typeData.superType(), hierarchy, visited);
+        hierarchy.add(typeData);
     }
 
     private Optional<ScalaClassData> sourceClassData(String name) {

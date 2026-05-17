@@ -379,4 +379,30 @@ class Engine extends Machine
         element.hasStereotype(Singleton)
         !element.hasDeclaredStereotype(Singleton)
     }
+
+    void "inherits classpath annotations through compiler symbols"() {
+        when:
+        def inherited = buildClassElement('example.Engine', '''
+package example
+
+import io.micronaut.scala.processing.fixtures.ExternalMachine
+
+class Engine extends ExternalMachine
+''')
+        def local = buildClassElement('example.LocalEngine', '''
+package example
+
+import io.micronaut.scala.processing.fixtures.ExternalLocalMachine
+
+class LocalEngine extends ExternalLocalMachine
+''')
+
+        then:
+        inherited.hasAnnotation('io.micronaut.scala.processing.fixtures.ExternalInheritedSingleton')
+        !inherited.hasDeclaredAnnotation('io.micronaut.scala.processing.fixtures.ExternalInheritedSingleton')
+        inherited.hasStereotype(Singleton)
+        !inherited.hasDeclaredStereotype(Singleton)
+        !local.hasAnnotation('io.micronaut.scala.processing.fixtures.ExternalLocalSingleton')
+        !local.hasStereotype(Singleton)
+    }
 }
