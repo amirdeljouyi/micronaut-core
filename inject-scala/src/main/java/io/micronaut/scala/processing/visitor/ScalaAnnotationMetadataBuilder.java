@@ -28,11 +28,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Builds Micronaut annotation metadata from the reduced Scala compiler model.
@@ -118,7 +120,18 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
 
     @Override
     protected List<Object> buildHierarchy(Object element, boolean inheritTypeAnnotations, boolean declaredOnly) {
-        return List.of(element);
+        if (element == null) {
+            return new ArrayList<>();
+        }
+        if (declaredOnly) {
+            return new ArrayList<>(List.of(element));
+        }
+        if (element instanceof ScalaClassData classData) {
+            List<Object> hierarchy = new ArrayList<>();
+            populateClassHierarchy(classData, hierarchy, new HashSet<>());
+            return hierarchy;
+        }
+        return new ArrayList<>(List.of(element));
     }
 
     @Override
@@ -546,6 +559,46 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
             registerAnnotationTypes(member.annotations());
             registerAnnotationTypes(member.defaultValue());
         }
+    }
+
+    private void populateClassHierarchy(ScalaClassData classData, List<Object> hierarchy, Set<String> visited) {
+        if (excludedHierarchyType(classData.name()) || !visited.add(classData.name())) {
+            return;
+        }
+        for (ScalaTypeData interfaceType : classData.interfaces()) {
+            populateTypeHierarchy(interfaceType, hierarchy, visited);
+        }
+        populateTypeHierarchy(classData.superType(), hierarchy, visited);
+        hierarchy.add(classData);
+    }
+
+    private void populateTypeHierarchy(@Nullable ScalaTypeData typeData, List<Object> hierarchy, Set<String> visited) {
+        if (typeData == null || typeData.primitive() || excludedHierarchyType(typeData.name())) {
+            return;
+        }
+        Optional<ScalaClassData> sourceClassData = sourceClassData(typeData.name());
+        if (sourceClassData.isPresent()) {
+            populateClassHierarchy(sourceClassData.get(), hierarchy, visited);
+            return;
+        }
+        if (!visited.add(typeData.name())) {
+            return;
+        }
+        for (ScalaTypeData interfaceType : typeData.interfaces()) {
+            populateTypeHierarchy(interfaceType, hierarchy, visited);
+        }
+        populateTypeHierarchy(typeData.superType(), hierarchy, visited);
+    }
+
+    private Optional<ScalaClassData> sourceClassData(String name) {
+        if (visitorContext instanceof ScalaVisitorContext scalaVisitorContext) {
+            return scalaVisitorContext.sourceClassData(name);
+        }
+        return Optional.empty();
+    }
+
+    private boolean excludedHierarchyType(String name) {
+        return Object.class.getName().equals(name) || Enum.class.getName().equals(name);
     }
 
     private String annotationTypeName(Object annotationType) {

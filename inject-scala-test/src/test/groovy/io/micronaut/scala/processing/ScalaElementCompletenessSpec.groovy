@@ -347,4 +347,36 @@ class Engine
             it.annotationName == 'example.NamedAlias'
         }.stringValue().get() == 'main'
     }
+
+    void "inherits source-defined annotations through class hierarchy"() {
+        when:
+        def element = buildClassElement('example.Engine', '''
+package example
+
+import jakarta.inject.Singleton
+import java.lang.annotation.ElementType
+import java.lang.annotation.Inherited
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Inherited
+@Singleton
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE))
+class InheritedSingleton extends StaticAnnotation
+
+@InheritedSingleton
+class Machine
+
+class Engine extends Machine
+''')
+
+        then:
+        element.hasAnnotation('example.InheritedSingleton')
+        !element.hasDeclaredAnnotation('example.InheritedSingleton')
+        element.hasStereotype(Singleton)
+        !element.hasDeclaredStereotype(Singleton)
+    }
 }
