@@ -30,6 +30,8 @@ This file tracks Scala documentation examples that are not yet ported to
   retry and circuit breaker operations.
 - `io.micronaut.docs.aop.introduction.IntroductionSpec` verifies introduction
   advice and generated proxies for a Scala trait.
+- `io.micronaut.docs.aop.lifecycle.LifeCycleAdviseSpec` verifies constructor,
+  post-construct, and pre-destroy lifecycle advice.
 - `io.micronaut.docs.server.routes.IssuesControllerTest` verifies HTTP
   controller URI variable binding, explicit `@PathVariable` binding, default
   URI variable values, and conversion/not-found error handling.
@@ -51,8 +53,7 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- Additional AOP examples: lifecycle advice, scheduled methods, and
-  proxy-target variants.
+- Additional AOP examples: scheduled methods and proxy-target variants.
 
 Scala examples should stay idiomatic: primary constructors, case classes,
 traits, `val`, and `var` should be preferred over JavaBean-style code unless
