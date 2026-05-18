@@ -43,6 +43,21 @@ class EngineConfigSpec:
       context.close()
 
   @Test
+  def bindsImmutableCaseClassConfigurationProperties(): Unit =
+    val context = ApplicationContext.run(
+      Map[String, Object](
+        "immutable.engine.cylinders" -> Integer.valueOf(6),
+        "immutable.engine.manufacturer" -> "Honda"
+      ).asJava
+    )
+    try
+      val config = context.getBean(classOf[ImmutableEngineConfig])
+      assertEquals(6, config.cylinders)
+      assertEquals("Honda", config.manufacturer)
+    finally
+      context.close()
+
+  @Test
   def validatesMutableConfigurationProperties(): Unit =
     val context = ApplicationContext.run(
       Map[String, Object](

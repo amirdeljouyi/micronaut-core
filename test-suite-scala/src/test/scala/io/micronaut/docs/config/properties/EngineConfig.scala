@@ -28,3 +28,9 @@ class EngineConfig:
 
   @(NotBlank @field)
   var manufacturer: String = uninitialized
+
+@ConfigurationProperties("immutable.engine")
+case class ImmutableEngineConfig(
+    manufacturer: String,
+    cylinders: Int
+)
