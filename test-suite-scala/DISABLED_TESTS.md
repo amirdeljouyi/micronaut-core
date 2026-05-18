@@ -43,11 +43,12 @@ This file tracks Scala documentation examples that are not yet ported to
 - `io.micronaut.docs.client.ThirdPartyClientFilterSpec` verifies
   `@ClientFilter` request filters, Scala object constants in annotation values,
   constructor injection, and outbound request header mutation.
+- `io.micronaut.docs.client.versioning.HelloClientSpec` verifies generated
+  executable client method metadata and API versioning annotations.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- HTTP examples: executable methods.
 - Additional AOP examples: lifecycle advice, scheduled methods, programmatic
   retry, and proxy-target variants.
 
