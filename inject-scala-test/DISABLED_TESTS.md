@@ -52,6 +52,8 @@ compiler symbol/type metadata without classloading.
 proxy methods.
 Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
 generated proxy-target beans, interceptor invocation, and target lifecycle.
+Source-defined Scala `@Around(proxyTarget = true, hotswap = true)` advice is
+covered for generated hot-swappable proxy-target beans and target swapping.
 Bean import is documented as unsupported for Scala.
 
 ## Classification Rules

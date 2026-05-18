@@ -17,6 +17,7 @@ package io.micronaut.scala.processing
 
 import io.micronaut.aop.Intercepted
 import io.micronaut.aop.InterceptedProxy
+import io.micronaut.aop.HotSwappableInterceptedProxy
 import io.micronaut.context.annotation.ConfigurationInject
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Prototype
@@ -332,6 +333,64 @@ class MyBean:
         interceptor.invoked()
         !instance.is(instance.interceptedTarget())
         instance.interceptedTarget().count() == 1
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports source-defined hotswappable proxy target around advice"() {
+        when:
+        def context = buildContext('''
+package hotswap
+
+import io.micronaut.aop.Around
+import io.micronaut.aop.InterceptorBean
+import io.micronaut.aop.MethodInterceptor
+import io.micronaut.aop.MethodInvocationContext
+import jakarta.inject.Singleton
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE, ElementType.METHOD))
+@Around(proxyTarget = true, hotswap = true)
+class Mutating extends StaticAnnotation, java.lang.annotation.Annotation:
+  override def annotationType(): Class[? <: java.lang.annotation.Annotation] =
+    classOf[Mutating]
+
+@Singleton
+@InterceptorBean(Array(classOf[Mutating]))
+class MutatingInterceptor extends MethodInterceptor[Object, Object]:
+  override def intercept(context: MethodInvocationContext[Object, Object]): Object =
+    context.proceed()
+
+@Singleton
+@Mutating
+class SwappableBean:
+  var invocationCount: Int = 0
+
+  def test(name: String): String =
+    invocationCount = invocationCount + 1
+    s"Name is $name"
+''')
+        def instance = getBean(context, 'hotswap.SwappableBean')
+        def newInstance = context.classLoader.loadClass('hotswap.SwappableBean').getDeclaredConstructor().newInstance()
+
+        then:
+        instance instanceof HotSwappableInterceptedProxy
+        instance.interceptedTarget().getClass().name == 'hotswap.SwappableBean'
+        instance.test('test') == 'Name is test'
+        instance.interceptedTarget().invocationCount() == 1
+
+        when:
+        instance.swap(newInstance)
+
+        then:
+        instance.interceptedTarget().is(newInstance)
+        instance.interceptedTarget().invocationCount() == 0
 
         cleanup:
         context?.close()
