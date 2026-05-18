@@ -23,6 +23,7 @@ dependencies {
     }
 
     testImplementation(libs.managed.graalvm.nativeimage)
+    testImplementation(projects.micronautHttp)
     testImplementation(platform(libs.test.boms.micronaut.validation))
     testImplementation(libs.micronaut.validation) {
         exclude(group = "io.micronaut")

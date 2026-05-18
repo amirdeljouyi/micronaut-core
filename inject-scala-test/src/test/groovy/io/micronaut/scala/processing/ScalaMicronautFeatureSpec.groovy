@@ -756,6 +756,37 @@ class Calculator:
         definition.findMethod('add', Integer.TYPE, Integer.TYPE).present
     }
 
+    void "supports routes inherited from Scala traits"() {
+        given:
+        def definition = buildBeanDefinition('test.HelloController', '''
+package test
+
+import io.micronaut.http.MediaType
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Produces
+
+@Controller("/hello")
+class HelloController extends ControllerTrait:
+  @Get("/{x}")
+  @Produces(Array(MediaType.TEXT_PLAIN))
+  def index(x: String): String = s"Hello World $x"
+
+trait ControllerTrait:
+  @Get("/trait/{x}")
+  @Produces(Array(MediaType.TEXT_PLAIN))
+  def indexT(x: String): String = s"Hello World Trait $x"
+''')
+
+        expect:
+        definition != null
+        definition.executableMethods.size() == 2
+        definition.executableMethods.find { it.methodName == 'indexT' }
+        definition.executableMethods.find { it.methodName == 'indexT' }.arguments.length == 1
+        definition.executableMethods.find { it.methodName == 'indexT' }.isAnnotationPresent('io.micronaut.http.annotation.Get')
+        definition.executableMethods.find { it.methodName == 'indexT' }.arguments[0].name == 'x'
+    }
+
     void "supports around advice on Scala methods"() {
         when:
         def context = buildContext('''

@@ -33,6 +33,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -239,7 +240,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (elementType == ConstructorElement.class) {
             classData.constructors().forEach(constructor -> elements.add(constructorElement(constructor)));
         } else if (elementType == MethodElement.class) {
-            classData.methods().forEach(method -> elements.add(methodElement(method)));
+            addMethodElements(result, elements);
         } else if (elementType == FieldElement.class) {
             addFieldElements(result, elements);
         } else if (elementType == PropertyElement.class) {
@@ -248,7 +249,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             elements.addAll(visitorContext.sourceClassElementsEnclosedBy(getName()));
         } else if (elementType == MemberElement.class) {
             addFieldElements(result, elements);
-            classData.methods().forEach(method -> elements.add(methodElement(method)));
+            addMethodElements(result, elements);
             if (!result.isExcludePropertyElements()) {
                 classData.properties().forEach(property -> elements.add(propertyElement(property)));
             }
@@ -257,6 +258,61 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             .filter(element -> matches(result, element))
             .map(elementType::cast)
             .toList();
+    }
+
+    private <T extends Element> void addMethodElements(ElementQuery.Result<T> result, List<Element> elements) {
+        ScalaClassData data = classData;
+        if (data == null) {
+            return;
+        }
+        Set<MethodSignature> signatures = new HashSet<>();
+        data.methods().forEach(method -> addMethodElement(method, this, signatures, elements));
+        if (!result.isOnlyDeclared()) {
+            Set<String> visited = new HashSet<>();
+            collectInheritedMethods(data.superType(), signatures, elements, visited);
+            data.interfaces().forEach(interfaceType -> collectInheritedMethods(interfaceType, signatures, elements, visited));
+        }
+    }
+
+    private void collectInheritedMethods(
+        @Nullable ScalaTypeData type,
+        Set<MethodSignature> signatures,
+        List<Element> elements,
+        Set<String> visited) {
+        if (type == null || !visited.add(type.name())) {
+            return;
+        }
+        Optional<ScalaClassElement> sourceElement = visitorContext.sourceClassElement(type.name());
+        if (sourceElement.isEmpty()) {
+            return;
+        }
+        ScalaClassElement inheritedElement = sourceElement.get();
+        ScalaClassData inheritedData = inheritedElement.classData;
+        if (inheritedData == null) {
+            return;
+        }
+        inheritedData.methods().forEach(method -> addMethodElement(method, inheritedElement, signatures, elements));
+        collectInheritedMethods(inheritedData.superType(), signatures, elements, visited);
+        inheritedData.interfaces().forEach(interfaceType -> collectInheritedMethods(interfaceType, signatures, elements, visited));
+    }
+
+    private void addMethodElement(
+        ScalaMethodData method,
+        ScalaClassElement declaringElement,
+        Set<MethodSignature> signatures,
+        List<Element> elements) {
+        if (signatures.add(signature(method))) {
+            elements.add(declaringElement.methodElement(method));
+        }
+    }
+
+    private MethodSignature signature(ScalaMethodData method) {
+        return new MethodSignature(
+            method.name(),
+            method.parameters().stream()
+                .map(parameter -> new TypeSignature(parameter.type().name(), parameter.type().arrayDimensions()))
+                .toList()
+        );
     }
 
     private <T extends Element> void addFieldElements(ElementQuery.Result<T> result, List<Element> elements) {
@@ -394,5 +450,11 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
     }
 
     private record ClassElementKey(String name, int arrayDimensions) {
+    }
+
+    private record MethodSignature(String name, List<TypeSignature> parameterTypes) {
+    }
+
+    private record TypeSignature(String name, int arrayDimensions) {
     }
 }

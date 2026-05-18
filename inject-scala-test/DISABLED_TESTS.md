@@ -31,7 +31,8 @@ and executable methods are covered for Graal build-time initialization. Construc
 introspection through an abstract Scala superclass is covered. Bean-introspection
 constructor argument generics are covered; superclass introspection constructor
 forwarding for byte arrays and boxed Boolean values is tracked with
-`@PendingFeature`.
+`@PendingFeature`. Executable route methods inherited from source-defined
+Scala traits are covered.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -64,9 +65,9 @@ unsupported in a future docs pass.
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Java AbstractTypeElementSpec | 14 | 2 | 167 | 1 | 11 | 195 |
-| Groovy AbstractBeanDefinitionSpec | 1 | 8 | 67 | 0 | 11 | 87 |
+| Groovy AbstractBeanDefinitionSpec | 2 | 7 | 67 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 0 | 3 | 19 |
-| Total | 16 | 13 | 246 | 1 | 25 | 301 |
+| Total | 17 | 12 | 246 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -77,7 +78,6 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy`
-- `inject-groovy/src/test/groovy/io/micronaut/inject/errors/RouteTraitSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/BeanIntrospectionSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ClassElementSpec.groovy`
 
@@ -339,7 +339,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-groovy/src/test/groovy/io/micronaut/inject/configuration/GroovyConfigBuilderSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/inject/context/NoPackageSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/inject/errors/GroovySingletonSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-groovy/src/test/groovy/io/micronaut/inject/errors/RouteTraitSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy/src/test/groovy/io/micronaut/inject/errors/RouteTraitSpec.groovy` - already covered: Scala route methods inherited from source-defined traits are exposed as executable methods
 - `inject-groovy/src/test/groovy/io/micronaut/inject/executable/ExecutableBeanSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/executable/inheritance/InheritedExecutableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryBeanDefinitionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
