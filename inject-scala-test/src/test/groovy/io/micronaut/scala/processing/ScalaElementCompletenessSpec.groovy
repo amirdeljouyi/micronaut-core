@@ -276,6 +276,27 @@ class Hints
         typeHint.enumValues('accessType', TypeHint.AccessType).toList() == [TypeHint.AccessType.ALL_PUBLIC]
     }
 
+    void "resolves Scala object constants used as annotation values"() {
+        when:
+        def element = buildClassElement('example.ConditionalBean', '''
+package example
+
+import io.micronaut.context.annotation.Requires
+
+object FeatureConfig:
+  inline val Property = "feature.enabled"
+  final val ExpectedValue = "true"
+
+@Requires(property = FeatureConfig.Property, value = FeatureConfig.ExpectedValue)
+class ConditionalBean
+''')
+        def requires = element.getAnnotation(Requires)
+
+        then:
+        requires.stringValue('property').get() == 'feature.enabled'
+        requires.stringValue('value').get() == 'true'
+    }
+
     void "expands nested repeatable annotation container values"() {
         when:
         def element = buildClassElement('example.ConditionalBean', '''

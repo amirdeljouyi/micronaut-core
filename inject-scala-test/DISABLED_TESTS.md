@@ -46,6 +46,8 @@ for source-defined Scala annotations. Source-defined Scala annotation classes
 are exposed as `ClassElement`s, including Java `@Retention` and `@Target`
 metadata recovered from compiler symbols on source-defined `StaticAnnotation`
 classes.
+Scala object constants referenced from annotation values are resolved from
+compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
 proxy methods.
 Bean import is documented as unsupported for Scala.

@@ -22,6 +22,7 @@ import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.core.Symbols
 import dotty.tools.dotc.core.Symbols.Symbol
 import dotty.tools.dotc.core.Types.AppliedType
+import dotty.tools.dotc.core.Types.ConstantType
 import dotty.tools.dotc.core.Types.MethodType
 import dotty.tools.dotc.core.Types.Type
 import dotty.tools.dotc.plugins.PluginPhase
@@ -926,21 +927,67 @@ private object ScalaModelExtractor:
               case Some(value) =>
                 value
               case None =>
-                tree match
-                  case literal: tpd.Literal =>
-                    val value = literal.const.value
-                    if value == null then
-                      null
-                    else
-                      renderedClassLiteralValue(value.toString).map(name => classValueData(name)).getOrElse(value.asInstanceOf[Object])
-                  case select: tpd.Select if isEnumConstant(select.symbol) =>
-                    select.name.toString
-                  case ident: tpd.Ident if ident.name.toString == "_" =>
-                    null
-                  case ident: tpd.Ident if isEnumConstant(ident.symbol) =>
-                    ident.name.toString
-                  case _ =>
-                    renderedClassLiteralValue(tree.show).map(name => classValueData(name)).getOrElse(tree.show)
+                typedConstantValue(tree) match
+                  case Some(value) =>
+                    value
+                  case None =>
+                    tree match
+                      case literal: tpd.Literal =>
+                        annotationConstantValue(literal.const.value).orNull
+                      case select: tpd.Select if isEnumConstant(select.symbol) =>
+                        select.name.toString
+                      case ident: tpd.Ident if ident.name.toString == "_" =>
+                        null
+                      case ident: tpd.Ident if isEnumConstant(ident.symbol) =>
+                        ident.name.toString
+                      case _ =>
+                        renderedClassLiteralValue(tree.show).map(name => classValueData(name)).getOrElse(tree.show)
+
+  private def typedConstantValue(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[Object] =
+    def symbolConstantValue(symbol: Symbol): Option[Object] =
+      if symbol == Symbols.NoSymbol then None
+      else constantTypeValue(symbol.info)
+
+    constantTypeValue(tree.tpe)
+      .orElse(symbolConstantValue(tree.symbol))
+      .orElse {
+        tree match
+          case typed: tpd.Typed =>
+            typedConstantValue(typed.expr)
+          case apply: tpd.Apply =>
+            typedConstantValue(apply.fun)
+          case typeApply: tpd.TypeApply =>
+            typedConstantValue(typeApply.fun)
+          case select: tpd.Select =>
+            symbolConstantValue(select.symbol)
+          case ident: tpd.Ident =>
+            symbolConstantValue(ident.symbol)
+          case _ =>
+            None
+      }
+
+  private def constantTypeValue(tpe: Type)(using Context, AnnotationDefaults): Option[Object] =
+    tpe match
+      case constant: ConstantType =>
+        annotationConstantValue(constant.value.value)
+      case method: MethodType =>
+        constantTypeValue(method.resultType)
+      case _ =>
+        None
+
+  private def annotationConstantValue(value: Any)(using Context, AnnotationDefaults): Option[Object] =
+    value match
+      case null => None
+      case value: String => Some(renderedClassLiteralValue(value).map(name => classValueData(name)).getOrElse(value))
+      case value: java.lang.Boolean => Some(value)
+      case value: java.lang.Byte => Some(value)
+      case value: java.lang.Short => Some(value)
+      case value: java.lang.Integer => Some(value)
+      case value: java.lang.Long => Some(value)
+      case value: java.lang.Float => Some(value)
+      case value: java.lang.Double => Some(value)
+      case value: java.lang.Character => Some(value)
+      case _ => None
 
   private def arrayLiteralValues(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[Object] =
     tree match
