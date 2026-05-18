@@ -15,7 +15,6 @@
  */
 package io.micronaut.scala.processing.visitor;
 
-import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.ConstructorElement;
 import io.micronaut.inject.ast.ElementFactory;
@@ -72,12 +71,15 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
                 case "long" -> primitiveElement(PrimitiveElement.LONG, type.arrayDimensions());
                 case "short" -> primitiveElement(PrimitiveElement.SHORT, type.arrayDimensions());
                 case "void" -> primitiveElement(PrimitiveElement.VOID, type.arrayDimensions());
-                default -> new ScalaClassElement(type, visitorContext, AnnotationMetadata.EMPTY_METADATA);
+                default -> new ScalaClassElement(type, visitorContext, visitorContext.annotationMetadata(type));
             };
         }
-        return visitorContext.sourceClassElement(type.name())
-            .map(classElement -> type.arrayDimensions() == 0 ? classElement : classElement.withArrayDimensions(type.arrayDimensions()))
-            .orElseGet(() -> new ScalaClassElement(type, visitorContext, AnnotationMetadata.EMPTY_METADATA));
+        if (!type.annotatedTypeUse()) {
+            return visitorContext.sourceClassElement(type.name())
+                .map(classElement -> type.arrayDimensions() == 0 ? classElement : classElement.withArrayDimensions(type.arrayDimensions()))
+                .orElseGet(() -> new ScalaClassElement(type, visitorContext, visitorContext.annotationMetadata(type)));
+        }
+        return new ScalaClassElement(type, visitorContext, visitorContext.annotationMetadata(type));
     }
 
     private ClassElement primitiveElement(PrimitiveElement element, int arrayDimensions) {

@@ -35,7 +35,6 @@ import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
 import jakarta.validation.Constraint
 import jakarta.validation.constraints.Min
-import spock.lang.PendingFeature
 
 import java.lang.annotation.ElementType
 import java.lang.annotation.Retention
@@ -192,7 +191,6 @@ class Test:
         beanMethod.arguments[0].isNonNull()
     }
 
-    @PendingFeature(reason = "Scala 3 does not currently expose Java type-use annotations on generic type arguments through the adapter")
     void "maps Scala nullable and non-null annotations on generic type arguments"() {
         when:
         def element = buildClassElement('example.Test', '''

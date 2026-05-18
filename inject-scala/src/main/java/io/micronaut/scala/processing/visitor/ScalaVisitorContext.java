@@ -227,6 +227,9 @@ public final class ScalaVisitorContext implements VisitorContext {
     }
 
     private Object annotationMetadataKey(ScalaAnnotatedElementData element) {
+        if (element instanceof ScalaTypeData typeData && typeData.annotatedTypeUse()) {
+            return typeData;
+        }
         Object nativeType = element.nativeType();
         return nativeType == null ? element : nativeType;
     }

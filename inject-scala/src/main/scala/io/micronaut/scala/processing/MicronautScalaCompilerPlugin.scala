@@ -17,10 +17,12 @@ package io.micronaut.scala.processing
 
 import dotty.tools.dotc.CompilationUnit
 import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.core.Annotations.Annotation
 import dotty.tools.dotc.core.Contexts.Context
 import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.core.Symbols
 import dotty.tools.dotc.core.Symbols.Symbol
+import dotty.tools.dotc.core.Types.AnnotatedType
 import dotty.tools.dotc.core.Types.AppliedType
 import dotty.tools.dotc.core.Types.ConstantType
 import dotty.tools.dotc.core.Types.MethodType
@@ -562,7 +564,7 @@ private object ScalaModelExtractor:
       if constructor then
         ScalaTypeData(className(owner), primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
       else
-        methodReturnType(method.name.toString, method.tpt.tpe)
+        methodReturnType(method.name.toString, method.tpt)
     ScalaMethodData(
       if constructor then "<init>" else methodName(method.name.toString),
       returnType,
@@ -610,10 +612,16 @@ private object ScalaModelExtractor:
     else
       typeData(tpe)
 
+  private def methodReturnType(name: String, tpt: tpd.Tree)(using Context, AnnotationDefaults): ScalaTypeData =
+    if name.endsWith("_=") then
+      VoidTypeData
+    else
+      typeData(tpt)
+
   private def fieldData(field: tpd.ValDef)(using Context, AnnotationDefaults): ScalaFieldData =
     ScalaFieldData(
       field.name.toString,
-      typeData(field.tpt.tpe),
+      typeData(field.tpt),
       annotations(field.symbol).asJava,
       modifiers(field.symbol).asJava,
       isEnumConstant(field.symbol),
@@ -670,7 +678,7 @@ private object ScalaModelExtractor:
   private def parameterData(parameter: tpd.ValDef)(using Context, AnnotationDefaults): ScalaParameterData =
     ScalaParameterData(
       parameter.name.toString,
-      typeData(parameter.tpt.tpe),
+      typeData(parameter.tpt),
       annotations(parameter.symbol).asJava,
       parameter
     )
@@ -687,10 +695,28 @@ private object ScalaModelExtractor:
     typeData(tpe, Set.empty)
 
   private def typeData(tpe: Type, visitedTypes: Set[String])(using Context, AnnotationDefaults): ScalaTypeData =
-    val widened = tpe.widenDealias
+    typeData(tpe, visitedTypes, None, Nil)
+
+  private def typeData(tpt: tpd.Tree)(using Context, AnnotationDefaults): ScalaTypeData =
+    typeData(tpt, Set.empty)
+
+  private def typeData(tpt: tpd.Tree, visitedTypes: Set[String])(using Context, AnnotationDefaults): ScalaTypeData =
+    val (baseTree, treeAnnotations) = annotatedTree(tpt)
+    typeData(baseTree.tpe, visitedTypes, Some(baseTree), treeAnnotations)
+
+  private def typeData(
+      tpe: Type,
+      visitedTypes: Set[String],
+      typeTree: Option[tpd.Tree],
+      extraAnnotations: List[Annotation]
+  )(using Context, AnnotationDefaults): ScalaTypeData =
+    val (widened, typeAnnotations) = annotatedType(tpe.widenDealiasKeepAnnots)
+    val allTypeAnnotations = extraAnnotations ++ typeAnnotations
     widened match
       case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
-        val componentType = typeData(applied.args.head, visitedTypes)
+        val componentType = typeTree.flatMap(appliedTypeArguments).flatMap(_.headOption) match
+          case Some(componentTree) => typeData(componentTree, visitedTypes)
+          case None => typeData(applied.args.head, visitedTypes)
         componentType.withArrayDimensions(componentType.arrayDimensions + 1).asInstanceOf[ScalaTypeData]
       case applied: AppliedType =>
         val rawName = typeName(applied.tycon)
@@ -699,7 +725,7 @@ private object ScalaModelExtractor:
         val symbol = applied.tycon.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
         val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes), hierarchy.superType, hierarchy.interfaces.asJava, annotations(symbol).asJava, symbol)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes, typeTree.flatMap(appliedTypeArguments).getOrElse(Nil)), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations).asJava, allTypeAnnotations.nonEmpty, symbol)
       case _ =>
         val rawName = typeName(widened)
         val primitiveName = ScalaPrimitiveNames.get(rawName)
@@ -707,7 +733,46 @@ private object ScalaModelExtractor:
         val symbol = widened.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
         val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, annotations(symbol).asJava, symbol)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations).asJava, allTypeAnnotations.nonEmpty, symbol)
+
+  private def annotatedTree(tpt: tpd.Tree)(using Context): (tpd.Tree, List[Annotation]) =
+    val typeAnnotations = ListBuffer.empty[Annotation]
+    var current = tpt
+    var continue = true
+    while continue do
+      current match
+        case annotated: tpd.Annotated =>
+          typeAnnotations += Annotation(annotated.annot)
+          current = annotated.arg
+        case _ =>
+          continue = false
+    (current, typeAnnotations.toList)
+
+  private def appliedTypeArguments(tpt: tpd.Tree): Option[List[tpd.Tree]] =
+    tpt match
+      case applied: tpd.AppliedTypeTree =>
+        Some(applied.args)
+      case _ =>
+        None
+
+  private def annotatedType(tpe: Type): (Type, List[Annotation]) =
+    val typeAnnotations = ListBuffer.empty[Annotation]
+    var current = tpe
+    var continue = true
+    while continue do
+      current match
+        case annotated: AnnotatedType =>
+          typeAnnotations += annotated.annot
+          current = annotated.parent
+        case _ =>
+          continue = false
+    (current, typeAnnotations.toList)
+
+  private def typeAnnotationsFor(
+      symbol: Symbol,
+      typeAnnotations: List[Annotation]
+  )(using Context, AnnotationDefaults): List[ScalaAnnotationData] =
+    typeAnnotations.map(annotationData(_, Set.empty)) ++ annotations(symbol)
 
   private def typeHierarchy(symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context, AnnotationDefaults): TypeHierarchy =
     if primitive || symbol == Symbols.NoSymbol || visitedTypes.contains(name) then
@@ -722,13 +787,16 @@ private object ScalaModelExtractor:
         parents.filter(_.interfaceType())
       )
 
-  private def typeArguments(symbol: Symbol, arguments: List[Type], visitedTypes: Set[String])(using Context, AnnotationDefaults): java.util.Map[String, ScalaTypeData] =
+  private def typeArguments(symbol: Symbol, arguments: List[Type], visitedTypes: Set[String], argumentTrees: List[tpd.Tree] = Nil)(using Context, AnnotationDefaults): java.util.Map[String, ScalaTypeData] =
     if symbol == Symbols.NoSymbol || arguments.isEmpty then
       java.util.Map.of()
     else
       val converted = LinkedHashMap[String, ScalaTypeData]()
-      symbol.typeParams.zip(arguments).foreach { case (parameter, argument) =>
-        converted.put(parameter.name.toString, typeData(argument, visitedTypes))
+      symbol.typeParams.zip(arguments).zipWithIndex.foreach { case ((parameter, argument), index) =>
+        val argumentData = argumentTrees.lift(index) match
+          case Some(argumentTree) => typeData(argumentTree, visitedTypes)
+          case None => typeData(argument, visitedTypes)
+        converted.put(parameter.name.toString, argumentData)
       }
       converted
 

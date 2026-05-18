@@ -32,6 +32,7 @@ import java.util.Map;
  * @param superType The compiler-resolved super type
  * @param interfaces The compiler-resolved interface types
  * @param annotations The compiler-resolved annotations
+ * @param annotatedTypeUse Whether the type reference has type-use annotations
  * @param nativeType The native Scala compiler object
  */
 public record ScalaTypeData(
@@ -43,6 +44,7 @@ public record ScalaTypeData(
     @Nullable ScalaTypeData superType,
     List<ScalaTypeData> interfaces,
     List<ScalaAnnotationData> annotations,
+    boolean annotatedTypeUse,
     @Nullable Object nativeType
 ) implements ScalaAnnotatedElementData {
 
@@ -61,7 +63,7 @@ public record ScalaTypeData(
         @Nullable ScalaTypeData superType,
         List<ScalaTypeData> interfaces
     ) {
-        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), null);
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), false, null);
     }
 
     public ScalaTypeData(
@@ -75,6 +77,6 @@ public record ScalaTypeData(
     }
 
     public ScalaTypeData withArrayDimensions(int dimensions) {
-        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, nativeType);
+        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType);
     }
 }

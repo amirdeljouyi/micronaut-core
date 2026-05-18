@@ -48,8 +48,7 @@ metadata recovered from compiler symbols on source-defined `StaticAnnotation`
 classes.
 Scala nullable and non-null annotations are covered for methods and parameters
 through both `ClassElement` and bean introspection metadata.
-Generic type argument nullability is tracked by a Scala `@PendingFeature`
-regression because Java type-use annotations are not currently exposed on
+Generic type argument nullability is covered for Java type-use annotations on
 Scala generic type arguments.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
@@ -116,7 +115,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/annotation/JavaEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/NonNullabilityAnnotationsSpec.groovy` - already covered: Scala non-null annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
 - `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityAnnotationsSpec.groovy` - already covered: Scala nullable annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
-- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityFutureAnnotationsSpec.groovy` - blocked: tracked by a Scala `@PendingFeature` regression because generic type argument nullability is not currently exposed
+- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityFutureAnnotationsSpec.groovy` - already covered: Scala generic type argument nullability is covered for JSpecify type-use annotations
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
