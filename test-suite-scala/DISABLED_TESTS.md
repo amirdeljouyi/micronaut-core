@@ -54,11 +54,16 @@ This file tracks Scala documentation examples that are not yet ported to
   constructor injection, and outbound request header mutation.
 - `io.micronaut.docs.client.versioning.HelloClientSpec` verifies generated
   executable client method metadata and API versioning annotations.
+- `io.micronaut.docs.aop.proxytarget.ProxyTargetSpec` verifies
+  `@Around(proxyTarget = true)` and `@Around(proxyTarget = true, hotswap = true)`
+  Scala stereotypes, generated proxy-target beans, interceptor invocation,
+  target lifecycle, and target swapping.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- Additional AOP examples: proxy-target variants.
+- Additional AOP examples: reactive around advice and generic introduction
+  variants.
 
 Scala examples should stay idiomatic: primary constructors, case classes,
 traits, `val`, and `var` should be preferred over JavaBean-style code unless
