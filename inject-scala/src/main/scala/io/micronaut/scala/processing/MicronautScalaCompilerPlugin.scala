@@ -383,8 +383,7 @@ private object ScalaModelExtractor:
           }
           val methods = allMethods
             .filterNot(method => skipMethod(method.symbol))
-            .map(method => methodByName.get(method.name.toString))
-            .filter(_ != null)
+            .map(method => methodData(method, constructor = false, owner = symbol))
           val fields = template.body.collect {
             case field: tpd.ValDef if !skipField(field.symbol) => fieldData(field)
           }

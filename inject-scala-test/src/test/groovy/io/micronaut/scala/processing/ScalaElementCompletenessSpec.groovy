@@ -494,10 +494,16 @@ package example
 class Vehicle(var name: String):
   val engine: String = "v8"
   def start(speed: Int): String = name + speed.toString
+  def start(speed: String): String = name + speed
+  def combine(left: String, right: String): String = left + right
 ''')
         def classCopy = element.withAnnotationMetadata(element.annotationMetadata)
-        def startMethod = element.getEnclosedElements(ElementQuery.ALL_METHODS).find { it.name == 'start' }
+        def methods = element.getEnclosedElements(ElementQuery.ALL_METHODS)
+        def startMethods = methods.findAll { it.name == 'start' }
+        def startMethod = startMethods[0]
         def startMethodCopy = startMethod.withAnnotationMetadata(startMethod.annotationMetadata)
+        def overloadedStartMethod = startMethods[1]
+        def combineMethod = methods.find { it.name == 'combine' }
         def engineField = element.getEnclosedElements(ElementQuery.ALL_FIELDS).find { it.name == 'engine' }
         def engineFieldCopy = engineField.withAnnotationMetadata(engineField.annotationMetadata)
         def nameProperty = element.beanProperties.find { it.name == 'name' }
@@ -512,6 +518,9 @@ class Vehicle(var name: String):
         element.hashCode() == classCopy.hashCode()
         startMethod == startMethodCopy
         startMethod.hashCode() == startMethodCopy.hashCode()
+        startMethods.size() == 2
+        startMethod != overloadedStartMethod
+        combineMethod.parameters[0] != combineMethod.parameters[1]
         engineField == engineFieldCopy
         engineField.hashCode() == engineFieldCopy.hashCode()
         nameProperty == namePropertyCopy

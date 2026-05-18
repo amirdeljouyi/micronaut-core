@@ -41,4 +41,12 @@ abstract class AbstractScalaMemberElement extends AbstractScalaElement implement
     public ClassElement getDeclaringType() {
         return declaringType;
     }
+
+    @Override
+    protected Object equalityKey() {
+        return new MemberElementKey(declaringType, getName());
+    }
+
+    private record MemberElementKey(ClassElement declaringType, String name) {
+    }
 }

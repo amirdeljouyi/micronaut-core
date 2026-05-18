@@ -27,6 +27,8 @@ import io.micronaut.inject.ast.annotation.MutatedMethodElementAnnotationMetadata
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 import org.jspecify.annotations.Nullable;
 
+import java.util.List;
+
 /**
  * Scala method element.
  */
@@ -146,5 +148,32 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     @Override
     public boolean hides(MethodElement hiddenMethod) {
         return false;
+    }
+
+    @Override
+    protected Object equalityKey() {
+        return new MethodElementKey(
+            declaringType,
+            methodData.name(),
+            methodData.constructor(),
+            methodData.parameters().stream()
+                .map(parameter -> typeKey(parameter.type()))
+                .toList()
+        );
+    }
+
+    private static TypeKey typeKey(ScalaTypeData typeData) {
+        return new TypeKey(typeData.name(), typeData.arrayDimensions());
+    }
+
+    private record MethodElementKey(
+        ClassElement declaringType,
+        String name,
+        boolean constructor,
+        List<TypeKey> parameterTypes
+    ) {
+    }
+
+    private record TypeKey(String name, int arrayDimensions) {
     }
 }

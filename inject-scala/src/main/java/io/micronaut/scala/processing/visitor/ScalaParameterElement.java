@@ -68,4 +68,12 @@ public final class ScalaParameterElement extends AbstractScalaElement implements
     public ParameterElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
         return new ScalaParameterElement(methodElement, parameterData, visitorContext, annotationMetadata);
     }
+
+    @Override
+    protected Object equalityKey() {
+        return new ParameterElementKey(methodElement, parameterData.name());
+    }
+
+    private record ParameterElementKey(MethodElement methodElement, String name) {
+    }
 }
