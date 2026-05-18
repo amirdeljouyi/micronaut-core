@@ -1012,7 +1012,7 @@ private object ScalaModelExtractor:
   private def classLiteralValue(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[ScalaClassValueData] =
     tree match
       case typeApply: tpd.TypeApply if isClassOf(typeApply) =>
-        val name = typeName(typeApply.args.head.tpe)
+        val name = classLiteralTypeName(typeApply.args.head.tpe)
         Some(classValueData(name, typeApply.args.head.tpe.classSymbol))
       case typed: tpd.Typed =>
         classLiteralValue(typed.expr)
@@ -1024,13 +1024,30 @@ private object ScalaModelExtractor:
         renderedClassLiteralValue(tree.show).map(name => classValueData(name))
 
   private def classValueData(name: String, fallback: Symbol = Symbols.NoSymbol)(using Context, AnnotationDefaults): ScalaClassValueData =
+    val resolvedName = resolveClassLiteralName(name, fallback)
     val classSymbol =
-      if isAnnotationSymbol(fallback) then fallback
-      else classSymbolForName(name)
+      if fallback != Symbols.NoSymbol then fallback
+      else classSymbolForName(resolvedName)
     val annotationType =
       if isAnnotationSymbol(classSymbol) then annotationTypeData(classSymbol, Set.empty)
       else null
-    ScalaClassValueData(name, annotationType)
+    ScalaClassValueData(resolvedName, annotationType)
+
+  private def classLiteralTypeName(tpe: Type)(using Context): String =
+    val rawName = typeName(tpe)
+    ScalaPrimitiveNames.getOrElse(rawName, rawName)
+
+  private def resolveClassLiteralName(name: String, fallback: Symbol)(using Context): String =
+    if fallback != Symbols.NoSymbol then
+      val symbolName = className(fallback)
+      ScalaPrimitiveNames.getOrElse(symbolName, symbolName)
+    else
+      val aliased = ScalaClassLiteralAliases.getOrElse(name, name)
+      if aliased.contains(".") || aliased.indexOf('$') > -1 || classSymbolForName(aliased) != Symbols.NoSymbol then
+        aliased
+      else
+        val javaLangName = s"java.lang.$aliased"
+        if classSymbolForName(javaLangName) != Symbols.NoSymbol then javaLangName else aliased
 
   private def renderedClassLiteralValue(rendered: String): Option[String] =
     val start = rendered.indexOf("classOf")

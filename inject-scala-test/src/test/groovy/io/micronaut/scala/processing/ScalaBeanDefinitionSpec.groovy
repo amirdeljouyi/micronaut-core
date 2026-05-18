@@ -1,0 +1,82 @@
+/*
+ * Copyright 2017-2026 original authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.micronaut.scala.processing
+
+import io.micronaut.core.type.TypeInformation
+import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+
+class ScalaBeanDefinitionSpec extends AbstractScalaTypeElementSpec {
+
+    void "formats Scala bean definition type strings"() {
+        given:
+        def definition = buildBeanDefinition('typestring.Test', '''
+package typestring
+
+import jakarta.inject.Singleton
+
+@Singleton
+class Test
+''')
+
+        expect:
+        definition.asArgument().getTypeString(format) == result
+
+        where:
+        format                                    | result
+        TypeInformation.TypeFormat.SIMPLE         | "Test"
+        TypeInformation.TypeFormat.QUALIFIED      | "typestring.Test"
+        TypeInformation.TypeFormat.SHORTENED      | "t.Test"
+        TypeInformation.TypeFormat.ANSI_SIMPLE    | "\u001B[0;36mTest\u001B[0m"
+        TypeInformation.TypeFormat.ANSI_QUALIFIED | "\u001B[0;36mtypestring.Test\u001B[0m"
+        TypeInformation.TypeFormat.ANSI_SHORTENED | "\u001B[0;36mt.Test\u001B[0m"
+    }
+
+    void "limits Scala exposed bean types"() {
+        given:
+        def definition = buildBeanDefinition('limittypes.Test', '''
+package limittypes
+
+import io.micronaut.context.annotation.Bean
+import jakarta.inject.Singleton
+
+@Singleton
+@Bean(typed = Array(classOf[Runnable]))
+class Test extends Runnable:
+  override def run(): Unit = ()
+''')
+
+        expect:
+        definition.exposedTypes == [Runnable] as Set
+    }
+
+    void "fails compilation for invalid Scala exposed bean type"() {
+        when:
+        buildBeanDefinition('limittypes.Test', '''
+package limittypes
+
+import io.micronaut.context.annotation.Bean
+import jakarta.inject.Singleton
+
+@Singleton
+@Bean(typed = Array(classOf[Runnable]))
+class Test
+''')
+
+        then:
+        def e = thrown(RuntimeException)
+        e.message.contains("Bean defines an exposed type [java.lang.Runnable] that is not implemented by the bean type")
+    }
+}

@@ -20,7 +20,8 @@ method overrides, and unscoped `@Bean` factory methods are covered for Scala
 annotation stereotypes. Singleton Scala enum beans are rejected with the core
 bean-definition error. Abstract bean collection filtering, abstract bean
 definitions with injection points, qualifier-only beans, and AOP-only beans are
-covered for Scala.
+covered for Scala. Bean-definition type-string formatting and class-level
+`@Bean(typed=...)` exposed type validation are partially covered for Scala.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -181,7 +182,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - already covered: Scala source-level abstract bean scenarios are covered for collection filtering, abstract definitions with injection points, qualifier-only beans, and AOP-only beans
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for type-string formatting and class-level `@Bean(typed=...)` exposed type validation; remaining factory, generic, qualifier, and metadata cases should be ported incrementally
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy` - already covered: Scala constructor, field, method, collection, array, and named `BeanRegistration` injection are covered
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
