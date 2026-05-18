@@ -24,7 +24,10 @@ stereotypes, and member aliases are now covered with compiler-symbol/typed-tree
 metadata, including inherited source annotations through source class
 hierarchies, classpath supertypes, bean definition processing, and
 `TypeElementVisitor` annotation mutations, including mutation-added stereotypes
-for source-defined Scala annotations.
+for source-defined Scala annotations. Source-defined Scala annotation classes
+are exposed as `ClassElement`s; Java `@Retention` and `@Target` metadata on
+those source-defined `StaticAnnotation` classes remains tracked with
+`@PendingFeature` until it can be recovered from supported compiler APIs.
 
 ## Classification Rules
 

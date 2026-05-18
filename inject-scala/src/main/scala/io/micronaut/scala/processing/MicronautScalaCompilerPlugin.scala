@@ -1084,8 +1084,7 @@ private object ScalaModelExtractor:
       hasFlag(symbol, Flags.ModuleClass) ||
       hasFlag(symbol, Flags.PackageClass) ||
       hasFlag(symbol, Flags.Synthetic) ||
-      hasFlag(symbol, Flags.Artifact) ||
-      symbol.denot.isAnnotation
+      hasFlag(symbol, Flags.Artifact)
 
   private def skipMethod(symbol: Symbol)(using Context): Boolean =
     symbol == Symbols.NoSymbol ||

@@ -30,6 +30,12 @@ import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
 import jakarta.validation.Constraint
 import jakarta.validation.constraints.Min
+import spock.lang.PendingFeature
+
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
 
 class ScalaElementCompletenessSpec extends AbstractScalaTypeElementSpec {
 
@@ -338,6 +344,57 @@ class Engine
         annotation.stringValue().get() == 'engine'
         annotation.booleanValue('enabled').get()
         element.hasStereotype(Singleton)
+    }
+
+    void "exposes source-defined Scala annotation classes as class elements"() {
+        when:
+        def marker = buildClassElement('example.MySingleton', '''
+package example
+
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Singleton
+class MySingleton extends StaticAnnotation
+
+@MySingleton
+class Engine
+''')
+
+        then:
+        marker != null
+        marker.name == 'example.MySingleton'
+        marker.hasStereotype(Singleton)
+    }
+
+    @PendingFeature(reason = 'Scala 3 typed symbols do not expose these Java meta-annotations at this plugin phase')
+    void "exposes source-defined Scala annotation retention and targets"() {
+        when:
+        def marker = buildClassElement('example.RuntimeMarker', '''
+package example
+
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE, ElementType.METHOD))
+class RuntimeMarker extends StaticAnnotation
+
+@RuntimeMarker
+class Engine:
+  @RuntimeMarker
+  def start(): Unit = ()
+''')
+        def target = marker.getAnnotation(Target)
+        def retention = marker.getAnnotation(Retention)
+
+        then:
+        marker != null
+        retention.enumValue('value', RetentionPolicy).get() == RetentionPolicy.RUNTIME
+        target.enumValues('value', ElementType).toList() == [ElementType.TYPE, ElementType.METHOD]
     }
 
     void "resolves alias target annotation stereotypes from class literal symbols"() {
