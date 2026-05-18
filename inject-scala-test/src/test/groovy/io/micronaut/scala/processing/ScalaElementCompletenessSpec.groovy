@@ -20,6 +20,7 @@ import io.micronaut.context.annotation.DefaultScope
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Requirements
+import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.annotation.AnnotationMetadataHierarchy
 import io.micronaut.inject.ast.ClassElement
@@ -105,6 +106,90 @@ class EngineConfig:
         property.hasAnnotation(Min)
         property.hasStereotype(Constraint)
         property.hasAnnotation(RequiresValidation)
+    }
+
+    void "maps Scala nullable annotations on methods and parameters"() {
+        when:
+        def element = buildClassElement('example.Test', '''
+package example
+
+import io.micronaut.core.annotation.Nullable
+
+class Test:
+  @Nullable
+  def nullableMethod(@Nullable test: String): String = null
+''')
+        def method = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'nullableMethod' })).get()
+
+        then:
+        method.isNullable()
+        !method.isNonNull()
+        method.parameters[0].isNullable()
+        !method.parameters[0].isNonNull()
+
+        when:
+        def introspection = buildBeanIntrospection('example.Test', '''
+package example
+
+import io.micronaut.context.annotation.Executable
+import io.micronaut.core.annotation.Introspected
+import io.micronaut.core.annotation.Nullable
+
+@Introspected
+class Test:
+  @Nullable
+  @Executable
+  def nullableMethod(@Nullable test: String): String = null
+''')
+        def beanMethod = introspection.beanMethods.find { it.name == 'nullableMethod' }
+
+        then:
+        beanMethod.annotationMetadata.hasStereotype(AnnotationUtil.NULLABLE)
+        !beanMethod.annotationMetadata.hasStereotype(AnnotationUtil.NON_NULL)
+        beanMethod.arguments[0].isNullable()
+        !beanMethod.arguments[0].isNonNull()
+    }
+
+    void "maps Scala non-null annotations on methods and parameters"() {
+        when:
+        def element = buildClassElement('example.Test', '''
+package example
+
+import io.micronaut.core.annotation.NonNull
+
+class Test:
+  @NonNull
+  def notNullableMethod(@NonNull test: String): String = ""
+''')
+        def method = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'notNullableMethod' })).get()
+
+        then:
+        !method.isNullable()
+        method.isNonNull()
+        !method.parameters[0].isNullable()
+        method.parameters[0].isNonNull()
+
+        when:
+        def introspection = buildBeanIntrospection('example.Test', '''
+package example
+
+import io.micronaut.context.annotation.Executable
+import io.micronaut.core.annotation.Introspected
+import io.micronaut.core.annotation.NonNull
+
+@Introspected
+class Test:
+  @NonNull
+  @Executable
+  def notNullableMethod(@NonNull test: String): String = ""
+''')
+        def beanMethod = introspection.beanMethods.find { it.name == 'notNullableMethod' }
+
+        then:
+        !beanMethod.annotationMetadata.hasStereotype(AnnotationUtil.NULLABLE)
+        beanMethod.annotationMetadata.hasStereotype(AnnotationUtil.NON_NULL)
+        !beanMethod.arguments[0].isNullable()
+        beanMethod.arguments[0].isNonNull()
     }
 
     void "exposes generic property type arguments"() {

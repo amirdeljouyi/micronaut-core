@@ -46,6 +46,8 @@ for source-defined Scala annotations. Source-defined Scala annotation classes
 are exposed as `ClassElement`s, including Java `@Retention` and `@Target`
 metadata recovered from compiler symbols on source-defined `StaticAnnotation`
 classes.
+Scala nullable and non-null annotations are covered for methods and parameters
+through both `ClassElement` and bean introspection metadata.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
@@ -109,8 +111,8 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotatePropertySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateTypeArgSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/JavaEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/annotation/NonNullabilityAnnotationsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityAnnotationsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/annotation/NonNullabilityAnnotationsSpec.groovy` - already covered: Scala non-null annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
+- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityAnnotationsSpec.groovy` - already covered: Scala nullable annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
 - `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityFutureAnnotationsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
