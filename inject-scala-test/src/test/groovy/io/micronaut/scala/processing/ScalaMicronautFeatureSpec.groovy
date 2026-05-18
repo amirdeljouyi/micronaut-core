@@ -16,6 +16,7 @@
 package io.micronaut.scala.processing
 
 import io.micronaut.aop.Intercepted
+import io.micronaut.aop.InterceptedProxy
 import io.micronaut.context.annotation.ConfigurationInject
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Prototype
@@ -276,6 +277,64 @@ abstract class ValidatedBean
 
         then:
         definition == null
+    }
+
+    void "supports source-defined proxy target around advice"() {
+        when:
+        def context = buildContext('''
+package proxytarget
+
+import io.micronaut.aop.Around
+import io.micronaut.aop.InterceptorBean
+import io.micronaut.aop.MethodInterceptor
+import io.micronaut.aop.MethodInvocationContext
+import jakarta.annotation.PostConstruct
+import jakarta.inject.Singleton
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE, ElementType.METHOD))
+@Around(proxyTarget = true)
+class Mutating extends StaticAnnotation, java.lang.annotation.Annotation:
+  override def annotationType(): Class[? <: java.lang.annotation.Annotation] =
+    classOf[Mutating]
+
+@Singleton
+@InterceptorBean(Array(classOf[Mutating]))
+class MutatingInterceptor extends MethodInterceptor[Object, Object]:
+  var invoked: Boolean = false
+
+  override def intercept(context: MethodInvocationContext[Object, Object]): Object =
+    invoked = true
+    context.proceed()
+
+@Singleton
+@Mutating
+class MyBean:
+  var count: Int = 0
+
+  @PostConstruct
+  def created(): Unit =
+    count = count + 1
+
+  def someMethod(): String = "good"
+''')
+        def instance = getBean(context, 'proxytarget.MyBean')
+        def interceptor = getBean(context, 'proxytarget.MutatingInterceptor')
+
+        then:
+        instance instanceof InterceptedProxy
+        instance.someMethod() == 'good'
+        interceptor.invoked()
+        !instance.is(instance.interceptedTarget())
+        instance.interceptedTarget().count() == 1
+
+        cleanup:
+        context?.close()
     }
 
     void "supports requires conditions on Scala beans"() {

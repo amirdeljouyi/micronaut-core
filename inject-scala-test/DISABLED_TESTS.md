@@ -50,6 +50,8 @@ Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
 proxy methods.
+Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
+generated proxy-target beans, interceptor invocation, and target lifecycle.
 Bean import is documented as unsupported for Scala.
 
 ## Classification Rules
@@ -140,7 +142,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxyTargetSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxyTargetSpec.groovy` - already covered: Scala source-defined `@Around(proxyTarget = true)` advice is covered for generated proxy-target beans, interceptor invocation, and target lifecycle
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/OriginatingElementsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/PostConstructInterceptorCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/ValidatedNonBeanSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
