@@ -79,4 +79,24 @@ class Test
         def e = thrown(RuntimeException)
         e.message.contains("Bean defines an exposed type [java.lang.Runnable] that is not implemented by the bean type")
     }
+
+    void "fails compilation for exposed Scala subclass bean type"() {
+        when:
+        buildBeanDefinition('limittypes.Test', '''
+package limittypes
+
+import io.micronaut.context.annotation.Bean
+import jakarta.inject.Singleton
+
+@Singleton
+@Bean(typed = Array(classOf[X]))
+class Test
+
+class X extends Test
+''')
+
+        then:
+        def e = thrown(RuntimeException)
+        e.message.contains("Bean defines an exposed type [limittypes.X] that is not implemented by the bean type")
+    }
 }
