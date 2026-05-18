@@ -31,6 +31,7 @@ import dotty.tools.dotc.report
 import dotty.tools.dotc.transform.Pickler
 import dotty.tools.dotc.transform.PostTyper
 import io.micronaut.inject.ast.ElementModifier
+import io.micronaut.inject.processing.ProcessingException
 import io.micronaut.scala.processing.visitor.ScalaAnnotationData
 import io.micronaut.scala.processing.visitor.ScalaAnnotationMemberData
 import io.micronaut.scala.processing.visitor.ScalaAnnotationTypeData
@@ -176,18 +177,26 @@ private final class ProcessingState(options: JMap[String, String], initialContex
 
   def addClasses(classes: List[ScalaClassData])(using Context): Unit =
     currentContext = summon[Context]
-    engineInstance.addClasses(classes.asJava)
-    typeUnitsSeen += 1
-    if !typeVisitorsProcessed && typeUnitsSeen >= unitCount then
-      typeVisitorsProcessed = true
-      engineInstance.processTypeVisitors()
-      processBeanDefinitions()
+    try
+      engineInstance.addClasses(classes.asJava)
+      typeUnitsSeen += 1
+      if !typeVisitorsProcessed && typeUnitsSeen >= unitCount then
+        typeVisitorsProcessed = true
+        engineInstance.processTypeVisitors()
+        processBeanDefinitions()
+    catch
+      case exception: ProcessingException =>
+        reportProcessingException(exception)
 
   def processBeanDefinitions()(using Context): Unit =
     currentContext = summon[Context]
-    if !beanDefinitionsProcessed then
-      beanDefinitionsProcessed = true
-      engineInstance.processBeanDefinitions()
+    try
+      if !beanDefinitionsProcessed then
+        beanDefinitionsProcessed = true
+        engineInstance.processBeanDefinitions()
+    catch
+      case exception: ProcessingException =>
+        reportProcessingException(exception)
 
   private def unitCount(using ctx: Context): Int =
     math.max(1, ctx.run.units.size)
@@ -215,6 +224,33 @@ private final class ProcessingState(options: JMap[String, String], initialContex
   private def classpath(using ctx: Context): List[File] =
     val value = ctx.settings.classpath.valueIn(ctx.settingsState)
     value.split(File.pathSeparator).toList.filter(_.nonEmpty).map(File(_))
+
+  private def reportProcessingException(exception: ProcessingException)(using Context): Unit =
+    val message = exception.getMessage
+    if message != null && !message.isBlank then
+      report.error(message)
+    else
+      report.error(processingExceptionMessage(exception))
+
+  private def processingExceptionMessage(exception: ProcessingException): String =
+    val element = exception.getElement
+    val elementDescription = if element == null then "" else s" [${element.getName}]"
+    s"Error processing Scala element$elementDescription: ${exceptionMessage(exception)}"
+
+  private def exceptionMessage(exception: Throwable): String =
+    var current: Throwable | Null = exception
+    var fallback: Throwable = exception
+    while current != null do
+      fallback = current
+      val message = current.getMessage
+      if message != null && !message.isBlank then
+        return message
+      current = current.getCause
+      if current == exception then
+        current = null
+    val stackTrace = fallback.getStackTrace
+    if stackTrace.isEmpty then fallback.getClass.getName
+    else s"${fallback.getClass.getName} at ${stackTrace(0)}"
 
 private final class TypeVisitorPhase(state: ProcessingState) extends PluginPhase:
 

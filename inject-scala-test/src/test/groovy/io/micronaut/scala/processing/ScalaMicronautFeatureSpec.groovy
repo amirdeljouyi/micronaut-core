@@ -732,6 +732,22 @@ class Engine
         e.message.contains('Error processing Scala element: io.micronaut.inject.processing.ProcessingException')
     }
 
+    void "type element visitor finish exceptions are reported as processing errors"() {
+        when:
+        ScalaAnnotatingVisitor.withFinishFailure(new IllegalStateException(), {
+            buildClassElement('example.Engine', '''
+package example
+
+class Engine
+''')
+        } as Supplier)
+
+        then:
+        def e = thrown(IllegalStateException)
+        e.message.contains('Error finalizing type visitor')
+        e.message.contains('java.lang.IllegalStateException')
+    }
+
     void "type element visitors can annotate Scala introduction methods"() {
         when:
         def definition = ScalaAnnotatingVisitor.withAnnotations({
