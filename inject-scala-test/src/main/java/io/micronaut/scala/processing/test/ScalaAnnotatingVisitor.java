@@ -38,7 +38,9 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
 
     private static final ThreadLocal<Boolean> ENABLED = new ThreadLocal<>();
     private static final ThreadLocal<String> CLASS_ANNOTATION = new ThreadLocal<>();
+    private static final ThreadLocal<RuntimeException> START_FAILURE = new ThreadLocal<>();
     private static final ThreadLocal<RuntimeException> CLASS_FAILURE = new ThreadLocal<>();
+    private static final ThreadLocal<RuntimeException> FINISH_FAILURE = new ThreadLocal<>();
 
     /**
      * Executes a compilation with this visitor enabled.
@@ -76,6 +78,25 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
     }
 
     /**
+     * Executes a compilation with this visitor failing when visitor processing starts.
+     *
+     * @param exception The exception to throw
+     * @param supplier The compilation work
+     * @param <T> The result type
+     * @return The supplier result
+     */
+    public static <T> T withStartFailure(RuntimeException exception, Supplier<T> supplier) {
+        ENABLED.set(Boolean.TRUE);
+        START_FAILURE.set(exception);
+        try {
+            return supplier.get();
+        } finally {
+            START_FAILURE.remove();
+            ENABLED.remove();
+        }
+    }
+
+    /**
      * Executes a compilation with this visitor failing when it visits a class.
      *
      * @param exception The exception to throw
@@ -94,9 +115,39 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
         }
     }
 
+    /**
+     * Executes a compilation with this visitor failing when visitor processing finishes.
+     *
+     * @param exception The exception to throw
+     * @param supplier The compilation work
+     * @param <T> The result type
+     * @return The supplier result
+     */
+    public static <T> T withFinishFailure(RuntimeException exception, Supplier<T> supplier) {
+        ENABLED.set(Boolean.TRUE);
+        FINISH_FAILURE.set(exception);
+        try {
+            return supplier.get();
+        } finally {
+            FINISH_FAILURE.remove();
+            ENABLED.remove();
+        }
+    }
+
     @Override
     public int getOrder() {
         return 100;
+    }
+
+    @Override
+    public void start(VisitorContext visitorContext) {
+        if (!enabled()) {
+            return;
+        }
+        RuntimeException startFailure = START_FAILURE.get();
+        if (startFailure != null) {
+            throw startFailure;
+        }
     }
 
     @Override
@@ -126,6 +177,17 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
         annotate(element, "method");
         for (ParameterElement parameter : element.getParameters()) {
             annotate(parameter, "parameter");
+        }
+    }
+
+    @Override
+    public void finish(VisitorContext visitorContext) {
+        if (!enabled()) {
+            return;
+        }
+        RuntimeException finishFailure = FINISH_FAILURE.get();
+        if (finishFailure != null) {
+            throw finishFailure;
         }
     }
 

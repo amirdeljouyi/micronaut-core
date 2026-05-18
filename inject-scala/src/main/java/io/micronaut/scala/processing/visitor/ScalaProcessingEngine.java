@@ -121,6 +121,8 @@ public final class ScalaProcessingEngine {
         for (LoadedScalaVisitor loadedVisitor : loadedVisitors) {
             try {
                 loadedVisitor.getVisitor().start(context);
+            } catch (ProcessingException e) {
+                reportProcessingException(e);
             } catch (Throwable e) {
                 context.warn("Error initializing type visitor [" + loadedVisitor.getVisitor() + "]: " + exceptionMessage(e), null);
             }

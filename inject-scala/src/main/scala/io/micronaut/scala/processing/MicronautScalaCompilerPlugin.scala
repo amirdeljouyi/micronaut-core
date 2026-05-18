@@ -132,6 +132,7 @@ private final class MicronautScalaPluginClassLoader(urls: Array[URL], parent: Cl
       name.startsWith("io.micronaut.expressions.context.") ||
       name.startsWith("io.micronaut.inject.annotation.") ||
       name.startsWith("io.micronaut.inject.ast.") ||
+      name.startsWith("io.micronaut.inject.processing.") ||
       name.startsWith("io.micronaut.inject.visitor.") ||
       name.startsWith("io.micronaut.inject.writer.") ||
       name.startsWith("io.micronaut.sourcegen.")
