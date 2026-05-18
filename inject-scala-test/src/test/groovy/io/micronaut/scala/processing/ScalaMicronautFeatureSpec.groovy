@@ -18,6 +18,7 @@ package io.micronaut.scala.processing
 import io.micronaut.aop.Intercepted
 import io.micronaut.context.annotation.ConfigurationInject
 import io.micronaut.context.annotation.Property
+import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.exceptions.BeanInstantiationException
 import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.qualifiers.Qualifiers
@@ -539,6 +540,56 @@ class LocalEngine extends ExternalLocalMachine
 
         cleanup:
         context?.close()
+    }
+
+    void "supports source-defined default scopes"() {
+        when:
+        def definition = buildBeanDefinition('example.Engine', '''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.DefaultScope
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Bean
+@DefaultScope(classOf[Singleton])
+class DefaultSingleton extends StaticAnnotation
+
+@DefaultSingleton
+class Engine
+''')
+
+        then:
+        definition.isSingleton()
+        definition.hasDeclaredStereotype(Singleton)
+    }
+
+    void "explicit Scala bean scope overrides source-defined default scope"() {
+        when:
+        def definition = buildBeanDefinition('example.Engine', '''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.DefaultScope
+import io.micronaut.context.annotation.Prototype
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Bean
+@DefaultScope(classOf[Singleton])
+class DefaultSingleton extends StaticAnnotation
+
+@DefaultSingleton
+@Prototype
+class Engine
+''')
+
+        then:
+        !definition.isSingleton()
+        !definition.hasDeclaredStereotype(Singleton)
+        definition.hasDeclaredStereotype(Prototype)
+        definition.scopeName.get() == Prototype.NAME
     }
 
     void "supports mutable configuration properties"() {
