@@ -25,10 +25,9 @@ covered for Scala. Bean-definition type-string formatting and class-level
 partially covered for Scala.
 Required and optional `@Autowired` field and method injection are covered for
 Scala. Dynamic `RuntimeBeanDefinition` registration from Scala source is
-covered. Qualifier metadata on field-targeted Scala `var` injection remains a
-future property-semantics gap; use constructor or method qualifiers until that
-is implemented. Evaluated expressions on Scala bean definitions and executable
-methods are covered for Graal build-time initialization. Constructor-copy
+covered. Qualifier metadata on field-targeted Scala `var` injection is covered
+for property setter injection. Evaluated expressions on Scala bean definitions
+and executable methods are covered for Graal build-time initialization. Constructor-copy
 introspection through an abstract Scala superclass is covered. Bean-introspection
 constructor argument generics are covered; superclass introspection constructor
 forwarding for byte arrays and boxed Boolean values is tracked with

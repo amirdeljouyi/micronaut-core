@@ -16,23 +16,32 @@
 package io.micronaut.scala.processing.visitor;
 
 import io.micronaut.core.annotation.AnnotationMetadata;
+import io.micronaut.core.annotation.AnnotationUtil;
+import io.micronaut.core.annotation.AnnotationValue;
+import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
+import io.micronaut.inject.ast.ParameterElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 import io.micronaut.inject.ast.annotation.PropertyElementAnnotationMetadata;
 import org.jspecify.annotations.Nullable;
 
+import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * Scala property element.
  */
 public final class ScalaPropertyElement extends AbstractScalaMemberElement implements PropertyElement {
+
+    private static final String VALUE_ANNOTATION = "io.micronaut.context.annotation.Value";
 
     private final ScalaClassElement declaringType;
     private final ScalaVisitorContext visitorContext;
@@ -115,9 +124,57 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
     public Optional<? extends MemberElement> getWriteMember() {
         if (propertyData.writeMethod() != null) {
             return getWriteMethod()
-                .map(methodElement -> methodElement.withAnnotationMetadata(writeMemberAnnotationMetadata()));
+                .map(this::writeMember);
         }
         return PropertyElement.super.getWriteMember();
+    }
+
+    private MethodElement writeMember(MethodElement methodElement) {
+        MethodElement writeMember = methodElement.withAnnotationMetadata(writeMemberAnnotationMetadata());
+        return writeMemberParameters(writeMember)
+            .map(writeMember::withParameters)
+            .orElse(writeMember);
+    }
+
+    private Optional<ParameterElement[]> writeMemberParameters(MethodElement methodElement) {
+        ParameterElement[] parameters = methodElement.getParameters();
+        if (parameters.length != 1 || propertyData.field() == null) {
+            return Optional.empty();
+        }
+        AnnotationMetadata qualifierAnnotationMetadata = qualifierAnnotationMetadata(visitorContext.annotationMetadata(propertyData.field()));
+        if (qualifierAnnotationMetadata.isEmpty()) {
+            return Optional.empty();
+        }
+        ParameterElement[] newParameters = parameters.clone();
+        ParameterElement parameter = parameters[0];
+        AnnotationMetadata annotationMetadata = new AnnotationMetadataHierarchy(
+            parameter,
+            qualifierAnnotationMetadata
+        ).merge();
+        newParameters[0] = parameter.withAnnotationMetadata(annotationMetadata);
+        return Optional.of(newParameters);
+    }
+
+    private AnnotationMetadata qualifierAnnotationMetadata(AnnotationMetadata annotationMetadata) {
+        List<AnnotationValue<Annotation>> qualifierValues = annotationMetadata.getAnnotationValuesByStereotype(AnnotationUtil.QUALIFIER);
+        if (qualifierValues.isEmpty()) {
+            return AnnotationMetadata.EMPTY_METADATA;
+        }
+        MutableAnnotationMetadata qualifierMetadata = new MutableAnnotationMetadata();
+        for (AnnotationValue<Annotation> qualifierValue : qualifierValues) {
+            String annotationName = qualifierValue.getAnnotationName();
+            if (VALUE_ANNOTATION.equals(annotationName)) {
+                continue;
+            }
+            qualifierMetadata.addDeclaredAnnotation(annotationName, qualifierValue.getValues(), qualifierValue.getRetentionPolicy());
+            qualifierMetadata.addDeclaredStereotype(
+                List.of(annotationName),
+                AnnotationUtil.QUALIFIER,
+                Map.of(),
+                qualifierValue.getRetentionPolicy()
+            );
+        }
+        return qualifierMetadata.isEmpty() ? AnnotationMetadata.EMPTY_METADATA : qualifierMetadata;
     }
 
     private AnnotationMetadata readMemberAnnotationMetadata() {

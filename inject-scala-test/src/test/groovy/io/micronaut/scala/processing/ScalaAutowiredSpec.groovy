@@ -48,6 +48,45 @@ class Foo
         context?.close()
     }
 
+    void "supports qualified Scala autowired fields"() {
+        given:
+        def context = buildContext('''
+package test
+
+import io.micronaut.inject.autowired.Autowired
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+import scala.compiletime.uninitialized
+
+@Singleton
+class Test:
+  @(Autowired @field)
+  @(Named @field)("two")
+  var foo: Foo = uninitialized
+
+@Singleton
+@Named("one")
+case class OneFoo() extends Foo:
+  override def name: String = "one"
+
+@Singleton
+@Named("two")
+case class TwoFoo() extends Foo:
+  override def name: String = "two"
+
+trait Foo:
+  def name: String
+''')
+        def bean = getBean(context, 'test.Test')
+
+        expect:
+        bean.foo().name() == 'two'
+
+        cleanup:
+        context?.close()
+    }
+
     void "fails required Scala autowired field injection when dependency is missing"() {
         when:
         ApplicationContext context = buildContext('''
