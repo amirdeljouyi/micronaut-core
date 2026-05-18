@@ -37,12 +37,17 @@ abstract class AbstractScalaElement implements Element {
     private final MutableAnnotationMetadata annotationMetadata;
     private final SimpleElementAnnotationMetadata elementAnnotationMetadata;
 
-    AbstractScalaElement(String name, Object nativeType, Set<ElementModifier> modifiers, MutableAnnotationMetadata annotationMetadata) {
+    AbstractScalaElement(
+        String name,
+        Object nativeType,
+        Set<ElementModifier> modifiers,
+        MutableAnnotationMetadata annotationMetadata,
+        ScalaAnnotationMetadataBuilder annotationMetadataBuilder) {
         this.name = name;
         this.nativeType = nativeType;
         this.modifiers = modifiers == null ? Set.of() : Set.copyOf(modifiers);
         this.annotationMetadata = annotationMetadata == null ? new MutableAnnotationMetadata() : annotationMetadata;
-        this.elementAnnotationMetadata = new SimpleElementAnnotationMetadata(this.annotationMetadata, false);
+        this.elementAnnotationMetadata = new SimpleElementAnnotationMetadata(this.annotationMetadata, false, annotationMetadataBuilder);
     }
 
     @Override

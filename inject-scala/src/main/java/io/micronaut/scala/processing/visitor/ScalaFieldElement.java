@@ -48,7 +48,8 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
             fieldData.name(),
             fieldData.nativeType(),
             fieldModifiers(fieldData.modifiers()),
-            MutableAnnotationMetadata.of(annotationMetadata)
+            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;

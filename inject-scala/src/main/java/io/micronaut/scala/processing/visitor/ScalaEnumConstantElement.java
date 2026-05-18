@@ -27,21 +27,28 @@ import io.micronaut.inject.ast.FieldElement;
 final class ScalaEnumConstantElement extends AbstractScalaMemberElement implements EnumConstantElement {
 
     private final ScalaEnumElement declaringEnum;
+    private final ScalaVisitorContext visitorContext;
     private final ScalaFieldData fieldData;
 
     ScalaEnumConstantElement(ScalaEnumElement declaringEnum, ScalaFieldData fieldData, ScalaVisitorContext visitorContext) {
-        this(declaringEnum, fieldData, visitorContext.annotationMetadata(fieldData));
+        this(declaringEnum, fieldData, visitorContext, visitorContext.annotationMetadata(fieldData));
     }
 
-    private ScalaEnumConstantElement(ScalaEnumElement declaringEnum, ScalaFieldData fieldData, AnnotationMetadata annotationMetadata) {
+    private ScalaEnumConstantElement(
+        ScalaEnumElement declaringEnum,
+        ScalaFieldData fieldData,
+        ScalaVisitorContext visitorContext,
+        AnnotationMetadata annotationMetadata) {
         super(
             declaringEnum,
             fieldData.name(),
             fieldData.nativeType(),
             ENUM_CONSTANT_MODIFIERS,
-            MutableAnnotationMetadata.of(annotationMetadata)
+            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringEnum = declaringEnum;
+        this.visitorContext = visitorContext;
         this.fieldData = fieldData;
     }
 
@@ -52,6 +59,6 @@ final class ScalaEnumConstantElement extends AbstractScalaMemberElement implemen
 
     @Override
     public FieldElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
-        return new ScalaEnumConstantElement(declaringEnum, fieldData, annotationMetadata);
+        return new ScalaEnumConstantElement(declaringEnum, fieldData, visitorContext, annotationMetadata);
     }
 }

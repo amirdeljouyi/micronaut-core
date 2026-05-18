@@ -57,7 +57,7 @@ public final class ScalaVisitorContext implements VisitorContext {
     private final File outputDirectory;
     private final DirectoryClassWriterOutputVisitor outputVisitor;
     private final ScalaElementFactory elementFactory = new ScalaElementFactory(this);
-    private final ScalaElementAnnotationMetadataFactory annotationMetadataFactory = new ScalaElementAnnotationMetadataFactory();
+    private final ScalaElementAnnotationMetadataFactory annotationMetadataFactory;
     private final ScalaAnnotationMetadataBuilder annotationMetadataBuilder;
     private final ExpressionCompilationContextFactory expressionCompilationContextFactory = new DefaultExpressionCompilationContextFactory(this);
     private final Map<String, ScalaClassData> sourceClasses = new LinkedHashMap<>();
@@ -85,6 +85,7 @@ public final class ScalaVisitorContext implements VisitorContext {
         this.errorReporter = errorReporter;
         this.classLoader = createClassLoader(classpath);
         this.annotationMetadataBuilder = new ScalaAnnotationMetadataBuilder(this);
+        this.annotationMetadataFactory = new ScalaElementAnnotationMetadataFactory(annotationMetadataBuilder);
         for (ScalaClassData sourceClass : sourceClasses) {
             this.sourceClasses.put(sourceClass.name(), sourceClass);
         }

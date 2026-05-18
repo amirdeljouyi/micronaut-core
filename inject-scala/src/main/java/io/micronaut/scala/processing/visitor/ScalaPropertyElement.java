@@ -54,7 +54,8 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
             propertyData.name(),
             propertyData.nativeType(),
             propertyData.modifiers(),
-            annotationMetadata == null ? visitorContext.annotationMetadata(propertyData) : MutableAnnotationMetadata.of(annotationMetadata)
+            annotationMetadata == null ? visitorContext.annotationMetadata(propertyData) : MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;
@@ -69,7 +70,7 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
                 visitorContext.annotationMetadata(propertyData),
                 true
             )
-            : new SimpleElementAnnotationMetadata(MutableAnnotationMetadata.of(annotationMetadata), false);
+            : new SimpleElementAnnotationMetadata(MutableAnnotationMetadata.of(annotationMetadata), false, visitorContext.getScalaAnnotationMetadataBuilder());
     }
 
     @Override

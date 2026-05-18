@@ -29,13 +29,17 @@ import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 public final class ScalaElementAnnotationMetadataFactory implements ElementAnnotationMetadataFactory {
 
     private final boolean readOnly;
+    private final ScalaAnnotationMetadataBuilder annotationMetadataBuilder;
 
-    public ScalaElementAnnotationMetadataFactory() {
-        this(false);
+    public ScalaElementAnnotationMetadataFactory(ScalaAnnotationMetadataBuilder annotationMetadataBuilder) {
+        this(false, annotationMetadataBuilder);
     }
 
-    private ScalaElementAnnotationMetadataFactory(boolean readOnly) {
+    private ScalaElementAnnotationMetadataFactory(
+        boolean readOnly,
+        ScalaAnnotationMetadataBuilder annotationMetadataBuilder) {
         this.readOnly = readOnly;
+        this.annotationMetadataBuilder = annotationMetadataBuilder;
     }
 
     @Override
@@ -56,11 +60,11 @@ public final class ScalaElementAnnotationMetadataFactory implements ElementAnnot
     @Override
     public ElementAnnotationMetadata buildMutable(AnnotationMetadata annotationMetadata) {
         MutableAnnotationMetadata mutable = MutableAnnotationMetadata.of(annotationMetadata);
-        return new SimpleElementAnnotationMetadata(mutable, readOnly);
+        return new SimpleElementAnnotationMetadata(mutable, readOnly, annotationMetadataBuilder);
     }
 
     @Override
     public ElementAnnotationMetadataFactory readOnly() {
-        return new ScalaElementAnnotationMetadataFactory(true);
+        return new ScalaElementAnnotationMetadataFactory(true, annotationMetadataBuilder);
     }
 }

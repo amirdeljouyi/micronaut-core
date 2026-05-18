@@ -37,6 +37,7 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
     public static final String ANN = "foo.bar.ScalaVisitorAnn";
 
     private static final ThreadLocal<Boolean> ENABLED = new ThreadLocal<>();
+    private static final ThreadLocal<String> CLASS_ANNOTATION = new ThreadLocal<>();
 
     /**
      * Executes a compilation with this visitor enabled.
@@ -54,6 +55,25 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
         }
     }
 
+    /**
+     * Executes a compilation with this visitor adding the given annotation to classes.
+     *
+     * @param annotationName The annotation name
+     * @param supplier The compilation work
+     * @param <T> The result type
+     * @return The supplier result
+     */
+    public static <T> T withClassAnnotation(String annotationName, Supplier<T> supplier) {
+        ENABLED.set(Boolean.TRUE);
+        CLASS_ANNOTATION.set(annotationName);
+        try {
+            return supplier.get();
+        } finally {
+            CLASS_ANNOTATION.remove();
+            ENABLED.remove();
+        }
+    }
+
     @Override
     public int getOrder() {
         return 100;
@@ -65,6 +85,10 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
             return;
         }
         annotate(element, "class");
+        String classAnnotation = CLASS_ANNOTATION.get();
+        if (classAnnotation != null) {
+            element.annotate(classAnnotation);
+        }
         for (PropertyElement propertyElement : element.getBeanProperties()) {
             annotate(propertyElement, "property");
         }

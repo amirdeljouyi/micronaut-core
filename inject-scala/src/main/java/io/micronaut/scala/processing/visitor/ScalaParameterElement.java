@@ -46,7 +46,8 @@ public final class ScalaParameterElement extends AbstractScalaElement implements
             parameterData.name(),
             parameterData.nativeType(),
             Set.of(ElementModifier.PUBLIC),
-            MutableAnnotationMetadata.of(annotationMetadata)
+            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.methodElement = methodElement;
         this.parameterData = parameterData;

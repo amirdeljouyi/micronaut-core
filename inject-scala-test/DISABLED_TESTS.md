@@ -10,7 +10,7 @@ Wave 1 covers simple Scala classes, primary constructors, methods, constructor `
 Additional Wave 4 smoke coverage now exists for named qualifiers, `@Requires`,
 constructor `@Value` injection, field and method injection, post-construct and
 pre-destroy lifecycle methods, simple `@Factory` methods, and executable methods, mutable
-`@ConfigurationProperties`, `@EachProperty`, and factory `val` property beans.
+and immutable case-class `@ConfigurationProperties`, `@EachProperty`, and factory `val` property beans.
 Nested `@ConfigurationProperties` are covered for Scala companion-object
 nested classes.
 
@@ -22,7 +22,8 @@ and Scala enum declarations through `EnumElement`. Source-defined Scala annotati
 stereotypes, and member aliases are now covered with compiler-symbol/typed-tree
 metadata, including inherited source annotations through source class
 hierarchies, classpath supertypes, bean definition processing, and
-`TypeElementVisitor` annotation mutations.
+`TypeElementVisitor` annotation mutations, including mutation-added stereotypes
+for source-defined Scala annotations.
 
 ## Classification Rules
 

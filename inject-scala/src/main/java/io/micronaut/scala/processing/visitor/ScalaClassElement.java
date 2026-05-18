@@ -64,7 +64,8 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             classData.name(),
             classData.nativeType(),
             classData.modifiers(),
-            MutableAnnotationMetadata.of(annotationMetadata)
+            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.visitorContext = visitorContext;
         this.classData = classData;
@@ -77,7 +78,8 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
             typeData.name(),
             typeData.name(),
             Set.of(ElementModifier.PUBLIC),
-            MutableAnnotationMetadata.of(annotationMetadata)
+            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.visitorContext = visitorContext;
         this.typeData = typeData;

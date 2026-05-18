@@ -44,7 +44,8 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
             methodData.name(),
             methodData.nativeType(),
             methodData.modifiers(),
-            MutableAnnotationMetadata.of(annotationMetadata)
+            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;
@@ -80,10 +81,14 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
         return parameters;
     }
 
+    protected final void replaceParameters(ParameterElement[] parameters) {
+        this.parameters = parameters;
+    }
+
     @Override
     public MethodElement withParameters(ParameterElement... newParameters) {
         ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, methodData, visitorContext, getElementAnnotationMetadata().getAnnotationMetadata());
-        methodElement.parameters = newParameters;
+        methodElement.replaceParameters(newParameters);
         return methodElement;
     }
 

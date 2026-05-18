@@ -31,8 +31,9 @@ abstract class AbstractScalaMemberElement extends AbstractScalaElement implement
         String name,
         Object nativeType,
         Set<ElementModifier> modifiers,
-        MutableAnnotationMetadata annotationMetadata) {
-        super(name, nativeType, modifiers, annotationMetadata);
+        MutableAnnotationMetadata annotationMetadata,
+        ScalaAnnotationMetadataBuilder annotationMetadataBuilder) {
+        super(name, nativeType, modifiers, annotationMetadata, annotationMetadataBuilder);
         this.declaringType = declaringType;
     }
 

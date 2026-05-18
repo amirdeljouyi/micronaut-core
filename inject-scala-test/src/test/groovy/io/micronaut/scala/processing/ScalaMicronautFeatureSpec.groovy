@@ -16,11 +16,14 @@
 package io.micronaut.scala.processing
 
 import io.micronaut.aop.Intercepted
+import io.micronaut.context.annotation.ConfigurationInject
+import io.micronaut.context.annotation.Property
 import io.micronaut.context.exceptions.BeanInstantiationException
 import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
+import jakarta.inject.Singleton
 
 import java.util.function.Supplier
 
@@ -278,6 +281,30 @@ class TestListener:
         valueArgument.annotationMetadata.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'parameter'
     }
 
+    void "type element visitor annotation mutations expand Scala annotation stereotypes"() {
+        when:
+        def element = ScalaAnnotatingVisitor.withClassAnnotation('example.MySingleton', {
+            buildClassElement('example.Engine', '''
+package example
+
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Singleton
+class MySingleton extends StaticAnnotation
+
+@MySingleton
+class Registered
+
+class Engine
+''')
+        } as Supplier)
+
+        then:
+        element.hasAnnotation('example.MySingleton')
+        element.hasStereotype(Singleton)
+    }
+
     void "type element visitors can annotate Scala introspection properties"() {
         when:
         def introspection = ScalaAnnotatingVisitor.withAnnotations({
@@ -526,6 +553,40 @@ class AppConfig:
   var name: String = _
   var port: Int = 0
 ''', ['app.name': 'demo', 'app.port': 8080], true)
+        def config = getBean(context, 'example.AppConfig')
+
+        then:
+        config.name() == 'demo'
+        config.port() == 8080
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports immutable case class configuration properties"() {
+        when:
+        def source = '''
+package example
+
+import io.micronaut.context.annotation.ConfigurationProperties
+
+@ConfigurationProperties("app")
+case class AppConfig(name: String, port: Int)
+'''
+        def element = buildClassElement('example.AppConfig', source)
+        def constructor = element.primaryConstructor.get()
+        def definition = buildBeanDefinition('example.AppConfig', source)
+        def arguments = definition.constructor.arguments
+
+        then:
+        constructor.hasAnnotation(ConfigurationInject)
+        constructor.parameters[0].stringValue(Property, 'name').get() == 'app.name'
+        constructor.parameters[1].stringValue(Property, 'name').get() == 'app.port'
+        arguments[0].annotationMetadata.stringValue(Property, 'name').get() == 'app.name'
+        arguments[1].annotationMetadata.stringValue(Property, 'name').get() == 'app.port'
+
+        when:
+        def context = buildContext(source, ['app.name': 'demo', 'app.port': 8080], true)
         def config = getBean(context, 'example.AppConfig')
 
         then:

@@ -18,7 +18,6 @@ package io.micronaut.scala.processing.visitor;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.core.annotation.AnnotationValueBuilder;
-import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
 
 import java.lang.annotation.Annotation;
@@ -27,12 +26,17 @@ import java.util.function.Predicate;
 
 final class SimpleElementAnnotationMetadata implements ElementAnnotationMetadata {
 
-    private final MutableAnnotationMetadata annotationMetadata;
+    private AnnotationMetadata annotationMetadata;
     private final boolean readOnly;
+    private final ScalaAnnotationMetadataBuilder annotationMetadataBuilder;
 
-    SimpleElementAnnotationMetadata(MutableAnnotationMetadata annotationMetadata, boolean readOnly) {
+    SimpleElementAnnotationMetadata(
+        AnnotationMetadata annotationMetadata,
+        boolean readOnly,
+        ScalaAnnotationMetadataBuilder annotationMetadataBuilder) {
         this.annotationMetadata = annotationMetadata;
         this.readOnly = readOnly;
+        this.annotationMetadataBuilder = annotationMetadataBuilder;
     }
 
     @Override
@@ -43,7 +47,7 @@ final class SimpleElementAnnotationMetadata implements ElementAnnotationMetadata
     @Override
     public <T extends Annotation> AnnotationMetadata annotate(String annotationType, Consumer<AnnotationValueBuilder<T>> consumer) {
         checkMutable();
-        AnnotationValueBuilder<T> builder = AnnotationValue.builder(annotationType);
+        AnnotationValueBuilder<T> builder = AnnotationValue.builder(annotationType, annotationMetadataBuilder.getRetentionPolicy(annotationType));
         consumer.accept(builder);
         return annotate(builder.build());
     }
@@ -51,28 +55,28 @@ final class SimpleElementAnnotationMetadata implements ElementAnnotationMetadata
     @Override
     public <T extends Annotation> AnnotationMetadata annotate(AnnotationValue<T> annotationValue) {
         checkMutable();
-        annotationMetadata.addDeclaredAnnotation(annotationValue.getAnnotationName(), annotationValue.getValues(), annotationValue.getRetentionPolicy());
+        annotationMetadata = annotationMetadataBuilder.annotate(annotationMetadata, annotationValue);
         return annotationMetadata;
     }
 
     @Override
     public AnnotationMetadata removeAnnotation(String annotationType) {
         checkMutable();
-        annotationMetadata.removeAnnotation(annotationType);
+        annotationMetadata = annotationMetadataBuilder.removeAnnotation(annotationMetadata, annotationType);
         return annotationMetadata;
     }
 
     @Override
     public <T extends Annotation> AnnotationMetadata removeAnnotationIf(Predicate<AnnotationValue<T>> predicate) {
         checkMutable();
-        annotationMetadata.removeAnnotationIf(predicate);
+        annotationMetadata = annotationMetadataBuilder.removeAnnotationIf(annotationMetadata, predicate);
         return annotationMetadata;
     }
 
     @Override
     public AnnotationMetadata removeStereotype(String annotationType) {
         checkMutable();
-        annotationMetadata.removeStereotype(annotationType);
+        annotationMetadata = annotationMetadataBuilder.removeStereotype(annotationMetadata, annotationType);
         return annotationMetadata;
     }
 
