@@ -50,6 +50,9 @@ Scala nullable and non-null annotations are covered for methods and parameters
 through both `ClassElement` and bean introspection metadata.
 Generic type argument nullability is covered for Java type-use annotations on
 Scala generic type arguments.
+Scala explicit-nulls union types such as `String | Null` are covered for
+method returns, parameters, generic type arguments, and introspection
+constructor argument metadata.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction

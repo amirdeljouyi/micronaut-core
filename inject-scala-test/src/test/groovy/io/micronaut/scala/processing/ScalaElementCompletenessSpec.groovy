@@ -220,6 +220,52 @@ class Test:
         !method.returnType.firstTypeArgument.get().isNullable()
     }
 
+    void "maps Scala explicit null union types to nullable metadata"() {
+        when:
+        def element = buildClassElement('example.Test', '''
+package example
+
+import java.util.concurrent.CompletionStage
+
+class Test:
+  def nullableMethod(test: String | Null): String | Null = test
+
+  def method(test: String): String = test
+
+  def genericMethod(test: String): CompletionStage[String | Null] = ???
+''', ['-Yexplicit-nulls'])
+        def nullableMethod = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'nullableMethod' })).get()
+        def method = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'method' })).get()
+        def genericMethod = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'genericMethod' })).get()
+
+        then:
+        nullableMethod.isNullable()
+        nullableMethod.returnType.isNullable()
+        nullableMethod.parameters[0].isNullable()
+        nullableMethod.parameters[0].type.isNullable()
+        !method.isNullable()
+        !method.returnType.isNullable()
+        !method.parameters[0].isNullable()
+        !method.parameters[0].type.isNullable()
+        genericMethod.returnType.firstTypeArgument.get().isNullable()
+    }
+
+    void "maps Scala explicit null constructor parameters to introspection metadata"() {
+        when:
+        def introspection = buildBeanIntrospection('example.Test', '''
+package example
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Test(val name: String | Null, val title: String)
+''', ['-Yexplicit-nulls'])
+
+        then:
+        introspection.constructorArguments[0].isNullable()
+        !introspection.constructorArguments[1].isNullable()
+    }
+
     void "exposes generic property type arguments"() {
         when:
         def element = buildClassElement('example.Holder', '''

@@ -26,6 +26,7 @@ import dotty.tools.dotc.core.Types.AnnotatedType
 import dotty.tools.dotc.core.Types.AppliedType
 import dotty.tools.dotc.core.Types.ConstantType
 import dotty.tools.dotc.core.Types.MethodType
+import dotty.tools.dotc.core.Types.OrType
 import dotty.tools.dotc.core.Types.Type
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.plugins.StandardPlugin
@@ -318,6 +319,18 @@ private object ScalaModelExtractor:
   private case class TypeHierarchy(superType: ScalaTypeData | Null, interfaces: List[ScalaTypeData])
 
   private val PositionalAnnotationMemberPrefix = "$micronaut$pos$"
+  private val NullableAnnotationName = "io.micronaut.core.annotation.Nullable"
+  private val NullabilityAnnotationNames = Set(
+    NullableAnnotationName,
+    "jakarta.annotation.Nullable",
+    "javax.annotation.Nullable",
+    "org.jspecify.annotations.Nullable",
+    "io.micronaut.core.annotation.NonNull",
+    "jakarta.annotation.Nonnull",
+    "javax.annotation.Nonnull",
+    "org.jspecify.annotations.NonNull"
+  )
+  private val NullableAnnotationData = ScalaAnnotationData(NullableAnnotationName, JMap.of[CharSequence, Object]())
 
   def collect(unit: CompilationUnit)(using Context): List[ScalaClassData] =
     given AnnotationDefaults = AnnotationDefaults(annotationDefaultValues(unit.tpdTree))
@@ -565,11 +578,12 @@ private object ScalaModelExtractor:
         ScalaTypeData(className(owner), primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
       else
         methodReturnType(method.name.toString, method.tpt)
+    val methodAnnotations = annotations(method.symbol) ++ typeUseNullabilityAnnotations(returnType)
     ScalaMethodData(
       if constructor then "<init>" else methodName(method.name.toString),
       returnType,
       method.termParamss.flatten.map(parameterData).asJava,
-      annotations(method.symbol).asJava,
+      methodAnnotations.asJava,
       modifiers(method.symbol).asJava,
       constructor,
       method
@@ -578,23 +592,27 @@ private object ScalaModelExtractor:
   private def methodData(symbol: Symbol)(using Context, AnnotationDefaults): ScalaMethodData =
     symbol.info match
       case methodType: MethodType =>
+        val returnType = methodReturnType(symbol.name.toString, methodType.resultType)
+        val methodAnnotations = annotations(symbol) ++ typeUseNullabilityAnnotations(returnType)
         ScalaMethodData(
           methodName(symbol.name.toString),
-          methodReturnType(symbol.name.toString, methodType.resultType),
+          returnType,
           methodType.paramNames.zip(methodType.paramInfos)
             .map { case (name, info) => parameterData(name.toString, info, symbol) }
             .asJava,
-          annotations(symbol).asJava,
+          methodAnnotations.asJava,
           modifiers(symbol).asJava,
           constructor = false,
           symbol
         )
       case info =>
+        val returnType = methodReturnType(symbol.name.toString, info)
+        val methodAnnotations = annotations(symbol) ++ typeUseNullabilityAnnotations(returnType)
         ScalaMethodData(
           methodName(symbol.name.toString),
-          methodReturnType(symbol.name.toString, info),
+          returnType,
           java.util.List.of(),
-          annotations(symbol).asJava,
+          methodAnnotations.asJava,
           modifiers(symbol).asJava,
           constructor = false,
           symbol
@@ -619,10 +637,12 @@ private object ScalaModelExtractor:
       typeData(tpt)
 
   private def fieldData(field: tpd.ValDef)(using Context, AnnotationDefaults): ScalaFieldData =
+    val fieldType = typeData(field.tpt)
+    val fieldAnnotations = annotations(field.symbol) ++ typeUseNullabilityAnnotations(fieldType)
     ScalaFieldData(
       field.name.toString,
-      typeData(field.tpt),
-      annotations(field.symbol).asJava,
+      fieldType,
+      fieldAnnotations.asJava,
       modifiers(field.symbol).asJava,
       isEnumConstant(field.symbol),
       fieldConstantValue(field),
@@ -676,18 +696,21 @@ private object ScalaModelExtractor:
       !hasFlag(symbol, Flags.Method)
 
   private def parameterData(parameter: tpd.ValDef)(using Context, AnnotationDefaults): ScalaParameterData =
+    val parameterType = typeData(parameter.tpt)
+    val parameterAnnotations = annotations(parameter.symbol) ++ typeUseNullabilityAnnotations(parameterType)
     ScalaParameterData(
       parameter.name.toString,
-      typeData(parameter.tpt),
-      annotations(parameter.symbol).asJava,
+      parameterType,
+      parameterAnnotations.asJava,
       parameter
     )
 
   private def parameterData(name: String, tpe: Type, nativeType: Object)(using Context, AnnotationDefaults): ScalaParameterData =
+    val parameterType = typeData(tpe)
     ScalaParameterData(
       name,
-      typeData(tpe),
-      java.util.List.of(),
+      parameterType,
+      typeUseNullabilityAnnotations(parameterType).asJava,
       nativeType
     )
 
@@ -710,7 +733,8 @@ private object ScalaModelExtractor:
       typeTree: Option[tpd.Tree],
       extraAnnotations: List[Annotation]
   )(using Context, AnnotationDefaults): ScalaTypeData =
-    val (widened, typeAnnotations) = annotatedType(tpe.widenDealiasKeepAnnots)
+    val (annotatedWidened, typeAnnotations) = annotatedType(tpe.widenDealiasKeepAnnots)
+    val (widened, explicitNullable) = explicitNullableType(annotatedWidened)
     val allTypeAnnotations = extraAnnotations ++ typeAnnotations
     widened match
       case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
@@ -725,7 +749,7 @@ private object ScalaModelExtractor:
         val symbol = applied.tycon.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
         val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes, typeTree.flatMap(appliedTypeArguments).getOrElse(Nil)), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations).asJava, allTypeAnnotations.nonEmpty, symbol)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes, typeTree.flatMap(appliedTypeArguments).getOrElse(Nil)), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
       case _ =>
         val rawName = typeName(widened)
         val primitiveName = ScalaPrimitiveNames.get(rawName)
@@ -733,7 +757,7 @@ private object ScalaModelExtractor:
         val symbol = widened.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
         val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations).asJava, allTypeAnnotations.nonEmpty, symbol)
+        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
 
   private def annotatedTree(tpt: tpd.Tree)(using Context): (tpd.Tree, List[Annotation]) =
     val typeAnnotations = ListBuffer.empty[Annotation]
@@ -768,11 +792,31 @@ private object ScalaModelExtractor:
           continue = false
     (current, typeAnnotations.toList)
 
+  private def explicitNullableType(tpe: Type)(using Context): (Type, Boolean) =
+    tpe match
+      case orType: OrType if isNullType(orType.tp1) =>
+        (orType.tp2, true)
+      case orType: OrType if isNullType(orType.tp2) =>
+        (orType.tp1, true)
+      case _ =>
+        (tpe, false)
+
+  private def isNullType(tpe: Type)(using Context): Boolean =
+    typeName(tpe.widenDealias) == "scala.Null"
+
+  private def typeUseNullabilityAnnotations(typeData: ScalaTypeData): List[ScalaAnnotationData] =
+    if typeData.annotatedTypeUse() then
+      typeData.annotations().asScala.toList.filter(annotation => NullabilityAnnotationNames.contains(annotation.name()))
+    else
+      Nil
+
   private def typeAnnotationsFor(
       symbol: Symbol,
-      typeAnnotations: List[Annotation]
+      typeAnnotations: List[Annotation],
+      explicitNullable: Boolean
   )(using Context, AnnotationDefaults): List[ScalaAnnotationData] =
-    typeAnnotations.map(annotationData(_, Set.empty)) ++ annotations(symbol)
+    val nullable = if explicitNullable then List(NullableAnnotationData) else Nil
+    nullable ++ typeAnnotations.map(annotationData(_, Set.empty)) ++ annotations(symbol)
 
   private def typeHierarchy(symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context, AnnotationDefaults): TypeHierarchy =
     if primitive || symbol == Symbols.NoSymbol || visitedTypes.contains(name) then

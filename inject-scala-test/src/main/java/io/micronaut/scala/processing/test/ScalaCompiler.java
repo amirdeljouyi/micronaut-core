@@ -78,8 +78,20 @@ public final class ScalaCompiler {
      * @return The class element
      */
     public static @Nullable ClassElement buildClassElement(String className, String source) {
+        return buildClassElement(className, source, List.of());
+    }
+
+    /**
+     * Builds a class element for the given source.
+     *
+     * @param className The class name
+     * @param source The source
+     * @param compilerOptions The additional compiler options
+     * @return The class element
+     */
+    public static @Nullable ClassElement buildClassElement(String className, String source, List<String> compilerOptions) {
         List<ClassElement> elements = new ArrayList<>();
-        compile(className, source, elements::add);
+        compile(className, source, compilerOptions, elements::add);
         return elements.stream().filter(element -> element.getName().equals(className)).findFirst().orElse(null);
     }
 
@@ -91,7 +103,20 @@ public final class ScalaCompiler {
      * @return The introspection
      */
     public static @Nullable BeanIntrospection<?> buildBeanIntrospection(String className, String source) {
-        URLClassLoader classLoader = buildClassLoader(className, source);
+        return buildBeanIntrospection(className, source, List.of());
+    }
+
+    /**
+     * Builds a bean introspection for the given source.
+     *
+     * @param className The class name
+     * @param source The source
+     * @param compilerOptions The additional compiler options
+     * @return The introspection
+     */
+    public static @Nullable BeanIntrospection<?> buildBeanIntrospection(String className, String source, List<String> compilerOptions) {
+        URLClassLoader classLoader = compile(className, source, compilerOptions, classElement -> {
+        }).classLoader();
         String beanDefName = "$" + NameUtils.getSimpleName(className) + "$Introspection";
         String packageName = NameUtils.getPackageName(className);
         String introspectionName = packageName + "." + beanDefName;
@@ -176,32 +201,39 @@ public final class ScalaCompiler {
     }
 
     static Compilation compile(String className, String source, Consumer<ClassElement> classElementConsumer) {
+        return compile(className, source, List.of(), classElementConsumer);
+    }
+
+    static Compilation compile(String className, String source, List<String> compilerOptions, Consumer<ClassElement> classElementConsumer) {
         try {
             Path workDirectory = Files.createTempDirectory("micronaut-scala-test");
             Path sourceDirectory = Files.createDirectories(workDirectory.resolve("src"));
             Path outputDirectory = Files.createDirectories(workDirectory.resolve("classes"));
             Path sourceFile = sourceDirectory.resolve(NameUtils.getSimpleName(className) + ".scala");
             Files.writeString(sourceFile, source, StandardCharsets.UTF_8);
-            ScalaClassElementCaptureVisitor.withConsumer(classElementConsumer, () -> compileSource(outputDirectory, sourceFile));
+            ScalaClassElementCaptureVisitor.withConsumer(classElementConsumer, () -> compileSource(outputDirectory, sourceFile, compilerOptions));
             return new Compilation(outputDirectory, newClassLoader(outputDirectory));
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    private static void compileSource(Path outputDirectory, Path sourceFile) {
+    private static void compileSource(Path outputDirectory, Path sourceFile, List<String> compilerOptions) {
         String classpath = System.getProperty("micronaut.scala.test.classpath");
         String pluginJar = System.getProperty("micronaut.scala.plugin.jar");
         if (classpath == null || pluginJar == null) {
             throw new IllegalStateException("Scala test classpath or plugin jar system property is missing");
         }
-        Reporter reporter = Main.process(new String[] {
-            "-classpath", classpath,
-            "-d", outputDirectory.toString(),
-            "-release:25",
-            "-Xplugin:" + pluginJar,
-            sourceFile.toString()
-        });
+        List<String> arguments = new ArrayList<>();
+        arguments.add("-classpath");
+        arguments.add(classpath);
+        arguments.add("-d");
+        arguments.add(outputDirectory.toString());
+        arguments.add("-release:25");
+        arguments.add("-Xplugin:" + pluginJar);
+        arguments.addAll(compilerOptions);
+        arguments.add(sourceFile.toString());
+        Reporter reporter = Main.process(arguments.toArray(String[]::new));
         if (reporter.hasErrors()) {
             throw new IllegalStateException(errorMessage(reporter));
         }

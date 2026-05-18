@@ -37,6 +37,10 @@ abstract class AbstractScalaTypeElementSpec extends Specification {
         ScalaCompiler.buildClassElement(className, source)
     }
 
+    protected ClassElement buildClassElement(String className, String source, List<String> compilerOptions) {
+        ScalaCompiler.buildClassElement(className, source, compilerOptions)
+    }
+
     protected boolean buildClassElement(String className, String source, Consumer<ClassElement> processor) {
         ClassElement element = ScalaCompiler.buildClassElement(className, source)
         if (element != null) {
@@ -51,6 +55,10 @@ abstract class AbstractScalaTypeElementSpec extends Specification {
 
     protected BeanIntrospection<?> buildBeanIntrospection(String className, String source) {
         ScalaCompiler.buildBeanIntrospection(className, source)
+    }
+
+    protected BeanIntrospection<?> buildBeanIntrospection(String className, String source, List<String> compilerOptions) {
+        ScalaCompiler.buildBeanIntrospection(className, source, compilerOptions)
     }
 
     protected ApplicationContext buildContext(String source, boolean includeAllBeans = false) {
