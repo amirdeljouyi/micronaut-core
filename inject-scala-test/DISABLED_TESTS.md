@@ -22,6 +22,8 @@ bean-definition error. Abstract bean collection filtering, abstract bean
 definitions with injection points, qualifier-only beans, and AOP-only beans are
 covered for Scala. Bean-definition type-string formatting and class-level
 `@Bean(typed=...)` exposed type validation are partially covered for Scala.
+Required and optional `@Autowired` field and method injection are covered for
+Scala.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -53,10 +55,10 @@ unsupported in a future docs pass.
 
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 9 | 7 | 167 | 1 | 11 | 195 |
+| Java AbstractTypeElementSpec | 10 | 6 | 167 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 1 | 8 | 67 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 0 | 3 | 19 |
-| Total | 11 | 18 | 246 | 1 | 25 | 301 |
+| Total | 12 | 17 | 246 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -174,7 +176,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/RepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/TransformToRepeatableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/ast/beans/BeanElementVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy` - already covered: Scala field and method `@Autowired` injection is covered for required and optional dependencies, including optional value injection and multi-argument method skipping
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
