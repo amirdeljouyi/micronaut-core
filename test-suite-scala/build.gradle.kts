@@ -22,6 +22,7 @@ dependencies {
     testImplementation(projects.micronautRuntime)
     testImplementation(projects.micronautInject)
     testImplementation(projects.micronautJacksonDatabind)
+    testImplementation(libs.managed.reactor)
     testImplementation(platform(libs.test.boms.micronaut.validation))
     testImplementation(libs.micronaut.validation) {
         exclude(group = "io.micronaut")

@@ -31,11 +31,14 @@ This file tracks Scala documentation examples that are not yet ported to
 - `io.micronaut.docs.server.routes.IssuesControllerTest` verifies HTTP
   controller URI variable binding, explicit `@PathVariable` binding, default
   URI variable values, and conversion/not-found error handling.
+- `io.micronaut.docs.annotation.PetControllerSpec` verifies HTTP client
+  introduction against a Scala trait, controller implementation, reactive return
+  type, and method validation metadata.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- HTTP examples: clients, filters, and executable methods.
+- HTTP examples: filters and executable methods.
 - Additional AOP examples: lifecycle advice, scheduled methods, programmatic
   retry, and proxy-target variants.
 
