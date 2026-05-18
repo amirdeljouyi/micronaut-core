@@ -28,6 +28,8 @@ This file tracks Scala documentation examples that are not yet ported to
   retry interception.
 - `io.micronaut.docs.aop.retry.ProgrammaticRetrySpec` verifies programmatic
   retry and circuit breaker operations.
+- `io.micronaut.docs.aop.around.AroundSpec` verifies a Scala `@Around`
+  stereotype annotation, method interceptor, and generated proxy.
 - `io.micronaut.docs.aop.introduction.IntroductionSpec` verifies introduction
   advice and generated proxies for a Scala trait.
 - `io.micronaut.docs.aop.lifecycle.LifeCycleAdviseSpec` verifies constructor,
