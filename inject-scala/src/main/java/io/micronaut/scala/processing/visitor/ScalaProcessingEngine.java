@@ -339,6 +339,8 @@ public final class ScalaProcessingEngine {
             if (visitor.isEnabled()) {
                 try {
                     visitor.start(context);
+                } catch (ProcessingException e) {
+                    reportProcessingException(e);
                 } catch (Exception e) {
                     context.fail("Error initializing bean element visitor [" + visitor.getClass().getName() + "]: " + exceptionMessage(e), null);
                 }
@@ -351,6 +353,8 @@ public final class ScalaProcessingEngine {
             if (visitor.isEnabled()) {
                 try {
                     visitor.finish(context);
+                } catch (ProcessingException e) {
+                    reportProcessingException(e);
                 } catch (Exception e) {
                     context.fail("Error finalizing bean element visitor [" + visitor.getClass().getName() + "]: " + exceptionMessage(e), null);
                 }

@@ -403,6 +403,7 @@ private object ScalaModelExtractor:
             className(symbol),
             annotations(symbol).asJava,
             modifiers(symbol).asJava,
+            isAnnotationSymbol(symbol),
             isInterfaceSymbol(symbol),
             hasFlag(symbol, Flags.Enum),
             superType,

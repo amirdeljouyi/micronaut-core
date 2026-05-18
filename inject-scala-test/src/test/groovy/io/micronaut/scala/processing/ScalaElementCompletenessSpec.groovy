@@ -388,7 +388,6 @@ class Engine
         marker.hasStereotype(Singleton)
     }
 
-    @PendingFeature(reason = 'Scala 3 typed symbols do not expose these Java meta-annotations at this plugin phase')
     void "exposes source-defined Scala annotation retention and targets"() {
         when:
         def marker = buildClassElement('example.RuntimeMarker', '''

@@ -27,6 +27,7 @@ import java.util.Set;
  * @param name The class name
  * @param annotations The annotations
  * @param modifiers The modifiers
+ * @param annotationType Whether this class is an annotation type
  * @param interfaceType Whether this class is an interface or trait
  * @param enumType Whether this class is an enum
  * @param superType The super type
@@ -42,6 +43,7 @@ public record ScalaClassData(
     String name,
     List<ScalaAnnotationData> annotations,
     Set<ElementModifier> modifiers,
+    boolean annotationType,
     boolean interfaceType,
     boolean enumType,
     ScalaTypeData superType,

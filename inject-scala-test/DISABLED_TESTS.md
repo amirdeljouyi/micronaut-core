@@ -43,13 +43,12 @@ metadata, including inherited source annotations through source class
 hierarchies, classpath supertypes, bean definition processing, and
 `TypeElementVisitor` annotation mutations, including mutation-added stereotypes
 for source-defined Scala annotations. Source-defined Scala annotation classes
-are exposed as `ClassElement`s; Java `@Retention` and `@Target` metadata on
-those source-defined `StaticAnnotation` classes remains tracked with
-`@PendingFeature` until it can be recovered from supported compiler APIs.
+are exposed as `ClassElement`s, including Java `@Retention` and `@Target`
+metadata recovered from compiler symbols on source-defined `StaticAnnotation`
+classes.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
 proxy methods.
-Bean import is tracked as unsupported for Scala and should be documented as
-unsupported in a future docs pass.
+Bean import is documented as unsupported for Scala.
 
 ## Classification Rules
 

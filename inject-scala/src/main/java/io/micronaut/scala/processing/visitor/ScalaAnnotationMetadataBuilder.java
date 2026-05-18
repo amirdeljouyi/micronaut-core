@@ -55,7 +55,11 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
      */
     public MutableAnnotationMetadata buildMetadata(ScalaAnnotatedElementData element) {
         registerAnnotationTypes(element.annotations());
-        return MutableAnnotationMetadata.of(buildInternal(element));
+        MutableAnnotationMetadata annotationMetadata = MutableAnnotationMetadata.of(buildInternal(element));
+        if (element instanceof ScalaClassData classData && isAnnotationType(classData)) {
+            addJavaMetaAnnotations(annotationMetadata, classData);
+        }
+        return annotationMetadata;
     }
 
     @Override
@@ -310,10 +314,55 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
 
     @Override
     protected boolean isExcludedAnnotation(Object element, String annotationName) {
-        if (element instanceof AnnotationTypeElement && annotationName.startsWith("java.lang.annotation.")) {
+        if (annotationName.startsWith("java.lang.annotation.")
+            && (element instanceof AnnotationTypeElement
+            || (element instanceof ScalaClassData classData && isAnnotationType(classData)))) {
             return false;
         }
         return super.isExcludedAnnotation(element, annotationName);
+    }
+
+    private void addJavaMetaAnnotations(MutableAnnotationMetadata annotationMetadata, ScalaClassData classData) {
+        for (ScalaAnnotationData annotation : classData.annotations()) {
+            if (annotation.name().startsWith("java.lang.annotation.")) {
+                annotationMetadata.addDeclaredAnnotation(
+                    annotation.name(),
+                    annotationValues(classData, annotation),
+                    getRetentionPolicy(annotationType(annotation))
+                );
+            }
+        }
+    }
+
+    private Map<CharSequence, Object> annotationValues(Object originatingElement, ScalaAnnotationData annotation) {
+        Map<CharSequence, Object> values = new LinkedHashMap<>();
+        for (Map.Entry<? extends Object, ?> entry : readAnnotationRawValues(annotation).entrySet()) {
+            Object member = entry.getKey();
+            readAnnotationRawValues(
+                originatingElement,
+                annotation.name(),
+                member,
+                getAnnotationMemberName(member),
+                entry.getValue(),
+                values);
+        }
+        return values;
+    }
+
+    private boolean isAnnotationType(ScalaClassData classData) {
+        return classData.annotationType()
+            || isAnnotationType(classData.superType())
+            || classData.interfaces().stream().anyMatch(this::isAnnotationType);
+    }
+
+    private boolean isAnnotationType(@Nullable ScalaTypeData typeData) {
+        if (typeData == null) {
+            return false;
+        }
+        return "scala.annotation.Annotation".equals(typeData.name())
+            || "scala.annotation.StaticAnnotation".equals(typeData.name())
+            || isAnnotationType(typeData.superType())
+            || typeData.interfaces().stream().anyMatch(this::isAnnotationType);
     }
 
     private boolean isValidationRequired(Object member, List<String> visited) {
