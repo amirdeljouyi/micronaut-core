@@ -8,7 +8,7 @@ It was generated from the current checkout by scanning direct subclasses of Java
 Wave 1 covers simple Scala classes, primary constructors, methods, constructor `val`/`var` properties, Java-visible annotations, basic type resolution, generated bean definitions, generated bean introspections, and a basic `TypeElementVisitor`.
 
 Additional Wave 4 smoke coverage now exists for named qualifiers, `@Requires`,
-constructor `@Value` injection, field and method injection, post-construct and
+constructor array injection, constructor `@Value` injection, field and method injection, post-construct and
 pre-destroy lifecycle methods, simple `@Factory` methods, and executable methods, mutable
 and immutable case-class `@ConfigurationProperties`, mixed configuration/bean
 constructor injection, `@EachProperty`, and factory `val` property beans.
@@ -43,10 +43,10 @@ those source-defined `StaticAnnotation` classes remains tracked with
 
 | Source | already covered | portable | blocked | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 4 | 13 | 167 | 11 | 195 |
+| Java AbstractTypeElementSpec | 5 | 12 | 167 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 1 | 8 | 67 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 3 | 19 |
-| Total | 6 | 24 | 246 | 25 | 301 |
+| Total | 7 | 23 | 246 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -62,7 +62,6 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy`
-- `inject-java/src/test/groovy/io/micronaut/inject/constructor/arrayinjection/ConstructorArrayInjectionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/injectscope/InjectScopeSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy`
 - `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy`
@@ -205,7 +204,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/configuration/ExternalConfigurationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/configurations/RequiresBeanCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/constructor/arrayinjection/ConstructorArrayInjectionSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-java/src/test/groovy/io/micronaut/inject/constructor/arrayinjection/ConstructorArrayInjectionSpec.groovy` - already covered: Scala array constructor injection is covered for bean definition parsing and runtime injection
 - `inject-java/src/test/groovy/io/micronaut/inject/context/NoPackageSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/inject/defaultimpl/DefaultImplementationSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/inject/errors/SingletonOnEnumSpec.groovy` - already covered: singleton Scala enum beans are rejected with the core bean-definition error

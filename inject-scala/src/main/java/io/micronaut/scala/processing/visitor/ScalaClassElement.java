@@ -354,7 +354,10 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
 
     @Override
     public ClassElement withArrayDimensions(int arrayDimensions) {
-        return elementFactory.newClassElement(typeData.withArrayDimensions(arrayDimensions));
+        if (arrayDimensions == getArrayDimensions()) {
+            return this;
+        }
+        return new ScalaClassElement(typeData.withArrayDimensions(arrayDimensions), visitorContext, getAnnotationMetadata());
     }
 
     @Override

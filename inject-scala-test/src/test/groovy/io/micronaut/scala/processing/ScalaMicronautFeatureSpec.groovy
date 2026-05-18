@@ -62,6 +62,39 @@ class Vehicle(@Named("v8") val engine: Engine)
         context?.close()
     }
 
+    void "supports array constructor injection"() {
+        when:
+        def source = '''
+package example
+
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val engines: Array[Engine])
+'''
+        def definition = buildBeanDefinition('example.Vehicle', source)
+        def context = buildContext(source)
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        definition.constructor.arguments.size() == 1
+        vehicle.engines()*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports requires conditions on Scala beans"() {
         when:
         def disabled = buildContext('''
