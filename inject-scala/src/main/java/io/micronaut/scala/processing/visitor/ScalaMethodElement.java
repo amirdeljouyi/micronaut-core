@@ -16,12 +16,16 @@
 package io.micronaut.scala.processing.visitor;
 
 import io.micronaut.core.annotation.AnnotationMetadata;
-import io.micronaut.inject.annotation.MutableAnnotationMetadata;
+import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
 import io.micronaut.inject.ast.ClassElement;
+import io.micronaut.inject.ast.ConstructorElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
+import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MethodElementAnnotationMetadata;
+import io.micronaut.inject.ast.annotation.MutatedMethodElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Scala method element.
@@ -31,26 +35,36 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     protected final ScalaClassElement declaringType;
     protected final ScalaVisitorContext visitorContext;
     protected final ScalaMethodData methodData;
-    private final MethodElementAnnotationMetadata elementAnnotationMetadata;
+    @Nullable
+    private final AnnotationMetadata presetAnnotationMetadata;
+    @Nullable
+    private ElementAnnotationMetadata methodAnnotationMetadata;
+    @Nullable
+    private AnnotationMetadata annotationMetadata;
     private ParameterElement[] parameters;
 
     ScalaMethodElement(ScalaClassElement declaringType, ScalaMethodData methodData, ScalaVisitorContext visitorContext) {
-        this(declaringType, methodData, visitorContext, visitorContext.annotationMetadata(methodData));
+        this(declaringType, methodData, visitorContext, null);
     }
 
-    ScalaMethodElement(ScalaClassElement declaringType, ScalaMethodData methodData, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
+    ScalaMethodElement(
+        ScalaClassElement declaringType,
+        ScalaMethodData methodData,
+        ScalaVisitorContext visitorContext,
+        @Nullable
+        AnnotationMetadata presetAnnotationMetadata) {
         super(
             declaringType,
             methodData.name(),
             methodData.nativeType(),
             methodData.modifiers(),
-            MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.annotationMetadata(methodData),
             visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;
         this.methodData = methodData;
-        this.elementAnnotationMetadata = new MethodElementAnnotationMetadata(this);
+        this.presetAnnotationMetadata = presetAnnotationMetadata;
         this.parameters = methodData.parameters().stream()
             .map(parameter -> new ScalaParameterElement(this, parameter, visitorContext))
             .toArray(ParameterElement[]::new);
@@ -58,17 +72,44 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
 
     @Override
     public AnnotationMetadata getAnnotationMetadata() {
-        return elementAnnotationMetadata.getAnnotationMetadata();
+        if (annotationMetadata == null) {
+            if (this instanceof ConstructorElement) {
+                annotationMetadata = getMethodAnnotationMetadata();
+            } else if (presetAnnotationMetadata instanceof AnnotationMetadataHierarchy annotationMetadataHierarchy) {
+                annotationMetadata = new AnnotationMetadataHierarchy(
+                    annotationMetadataHierarchy.getRootMetadata(),
+                    getMethodAnnotationMetadata()
+                );
+            } else if (presetAnnotationMetadata != null) {
+                annotationMetadata = new MutatedMethodElementAnnotationMetadata(this, getMethodAnnotationMetadata());
+            } else {
+                annotationMetadata = new MethodElementAnnotationMetadata(this);
+            }
+        }
+        return annotationMetadata;
     }
 
     @Override
     protected MutableAnnotationMetadataDelegate<?> getAnnotationMetadataToWrite() {
-        return elementAnnotationMetadata;
+        return getMethodAnnotationMetadata();
     }
 
     @Override
     public MutableAnnotationMetadataDelegate<AnnotationMetadata> getMethodAnnotationMetadata() {
-        return getElementAnnotationMetadata();
+        if (methodAnnotationMetadata == null) {
+            if (presetAnnotationMetadata instanceof AnnotationMetadataHierarchy annotationMetadataHierarchy) {
+                methodAnnotationMetadata = mutableAnnotationMetadata(annotationMetadataHierarchy.getDeclaredMetadata());
+            } else if (presetAnnotationMetadata != null) {
+                methodAnnotationMetadata = mutableAnnotationMetadata(presetAnnotationMetadata);
+            } else {
+                methodAnnotationMetadata = getElementAnnotationMetadata();
+            }
+        }
+        return methodAnnotationMetadata;
+    }
+
+    private ElementAnnotationMetadata mutableAnnotationMetadata(AnnotationMetadata annotationMetadata) {
+        return visitorContext.getElementAnnotationMetadataFactory().buildMutable(annotationMetadata);
     }
 
     @Override
@@ -87,7 +128,7 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
 
     @Override
     public MethodElement withParameters(ParameterElement... newParameters) {
-        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, methodData, visitorContext, getElementAnnotationMetadata().getAnnotationMetadata());
+        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, methodData, visitorContext, getAnnotationMetadata());
         methodElement.replaceParameters(newParameters);
         return methodElement;
     }

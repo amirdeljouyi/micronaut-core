@@ -62,7 +62,7 @@ public final class ScalaConstructorElement extends ScalaMethodElement implements
             declaringType,
             methodData,
             visitorContext,
-            getElementAnnotationMetadata().getAnnotationMetadata(),
+            getAnnotationMetadata(),
             newParameters
         );
     }

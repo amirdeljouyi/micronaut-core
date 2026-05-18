@@ -592,6 +592,92 @@ class Engine
         definition.scopeName.get() == Prototype.NAME
     }
 
+    void "explicit Scala factory scope overrides source-defined default scope"() {
+        when:
+        def definition = buildBeanDefinition('example.MyBeanFactory', '''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.DefaultScope
+import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Prototype
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Bean
+@DefaultScope(classOf[Singleton])
+class DefaultSingleton extends StaticAnnotation
+
+@Factory
+@Prototype
+class MyBeanFactory:
+  @DefaultSingleton
+  @Prototype
+  def myBean(): MyBean = MyBean()
+
+class MyBean
+''')
+
+        then:
+        !definition.isSingleton()
+        definition.scopeName.get() == Prototype.NAME
+    }
+
+    void "explicit Scala factory method scope overrides source-defined default scope"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.DefaultScope
+import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Prototype
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Bean
+@DefaultScope(classOf[Singleton])
+class DefaultSingleton extends StaticAnnotation
+
+@Factory
+class MyBeanFactory:
+  @DefaultSingleton
+  @Prototype
+  def myBean(): MyBean = MyBean()
+
+class MyBean
+''')
+
+        then:
+        !getBeanDefinition(context, 'example.MyBean').isSingleton()
+
+        cleanup:
+        context?.close()
+    }
+
+    void "Scala bean factory method without explicit scope remains unscoped"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+
+@Factory
+class MyBeanFactory:
+  @Bean
+  def myBean(): MyBean = MyBean()
+
+class MyBean
+''')
+
+        then:
+        !getBeanDefinition(context, 'example.MyBean').isSingleton()
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports mutable configuration properties"() {
         when:
         def context = buildContext('''

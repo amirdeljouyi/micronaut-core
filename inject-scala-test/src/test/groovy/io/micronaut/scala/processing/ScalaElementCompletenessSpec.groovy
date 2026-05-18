@@ -15,9 +15,13 @@
  */
 package io.micronaut.scala.processing
 
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.DefaultScope
+import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Requirements
 import io.micronaut.core.annotation.TypeHint
+import io.micronaut.inject.annotation.AnnotationMetadataHierarchy
 import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.inject.ast.EnumElement
@@ -517,5 +521,32 @@ class Vehicle(var name: String):
         nameParameter == nameParameterCopy
         nameParameter.hashCode() == nameParameterCopy.hashCode()
         nameProperty != nameParameter
+    }
+
+    void "keeps Scala method mutation hierarchy out of declared metadata"() {
+        when:
+        def element = buildClassElement('example.EngineFactory', '''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+
+@Factory
+class EngineFactory:
+  @Bean
+  def engine(): Engine = Engine()
+
+class Engine
+''')
+        def method = element.getEnclosedElements(ElementQuery.ALL_METHODS).find { it.name == 'engine' }
+        def mutated = method.withAnnotationMetadata(new AnnotationMetadataHierarchy(element.annotationMetadata, method.methodAnnotationMetadata))
+
+        then:
+        mutated == method
+        mutated.hashCode() == method.hashCode()
+        mutated.annotationMetadata.hasStereotype(DefaultScope)
+        mutated.declaredMetadata.hasDeclaredAnnotation(Bean)
+        !mutated.declaredMetadata.hasStereotype(DefaultScope)
+        !mutated.declaredMetadata.hasDeclaredAnnotation(Factory)
     }
 }

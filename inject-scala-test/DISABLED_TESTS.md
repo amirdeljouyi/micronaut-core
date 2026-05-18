@@ -13,8 +13,9 @@ pre-destroy lifecycle methods, simple `@Factory` methods, and executable methods
 and immutable case-class `@ConfigurationProperties`, mixed configuration/bean
 constructor injection, `@EachProperty`, and factory `val` property beans.
 Nested `@ConfigurationProperties` are covered for Scala companion-object
-nested classes. Source-defined default scopes and explicit scope overrides are
-covered for Scala annotation stereotypes.
+nested classes. Source-defined default scopes, explicit scope overrides, factory
+method overrides, and unscoped `@Bean` factory methods are covered for Scala
+annotation stereotypes.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -63,7 +64,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/constructor/arrayinjection/ConstructorArrayInjectionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/errors/SingletonOnEnumSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/injectscope/InjectScopeSpec.groovy`
-- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` (remaining factory-method variants)
+- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy`
 - `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy`
@@ -254,7 +255,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/records/RecordBeansSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` - portable: source-defined default scope and explicit scope override are covered; factory-method variants remain to port
+- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` - portable: source-defined default scope, explicit scope override, factory method override, and unscoped `@Bean` factory method variants are covered
 - `inject-java/src/test/groovy/io/micronaut/inject/value/factorywithvalue/FactoryWithValueSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementAnnotationsRetaining.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
