@@ -26,7 +26,8 @@ Required and optional `@Autowired` field and method injection are covered for
 Scala. Dynamic `RuntimeBeanDefinition` registration from Scala source is
 covered. Qualifier metadata on field-targeted Scala `var` injection remains a
 future property-semantics gap; use constructor or method qualifiers until that
-is implemented.
+is implemented. Evaluated expressions on Scala bean definitions and executable
+methods are covered for Graal build-time initialization.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -58,20 +59,17 @@ unsupported in a future docs pass.
 
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 11 | 5 | 167 | 1 | 11 | 195 |
+| Java AbstractTypeElementSpec | 12 | 4 | 167 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 1 | 8 | 67 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 0 | 3 | 19 |
-| Total | 13 | 16 | 246 | 1 | 25 | 301 |
+| Total | 14 | 15 | 246 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
 Start with small tests that exercise already-supported Scala forms before enabling blocked feature groups. Suggested first ports:
 
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy`
-- `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy`
-- `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy`
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy`
 - `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy`
@@ -157,7 +155,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/named2/NamedAopAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy` - already covered: Scala evaluated expressions on bean definitions and executable methods are registered for Graal build-time initialization
 - `inject-java/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/AddStereotypesFromVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotatedFieldWithSetterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support

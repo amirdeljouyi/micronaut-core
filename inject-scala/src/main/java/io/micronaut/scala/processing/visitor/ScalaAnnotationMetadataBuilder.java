@@ -273,6 +273,10 @@ public final class ScalaAnnotationMetadataBuilder extends AbstractAnnotationMeta
         if (originatingElement instanceof ScalaClassData classData) {
             return classData.name();
         }
+        if (originatingElement instanceof ScalaAnnotatedElementData annotatedElementData
+            && visitorContext instanceof ScalaVisitorContext scalaVisitorContext) {
+            return scalaVisitorContext.originatingClassName(annotatedElementData).orElse(null);
+        }
         return null;
     }
 

@@ -123,6 +123,66 @@ public final class ScalaVisitorContext implements VisitorContext {
         return Optional.ofNullable(sourceClasses.get(name));
     }
 
+    Optional<String> originatingClassName(ScalaAnnotatedElementData element) {
+        if (element instanceof ScalaClassData classData) {
+            return Optional.of(classData.name());
+        }
+        if (element instanceof ScalaTypeData typeData) {
+            return Optional.of(typeData.name());
+        }
+        for (ScalaClassData classData : sourceClasses.values()) {
+            if (ownsElement(classData, element)) {
+                return Optional.of(classData.name());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private boolean ownsElement(ScalaClassData classData, ScalaAnnotatedElementData element) {
+        for (ScalaMethodData constructor : classData.constructors()) {
+            if (ownsMethodElement(constructor, element)) {
+                return true;
+            }
+        }
+        for (ScalaMethodData method : classData.methods()) {
+            if (ownsMethodElement(method, element)) {
+                return true;
+            }
+        }
+        for (ScalaFieldData field : classData.fields()) {
+            if (field == element) {
+                return true;
+            }
+        }
+        for (ScalaPropertyData property : classData.properties()) {
+            if (ownsPropertyElement(property, element)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean ownsMethodElement(ScalaMethodData method, ScalaAnnotatedElementData element) {
+        if (method == element) {
+            return true;
+        }
+        for (ScalaParameterData parameter : method.parameters()) {
+            if (parameter == element) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean ownsPropertyElement(ScalaPropertyData property, ScalaAnnotatedElementData element) {
+        return property == element
+            || property.readMethod() == element
+            || property.writeMethod() == element
+            || property.field() == element
+            || (property.readMethod() != null && ownsMethodElement(property.readMethod(), element))
+            || (property.writeMethod() != null && ownsMethodElement(property.writeMethod(), element));
+    }
+
     List<ScalaClassElement> sourceClassElementsEnclosedBy(String name) {
         return sourceClasses.values().stream()
             .filter(classData -> name.equals(classData.enclosingTypeName()))

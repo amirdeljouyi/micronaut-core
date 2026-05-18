@@ -22,6 +22,7 @@ dependencies {
         exclude(module = "groovy-all")
     }
 
+    testImplementation(libs.managed.graalvm.nativeimage)
     testImplementation(platform(libs.test.boms.micronaut.validation))
     testImplementation(libs.micronaut.validation) {
         exclude(group = "io.micronaut")
