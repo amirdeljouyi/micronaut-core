@@ -107,6 +107,7 @@ class Holder(
         properties.names.type.name == 'java.util.List'
         properties.names.type.typeArguments.keySet() == ['E'] as Set
         properties.names.type.typeArguments.E.name == String.name
+        properties.names.type.isAssignable(Collection)
         properties.lookup.type.name == 'java.util.Map'
         properties.lookup.type.typeArguments.keySet() == ['K', 'V'] as Set
         properties.lookup.type.typeArguments.K.name == String.name

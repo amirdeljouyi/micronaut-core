@@ -95,6 +95,70 @@ class Vehicle(val engines: Array[Engine])
         context?.close()
     }
 
+    void "supports bean registration injection"() {
+        when:
+        def source = '''
+package beanreg
+
+import io.micronaut.context.BeanRegistration
+import io.micronaut.context.annotation.Primary
+import jakarta.inject.Inject
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+import java.util.Collection
+import java.util.List
+import scala.annotation.meta.field
+
+@Singleton
+class Test(
+  val registrations: Collection[BeanRegistration[Foo]],
+  val primaryBean: BeanRegistration[Foo],
+  @Named("two") val secondaryBean: BeanRegistration[Foo]
+):
+  @(Inject @field)
+  var fieldRegistrations: Collection[BeanRegistration[Foo]] = _
+
+  @(Inject @field)
+  var fieldArrayRegistrations: Array[BeanRegistration[Foo]] = _
+
+  var methodRegistrations: List[BeanRegistration[Foo]] = _
+
+  @Inject
+  def setRegs(registrations: List[BeanRegistration[Foo]]): Unit =
+    methodRegistrations = registrations
+
+trait Foo
+
+@Singleton
+@Primary
+class Foo1 extends Foo
+
+@Singleton
+@Named("two")
+class Foo2 extends Foo
+'''
+        def context = buildContext(source)
+        def bean = getBean(context, 'beanreg.Test')
+        def registrations = bean.registrations()
+        def fieldRegistrations = bean.fieldRegistrations()
+        def methodRegistrations = bean.methodRegistrations()
+        def fieldArrayRegistrations = bean.fieldArrayRegistrations().toList()
+
+        then:
+        bean.primaryBean().bean.getClass().name == 'beanreg.Foo1'
+        bean.secondaryBean().bean.getClass().name == 'beanreg.Foo2'
+        registrations.size() == 2
+        fieldRegistrations.size() == 2
+        fieldRegistrations == registrations
+        fieldRegistrations as List == methodRegistrations
+        fieldRegistrations as List == fieldArrayRegistrations
+        registrations.any { it.bean.getClass().name == 'beanreg.Foo1' }
+        registrations.any { it.bean.getClass().name == 'beanreg.Foo2' }
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports requires conditions on Scala beans"() {
         when:
         def disabled = buildContext('''

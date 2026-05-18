@@ -105,7 +105,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (classData != null) {
             return isAssignableTo(type, classData, Set.of(getName()));
         }
-        return isTypeAssignable(type, typeData, Set.of(getName()));
+        return isTypeAssignable(type, typeData, Set.of());
     }
 
     private boolean isAssignableTo(String type, ScalaClassData data, Set<String> visited) {
