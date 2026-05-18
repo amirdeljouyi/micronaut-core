@@ -63,10 +63,10 @@ unsupported in a future docs pass.
 
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 13 | 3 | 167 | 1 | 11 | 195 |
+| Java AbstractTypeElementSpec | 14 | 2 | 167 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 1 | 8 | 67 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 0 | 3 | 19 |
-| Total | 15 | 14 | 246 | 1 | 25 | 301 |
+| Total | 16 | 13 | 246 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -74,7 +74,6 @@ Start with small tests that exercise already-supported Scala forms before enabli
 
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy`
-- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy`
 - `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy`
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy`
@@ -265,7 +264,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/records/RecordBeansSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` - portable: source-defined default scope, explicit scope override, factory method override, and unscoped `@Bean` factory method variants are covered
+- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` - already covered: source-defined default scope, explicit scope override, factory method override, and unscoped `@Bean` factory method variants are covered
 - `inject-java/src/test/groovy/io/micronaut/inject/value/factorywithvalue/FactoryWithValueSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementAnnotationsRetaining.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
