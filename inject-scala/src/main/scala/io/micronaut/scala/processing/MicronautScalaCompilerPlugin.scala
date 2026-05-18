@@ -1098,10 +1098,9 @@ private object ScalaModelExtractor:
       hasFlag(symbol, Flags.Synthetic) ||
       hasFlag(symbol, Flags.Artifact)
 
-  private def skipField(symbol: Symbol)(using Context): Boolean =
+  private def skipField(symbol: Symbol)(using Context, AnnotationDefaults): Boolean =
     symbol == Symbols.NoSymbol ||
-      hasFlag(symbol, Flags.Synthetic) ||
-      hasFlag(symbol, Flags.Artifact)
+      ((hasFlag(symbol, Flags.Synthetic) || hasFlag(symbol, Flags.Artifact)) && annotations(symbol).isEmpty)
 
   private def hasFlag(symbol: Symbol, flag: Flags.FlagSet)(using Context): Boolean =
     symbol != Symbols.NoSymbol && symbol.denot.isOneOf(flag)

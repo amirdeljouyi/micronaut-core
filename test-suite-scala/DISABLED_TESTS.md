@@ -32,6 +32,8 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
+- Bean import examples: document `@Import` bean import as unsupported for Scala
+  instead of porting examples.
 - HTTP examples: controllers, clients, filters, and executable methods.
 - Additional AOP examples: lifecycle advice, scheduled methods, programmatic
   retry, and proxy-target variants.

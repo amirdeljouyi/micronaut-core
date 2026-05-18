@@ -160,6 +160,123 @@ class Foo2 extends Foo
         context?.close()
     }
 
+    void "excludes abstract Scala beans from injected collections"() {
+        when:
+        def context = buildContext('''
+package abstractbeans
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import java.util.List
+import scala.annotation.meta.field
+
+@Singleton
+class Test:
+  @(Inject @field)
+  var rules: List[InterceptRule] = _
+
+@Singleton
+abstract class AbstractRule extends InterceptRule
+
+@Singleton
+class ConcreteRule extends InterceptRule
+
+trait InterceptRule
+''')
+        def bean = getBean(context, 'abstractbeans.Test')
+
+        then:
+        bean.rules().size() == 1
+        bean.rules().first().getClass().name == 'abstractbeans.ConcreteRule'
+
+        cleanup:
+        context?.close()
+    }
+
+    void "builds abstract Scala bean definitions with injection points"() {
+        when:
+        def source = '''
+package abstractbeans
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+import scala.compiletime.uninitialized
+
+@Singleton
+abstract class AbstractBean:
+  @(Inject @field)
+  var host: String = uninitialized
+'''
+        def definition = buildBeanDefinition('abstractbeans.AbstractBean', source)
+
+        then:
+        definition != null
+        definition.abstract
+        definition.injectedMethods.size() == 1
+    }
+
+    void "creates Scala bean definitions for classes with only a qualifier"() {
+        when:
+        def definition = buildBeanDefinition('abstractbeans.QualifiedBean', '''
+package abstractbeans
+
+import jakarta.inject.Named
+
+@Named("a")
+class QualifiedBean
+''')
+
+        then:
+        definition != null
+        !definition.singleton
+    }
+
+    void "does not create Scala bean definitions for abstract classes with only a qualifier"() {
+        when:
+        def definition = buildBeanDefinition('abstractbeans.QualifiedBean', '''
+package abstractbeans
+
+import jakarta.inject.Named
+
+@Named("a")
+abstract class QualifiedBean
+''')
+
+        then:
+        definition == null
+    }
+
+    void "creates Scala bean definitions for classes with only AOP advice"() {
+        when:
+        def definition = buildBeanDefinition('abstractbeans.ValidatedBean', '''
+package abstractbeans
+
+import io.micronaut.validation.Validated
+
+@Validated
+class ValidatedBean
+''')
+
+        then:
+        definition != null
+    }
+
+    void "does not create Scala bean definitions for abstract classes with only AOP advice"() {
+        when:
+        def definition = buildBeanDefinition('abstractbeans.ValidatedBean', '''
+package abstractbeans
+
+import io.micronaut.validation.Validated
+
+@Validated
+abstract class ValidatedBean
+''')
+
+        then:
+        definition == null
+    }
+
     void "supports requires conditions on Scala beans"() {
         when:
         def disabled = buildContext('''
