@@ -235,6 +235,62 @@ class Worker:
         worker.stopped()
     }
 
+    void "supports inject scope dependencies"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.InjectScope
+import jakarta.annotation.PreDestroy
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import java.util.ArrayList
+
+trait Connection extends AutoCloseable:
+  override def close(): Unit
+  def isOpen(): Boolean
+
+@Bean
+class TestConnection(val other: Other) extends Connection:
+  var open: Boolean = true
+
+  override def isOpen(): Boolean = open && other.isOpen
+
+  @PreDestroy
+  override def close(): Unit =
+    open = false
+
+@Bean
+class Other:
+  var isOpen: Boolean = true
+
+  @PreDestroy
+  def close(): Unit =
+    isOpen = false
+
+@Singleton
+class Test(@InjectScope conn1: Connection, @InjectScope conn2: Connection):
+  val createdConnections = new ArrayList[Connection]()
+  createdConnections.add(conn1)
+  createdConnections.add(conn2)
+
+  @Inject
+  def init(@InjectScope conn3: Connection): Unit =
+    createdConnections.add(conn3)
+''')
+        def bean = getBean(context, 'example.Test')
+        def connections = bean.createdConnections()
+
+        then:
+        connections.size() == 3
+        connections.every { !it.isOpen() }
+        connections.every { !it.other().isOpen() }
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports simple factory methods"() {
         when:
         def context = buildContext('''
