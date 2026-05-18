@@ -192,6 +192,36 @@ class Test:
         beanMethod.arguments[0].isNonNull()
     }
 
+    @PendingFeature(reason = "Scala 3 does not currently expose Java type-use annotations on generic type arguments through the adapter")
+    void "maps Scala nullable and non-null annotations on generic type arguments"() {
+        when:
+        def element = buildClassElement('example.Test', '''
+package example
+
+import java.util.concurrent.CompletionStage
+import org.jspecify.annotations.NonNull
+import org.jspecify.annotations.Nullable
+
+class Test:
+  def notNullableMethod(test: String): CompletionStage[String @NonNull] = null
+
+  def nullableMethod(test: String): CompletionStage[String @Nullable] = null
+
+  def method(test: String): CompletionStage[String] = null
+''')
+        def notNullableMethod = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'notNullableMethod' })).get()
+        def nullableMethod = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'nullableMethod' })).get()
+        def method = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'method' })).get()
+
+        then:
+        notNullableMethod.returnType.firstTypeArgument.get().isNonNull()
+        !notNullableMethod.returnType.firstTypeArgument.get().isNullable()
+        !nullableMethod.returnType.firstTypeArgument.get().isNonNull()
+        nullableMethod.returnType.firstTypeArgument.get().isNullable()
+        !method.returnType.firstTypeArgument.get().isNonNull()
+        !method.returnType.firstTypeArgument.get().isNullable()
+    }
+
     void "exposes generic property type arguments"() {
         when:
         def element = buildClassElement('example.Holder', '''
