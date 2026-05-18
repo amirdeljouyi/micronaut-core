@@ -37,12 +37,14 @@ This file tracks Scala documentation examples that are not yet ported to
 - `io.micronaut.docs.server.filters.filtermethods.TraceFilterMethodsSpec`
   verifies `@ServerFilter` filter methods, request/response filters, constructor
   injection, and response header mutation.
+- `io.micronaut.docs.server.filters.TraceFilterSpec` verifies legacy
+  `HttpServerFilter` usage, constructor injection, reactive chaining, and
+  response header mutation.
 - Scala docs snippets are wired through the root `testsuitescala` property.
 
 ## Backlog
 
-- HTTP examples: client filters, legacy `HttpServerFilter`, and executable
-  methods.
+- HTTP examples: client filters and executable methods.
 - Additional AOP examples: lifecycle advice, scheduled methods, programmatic
   retry, and proxy-target variants.
 
