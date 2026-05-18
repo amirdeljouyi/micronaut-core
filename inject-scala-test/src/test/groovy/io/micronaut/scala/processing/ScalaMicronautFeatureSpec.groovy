@@ -542,6 +542,23 @@ class LocalEngine extends ExternalLocalMachine
         context?.close()
     }
 
+    void "rejects singleton Scala enum beans"() {
+        when:
+        buildBeanDefinition('example.Status', '''
+package example
+
+import jakarta.inject.Singleton
+
+@Singleton
+enum Status:
+  case Active
+''')
+
+        then:
+        def e = thrown(RuntimeException)
+        e.message.contains('Enum types cannot be defined as beans')
+    }
+
     void "supports source-defined default scopes"() {
         when:
         def definition = buildBeanDefinition('example.Engine', '''

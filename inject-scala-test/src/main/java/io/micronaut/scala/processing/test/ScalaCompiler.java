@@ -16,6 +16,7 @@
 package io.micronaut.scala.processing.test;
 
 import dotty.tools.dotc.Main;
+import dotty.tools.dotc.reporting.Diagnostic;
 import dotty.tools.dotc.reporting.Reporter;
 import io.micronaut.aop.internal.InterceptorRegistryBean;
 import io.micronaut.context.ApplicationContext;
@@ -45,7 +46,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import scala.jdk.javaapi.CollectionConverters;
 
 /**
  * Scala compiler helper for inline test sources.
@@ -200,8 +203,18 @@ public final class ScalaCompiler {
             sourceFile.toString()
         });
         if (reporter.hasErrors()) {
-            throw new IllegalStateException(reporter.summary());
+            throw new IllegalStateException(errorMessage(reporter));
         }
+    }
+
+    private static String errorMessage(Reporter reporter) {
+        String diagnostics = CollectionConverters.asJava(reporter.allErrors()).stream()
+            .map(Diagnostic::message)
+            .collect(Collectors.joining(System.lineSeparator()));
+        if (diagnostics.isBlank()) {
+            return reporter.summary();
+        }
+        return diagnostics + System.lineSeparator() + reporter.summary();
     }
 
     private static URLClassLoader newClassLoader(Path outputDirectory) {
