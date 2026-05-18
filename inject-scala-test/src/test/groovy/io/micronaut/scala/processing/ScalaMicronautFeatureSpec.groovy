@@ -597,6 +597,41 @@ case class AppConfig(name: String, port: Int)
         context?.close()
     }
 
+    void "supports configuration inject constructors with bean dependencies"() {
+        when:
+        def source = '''
+package example
+
+import io.micronaut.context.annotation.ConfigurationInject
+import io.micronaut.context.annotation.ConfigurationProperties
+import jakarta.inject.Singleton
+
+@Singleton
+class Engine:
+  def name(): String = "v8"
+
+@ConfigurationProperties("app")
+class AppConfig @ConfigurationInject (val name: String, val engine: Engine)
+'''
+        def definition = buildBeanDefinition('example.AppConfig', source)
+        def arguments = definition.constructor.arguments
+
+        then:
+        arguments[0].annotationMetadata.stringValue(Property, 'name').get() == 'app.name'
+        !arguments[1].annotationMetadata.hasAnnotation(Property)
+
+        when:
+        def context = buildContext(source, ['app.name': 'demo'], true)
+        def config = getBean(context, 'example.AppConfig')
+
+        then:
+        config.name() == 'demo'
+        config.engine().name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports validation on mutable configuration properties"() {
         when:
         def context = buildContext('''

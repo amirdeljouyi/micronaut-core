@@ -18,6 +18,7 @@ package io.micronaut.scala.processing.visitor;
 import io.micronaut.context.annotation.ConfigurationInject;
 import io.micronaut.context.annotation.ConfigurationReader;
 import io.micronaut.context.annotation.Property;
+import io.micronaut.context.visitor.ConfigurationReaderVisitor;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.inject.ast.ConstructorElement;
@@ -74,7 +75,8 @@ public final class ScalaConstructorElement extends ScalaMethodElement implements
             boolean changed = false;
             for (int i = 0; i < parameters.length; i++) {
                 ParameterElement parameter = parameters[i];
-                if (parameter.stringValue(Property.class, "name").isEmpty()) {
+                if (parameter.stringValue(Property.class, "name").isEmpty()
+                    && ConfigurationReaderVisitor.isPropertyParameter(parameter, visitorContext)) {
                     updatedParameters[i] = parameter.withAnnotationMetadata(
                         visitorContext.getScalaAnnotationMetadataBuilder().annotate(
                             parameter.getAnnotationMetadata(),
