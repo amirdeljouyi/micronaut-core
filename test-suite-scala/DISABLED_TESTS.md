@@ -26,6 +26,8 @@ This file tracks Scala documentation examples that are not yet ported to
   carrying scope stereotypes.
 - `io.micronaut.docs.aop.retry.RetrySpec` verifies around advice through
   retry interception.
+- `io.micronaut.docs.aop.retry.ProgrammaticRetrySpec` verifies programmatic
+  retry and circuit breaker operations.
 - `io.micronaut.docs.aop.introduction.IntroductionSpec` verifies introduction
   advice and generated proxies for a Scala trait.
 - `io.micronaut.docs.server.routes.IssuesControllerTest` verifies HTTP
@@ -49,8 +51,8 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- Additional AOP examples: lifecycle advice, scheduled methods, programmatic
-  retry, and proxy-target variants.
+- Additional AOP examples: lifecycle advice, scheduled methods, and
+  proxy-target variants.
 
 Scala examples should stay idiomatic: primary constructors, case classes,
 traits, `val`, and `var` should be preferred over JavaBean-style code unless
