@@ -425,10 +425,13 @@ private object ScalaModelExtractor:
     constructor.termParamss.flatten
       .filter { param =>
         val propertyName = param.name.toString
-        hasFlag(param.symbol, Flags.ParamAccessor) ||
-          hasFlag(param.symbol, Flags.CaseAccessor) ||
-          methods.containsKey(propertyName) ||
-          fields.exists(_.name == propertyName)
+        val readMethod = methods.get(propertyName)
+        val field = fields.find(_.name == propertyName).orNull
+        val propertyAccessor = hasFlag(param.symbol, Flags.ParamAccessor) ||
+          hasFlag(param.symbol, Flags.CaseAccessor)
+        propertyAccessor &&
+          ((readMethod != null && !readMethod.modifiers().contains(ElementModifier.PRIVATE)) ||
+            (field != null && !field.modifiers().contains(ElementModifier.PRIVATE)))
       }
       .map { param =>
         val propertyName = param.name.toString
@@ -462,7 +465,7 @@ private object ScalaModelExtractor:
       if isPropertyDeclaration(declaration, propertyName) && !added.contains(propertyName) then
         val readMethod = methods.get(propertyName)
         val writeMethod = methods.get(propertyName + "_=")
-        if readMethod != null then
+        if readMethod != null && !readMethod.modifiers().contains(ElementModifier.PRIVATE) then
           val field = fieldsByName.getOrElse(propertyName, null)
           properties += ScalaPropertyData(
             propertyName,

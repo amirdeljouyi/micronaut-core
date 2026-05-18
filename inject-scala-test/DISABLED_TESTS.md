@@ -30,9 +30,8 @@ for property setter injection. Evaluated expressions on Scala bean definitions
 and executable methods are covered for Graal build-time initialization. Constructor-copy
 introspection through an abstract Scala superclass is covered. Bean-introspection
 constructor argument generics are covered; superclass introspection constructor
-forwarding for byte arrays and boxed Boolean values is tracked with
-`@PendingFeature`. Executable route methods inherited from source-defined
-Scala traits are covered.
+forwarding for byte arrays and boxed Boolean values is covered. Executable route
+methods inherited from source-defined Scala traits are covered.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -94,7 +93,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/InheritanceVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/AnnotatedIntrospectedSpec.groovy` - already covered: basic @Introspected class metadata is covered by ScalaPoCSpec
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionGenericsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - portable: partially covered for constructor argument generics; byte array and boxed Boolean superclass constructor forwarding are tracked with `@PendingFeature`; remaining introspection, access-kind, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - portable: partially covered for constructor argument generics and superclass constructor forwarding; remaining introspection, access-kind, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BuildClassElementSpec.groovy` - already covered: basic buildClassElement coverage is present in ScalaPoCSpec
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support

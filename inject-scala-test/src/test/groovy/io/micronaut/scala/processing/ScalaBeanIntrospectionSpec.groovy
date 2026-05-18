@@ -16,7 +16,6 @@
 package io.micronaut.scala.processing
 
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
-import spock.lang.PendingFeature
 
 class ScalaBeanIntrospectionSpec extends AbstractScalaTypeElementSpec {
 
@@ -36,7 +35,6 @@ class Test(val properties: java.util.Map[String, String])
         introspection.constructorArguments[0].getTypeVariable("V").get().type == String
     }
 
-    @PendingFeature(reason = "Superclass introspection constructor forwarding currently needs Scala-specific read-member coverage without core-processor changes")
     void "instantiates Scala introspection with byte array constructor forwarding"() {
         when:
         def introspection = buildBeanIntrospection('test.FormulaDto', '''
@@ -59,7 +57,6 @@ class FormulaCreationDto(val bytes: Array[Byte])
         bean.bytes().is(bytes)
     }
 
-    @PendingFeature(reason = "Superclass introspection constructor forwarding currently needs Scala-specific read-member coverage without core-processor changes")
     void "instantiates Scala introspection with boxed Boolean constructor forwarding"() {
         when:
         def introspection = buildBeanIntrospection('test.FormulaDto', '''

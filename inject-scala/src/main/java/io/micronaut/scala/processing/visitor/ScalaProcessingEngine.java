@@ -392,7 +392,11 @@ public final class ScalaProcessingEngine {
                 break;
             }
         }
-        return fallback.getClass().getName();
+        StackTraceElement[] stackTrace = fallback.getStackTrace();
+        if (stackTrace.length == 0) {
+            return fallback.getClass().getName();
+        }
+        return fallback.getClass().getName() + " at " + stackTrace[0];
     }
 
 }

@@ -66,6 +66,22 @@ class Worker:
         properties.started.writeMethod.get().returnType.isVoid()
     }
 
+    void "does not expose private constructor forwarding accessors as properties"() {
+        when:
+        def element = buildClassElement('example.FormulaDto', '''
+package example
+
+class FormulaDto(val otherColumns: java.util.List[String], bytesValue: Array[Byte])
+    extends FormulaCreationDto(bytesValue)
+
+class FormulaCreationDto(val bytes: Array[Byte])
+''')
+
+        then:
+        element.getBeanProperties()*.name == ['otherColumns']
+        element.primaryConstructor.get().parameters*.name == ['otherColumns', 'bytesValue']
+    }
+
     void "propagates field-targeted validation annotations to Scala properties"() {
         when:
         def element = buildClassElement('example.EngineConfig', '''
