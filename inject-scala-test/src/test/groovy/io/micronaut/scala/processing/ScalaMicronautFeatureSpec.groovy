@@ -22,6 +22,7 @@ import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.exceptions.BeanInstantiationException
 import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.qualifiers.Qualifiers
+import io.micronaut.inject.writer.BeanDefinitionVisitor
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
 import jakarta.inject.Singleton
@@ -433,6 +434,52 @@ class TestListener:
         definition.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'class'
         receiveMethod.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'method'
         valueArgument.annotationMetadata.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'parameter'
+    }
+
+    void "type element visitors can annotate Scala introduction methods"() {
+        when:
+        def definition = ScalaAnnotatingVisitor.withAnnotations({
+            buildBeanDefinition('example.TextService' + BeanDefinitionVisitor.PROXY_SUFFIX, '''
+package example
+
+import io.micronaut.aop.Interceptor
+import io.micronaut.aop.Introduction
+import io.micronaut.aop.InvocationContext
+import io.micronaut.context.annotation.Executable
+import io.micronaut.context.annotation.Type
+import jakarta.inject.Singleton
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+import scala.annotation.StaticAnnotation
+
+@Singleton
+class StubIntroduction extends Interceptor[AnyRef, Object]:
+  override def intercept(context: InvocationContext[AnyRef, Object]): Object =
+    context.proceed()
+
+@Introduction
+@Type(Array(classOf[StubIntroduction]))
+@Retention(RetentionPolicy.RUNTIME)
+@Target(Array(ElementType.TYPE))
+class Stub extends StaticAnnotation
+
+@Stub
+trait TextService:
+  @Executable
+  def save(name: String, age: Int): Unit
+  @Executable
+  def saveTwo(name: String): Unit
+''')
+        } as Supplier)
+
+        then:
+        !definition.abstract
+        definition.getRequiredMethod('save', String, Integer.TYPE)
+            .stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'method'
+        definition.getRequiredMethod('saveTwo', String)
+            .stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'method'
     }
 
     void "type element visitor annotation mutations expand Scala annotation stereotypes"() {

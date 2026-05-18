@@ -33,6 +33,8 @@ for source-defined Scala annotations. Source-defined Scala annotation classes
 are exposed as `ClassElement`s; Java `@Retention` and `@Target` metadata on
 those source-defined `StaticAnnotation` classes remains tracked with
 `@PendingFeature` until it can be recovered from supported compiler APIs.
+`TypeElementVisitor` annotation mutations are covered for generated introduction
+proxy methods.
 
 ## Classification Rules
 
@@ -45,17 +47,16 @@ those source-defined `StaticAnnotation` classes remains tracked with
 
 | Source | already covered | portable | blocked | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 7 | 10 | 167 | 11 | 195 |
+| Java AbstractTypeElementSpec | 8 | 9 | 167 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 1 | 8 | 67 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 3 | 19 |
-| Total | 9 | 21 | 246 | 25 | 301 |
+| Total | 10 | 20 | 246 | 25 | 301 |
 
 ## First Portable Ports
 
 Start with small tests that exercise already-supported Scala forms before enabling blocked feature groups. Suggested first ports:
 
 - `inject-java-test/src/test/groovy/io/micronaut/inject/beanimport/BeanImportSpec.groovy`
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy`
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy`
@@ -80,7 +81,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationTransformerSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/InheritedNullableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java-test/src/test/groovy/io/micronaut/inject/beanimport/BeanImportSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - already covered: Scala `TypeElementVisitor` annotation mutations are covered for classes, methods, parameters, introspection properties, source-defined stereotypes, and introduction proxy methods
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/InheritanceVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/AnnotatedIntrospectedSpec.groovy` - already covered: basic @Introspected class metadata is covered by ScalaPoCSpec
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionGenericsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
