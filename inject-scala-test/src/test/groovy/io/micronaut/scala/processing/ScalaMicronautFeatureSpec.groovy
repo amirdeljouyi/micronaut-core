@@ -21,6 +21,7 @@ import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.exceptions.BeanInstantiationException
 import io.micronaut.inject.ValidatedBeanDefinition
+import io.micronaut.inject.processing.ProcessingException
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.inject.writer.BeanDefinitionVisitor
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
@@ -551,6 +552,36 @@ class TestListener:
         definition.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'class'
         receiveMethod.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'method'
         valueArgument.annotationMetadata.stringValue(ScalaAnnotatingVisitor.ANN, 'target').get() == 'parameter'
+    }
+
+    void "type element visitor errors include fallback messages for exceptions without messages"() {
+        when:
+        ScalaAnnotatingVisitor.withClassFailure(new IllegalStateException(), {
+            buildClassElement('example.Engine', '''
+package example
+
+class Engine
+''')
+        } as Supplier)
+
+        then:
+        def e = thrown(IllegalStateException)
+        e.message.contains('Error processing Scala element [example.Engine]: java.lang.IllegalStateException')
+    }
+
+    void "type element visitor processing exceptions include fallback messages"() {
+        when:
+        ScalaAnnotatingVisitor.withClassFailure(new ProcessingException(null, null), {
+            buildClassElement('example.Engine', '''
+package example
+
+class Engine
+''')
+        } as Supplier)
+
+        then:
+        def e = thrown(IllegalStateException)
+        e.message.contains('Error processing Scala element [example.Engine]: io.micronaut.inject.processing.ProcessingException')
     }
 
     void "type element visitors can annotate Scala introduction methods"() {

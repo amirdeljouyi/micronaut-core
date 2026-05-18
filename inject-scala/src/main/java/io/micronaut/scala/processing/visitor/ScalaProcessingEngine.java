@@ -26,6 +26,7 @@ import io.micronaut.core.util.StringUtils;
 import io.micronaut.core.version.VersionUtils;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.ConstructorElement;
+import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.ElementQuery;
 import io.micronaut.inject.ast.EnumConstantElement;
 import io.micronaut.inject.ast.FieldElement;
@@ -121,7 +122,7 @@ public final class ScalaProcessingEngine {
             try {
                 loadedVisitor.getVisitor().start(context);
             } catch (Throwable e) {
-                context.warn("Error initializing type visitor [" + loadedVisitor.getVisitor() + "]: " + e.getMessage(), null);
+                context.warn("Error initializing type visitor [" + loadedVisitor.getVisitor() + "]: " + exceptionMessage(e), null);
             }
         }
         for (LoadedScalaVisitor loadedVisitor : loadedVisitors) {
@@ -135,7 +136,11 @@ public final class ScalaProcessingEngine {
                 if (!loadedVisitor.matchesClass(classElement.getAnnotationMetadata())) {
                     continue;
                 }
-                visitClass(loadedVisitor, classElement, query, context);
+                try {
+                    visitClass(loadedVisitor, classElement, query, context);
+                } catch (ProcessingException e) {
+                    reportProcessingException(e);
+                }
             }
         }
         for (LoadedScalaVisitor loadedVisitor : loadedVisitors) {
@@ -144,7 +149,7 @@ public final class ScalaProcessingEngine {
             } catch (ProcessingException e) {
                 reportProcessingException(e);
             } catch (Throwable e) {
-                context.fail("Error finalizing type visitor [" + loadedVisitor.getVisitor() + "]: " + e.getMessage(), null);
+                context.fail("Error finalizing type visitor [" + loadedVisitor.getVisitor() + "]: " + exceptionMessage(e), null);
             }
         }
     }
@@ -178,7 +183,7 @@ public final class ScalaProcessingEngine {
             } catch (ProcessingException e) {
                 reportProcessingException(e);
             } catch (IOException e) {
-                context.fail("Unexpected error writing bean definition: " + e.getMessage(), classElement);
+                context.fail("Unexpected error writing bean definition: " + exceptionMessage(e), classElement);
             }
         }
         finishBeanElementVisitors(context);
@@ -213,16 +218,20 @@ public final class ScalaProcessingEngine {
         }
         try {
             loadedVisitor.getVisitor().visitClass(classElement, context);
+        } catch (ProcessingException e) {
+            throw processingException(classElement, e);
         } catch (Exception e) {
-            throw new ProcessingException(classElement, e.getMessage(), e);
+            throw processingException(classElement, e);
         }
         if (query.includesConstructors()) {
             for (ConstructorElement constructorElement : classElement.getEnclosedElements(ElementQuery.CONSTRUCTORS)) {
                 if (loadedVisitor.matchesElement(constructorElement.getAnnotationMetadata())) {
                     try {
                         loadedVisitor.getVisitor().visitConstructor(constructorElement, context);
+                    } catch (ProcessingException e) {
+                        throw processingException(constructorElement, e);
                     } catch (Exception e) {
-                        throw new ProcessingException(constructorElement, e.getMessage(), e);
+                        throw processingException(constructorElement, e);
                     }
                 }
             }
@@ -256,18 +265,21 @@ public final class ScalaProcessingEngine {
                     } else if (memberElement instanceof MethodElement methodElement) {
                         loadedVisitor.getVisitor().visitMethod(methodElement, context);
                     }
+                } catch (ProcessingException e) {
+                    throw processingException(memberElement, e);
                 } catch (Exception e) {
-                    throw new ProcessingException(memberElement, e.getMessage(), e);
+                    throw processingException(memberElement, e);
                 }
             }
         }
     }
 
     private void reportProcessingException(ProcessingException exception) {
-        if (exception.getMessage() == null) {
-            errorReporter.accept("Unknown error processing Scala element");
+        String message = exception.getMessage();
+        if (message != null && !message.isBlank()) {
+            errorReporter.accept(message);
         } else {
-            errorReporter.accept(exception.getMessage());
+            errorReporter.accept(processingExceptionMessage(exception));
         }
     }
 
@@ -281,7 +293,7 @@ public final class ScalaProcessingEngine {
             try {
                 visitor = definition.load();
             } catch (Throwable e) {
-                warningReporter.accept("TypeElementVisitor [" + definition.getName() + "] will be ignored due to loading error: " + e.getMessage());
+                warningReporter.accept("TypeElementVisitor [" + definition.getName() + "] will be ignored due to loading error: " + exceptionMessage(e));
                 continue;
             }
             if (visitor == null || !visitor.isEnabled() || !meetsRequires(visitor)) {
@@ -326,7 +338,7 @@ public final class ScalaProcessingEngine {
                 try {
                     visitor.start(context);
                 } catch (Exception e) {
-                    context.fail("Error initializing bean element visitor [" + visitor.getClass().getName() + "]: " + e.getMessage(), null);
+                    context.fail("Error initializing bean element visitor [" + visitor.getClass().getName() + "]: " + exceptionMessage(e), null);
                 }
             }
         }
@@ -338,10 +350,47 @@ public final class ScalaProcessingEngine {
                 try {
                     visitor.finish(context);
                 } catch (Exception e) {
-                    context.fail("Error finalizing bean element visitor [" + visitor.getClass().getName() + "]: " + e.getMessage(), null);
+                    context.fail("Error finalizing bean element visitor [" + visitor.getClass().getName() + "]: " + exceptionMessage(e), null);
                 }
             }
         }
+    }
+
+    private static ProcessingException processingException(Element element, Throwable exception) {
+        if (exception instanceof ProcessingException processingException) {
+            String message = processingException.getMessage();
+            if (message != null && !message.isBlank()) {
+                return processingException;
+            }
+        }
+        return new ProcessingException(
+            element,
+            "Error processing Scala element [" + element.getName() + "]: " + exceptionMessage(exception),
+            exception
+        );
+    }
+
+    private static String processingExceptionMessage(ProcessingException exception) {
+        Element element = exception.getElement();
+        String elementDescription = element == null ? "" : " [" + element.getName() + "]";
+        return "Error processing Scala element" + elementDescription + ": " + exceptionMessage(exception);
+    }
+
+    private static String exceptionMessage(Throwable exception) {
+        Throwable current = exception;
+        Throwable fallback = exception;
+        while (current != null) {
+            fallback = current;
+            String message = current.getMessage();
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
+            current = current.getCause();
+            if (current == exception) {
+                break;
+            }
+        }
+        return fallback.getClass().getName();
     }
 
 }

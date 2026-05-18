@@ -38,6 +38,7 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
 
     private static final ThreadLocal<Boolean> ENABLED = new ThreadLocal<>();
     private static final ThreadLocal<String> CLASS_ANNOTATION = new ThreadLocal<>();
+    private static final ThreadLocal<RuntimeException> CLASS_FAILURE = new ThreadLocal<>();
 
     /**
      * Executes a compilation with this visitor enabled.
@@ -74,6 +75,25 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
         }
     }
 
+    /**
+     * Executes a compilation with this visitor failing when it visits a class.
+     *
+     * @param exception The exception to throw
+     * @param supplier The compilation work
+     * @param <T> The result type
+     * @return The supplier result
+     */
+    public static <T> T withClassFailure(RuntimeException exception, Supplier<T> supplier) {
+        ENABLED.set(Boolean.TRUE);
+        CLASS_FAILURE.set(exception);
+        try {
+            return supplier.get();
+        } finally {
+            CLASS_FAILURE.remove();
+            ENABLED.remove();
+        }
+    }
+
     @Override
     public int getOrder() {
         return 100;
@@ -83,6 +103,10 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
     public void visitClass(ClassElement element, VisitorContext context) {
         if (!enabled()) {
             return;
+        }
+        RuntimeException classFailure = CLASS_FAILURE.get();
+        if (classFailure != null) {
+            throw classFailure;
         }
         annotate(element, "class");
         String classAnnotation = CLASS_ANNOTATION.get();
