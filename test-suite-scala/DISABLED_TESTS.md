@@ -32,6 +32,9 @@ This file tracks Scala documentation examples that are not yet ported to
   advice and generated proxies for a Scala trait.
 - `io.micronaut.docs.aop.lifecycle.LifeCycleAdviseSpec` verifies constructor,
   post-construct, and pre-destroy lifecycle advice.
+- `io.micronaut.docs.aop.scheduled.ScheduledExample` and
+  `TaskSchedulerInjectExample` compile the scheduled method and scheduler
+  injection docs snippets.
 - `io.micronaut.docs.server.routes.IssuesControllerTest` verifies HTTP
   controller URI variable binding, explicit `@PathVariable` binding, default
   URI variable values, and conversion/not-found error handling.
@@ -53,7 +56,7 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- Additional AOP examples: scheduled methods and proxy-target variants.
+- Additional AOP examples: proxy-target variants.
 
 Scala examples should stay idiomatic: primary constructors, case classes,
 traits, `val`, and `var` should be preferred over JavaBean-style code unless
