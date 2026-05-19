@@ -386,6 +386,52 @@ class SetTest[E] extends Serde[java.util.HashSet[E]]
         context?.close()
     }
 
+    void "resolves Scala wildcard generic bounds without concrete type arguments"() {
+        when:
+        def definition = buildBeanDefinition('test.NumberThingManager', '''
+package test
+
+import jakarta.inject.Singleton
+
+trait Thing[T]
+
+trait NumberThing[T <: Number & Comparable[T]] extends Thing[T]
+
+class AbstractThingManager[T <: Thing[?]]
+
+@Singleton
+class NumberThingManager extends AbstractThingManager[NumberThing[?]]
+''')
+
+        then:
+        noExceptionThrown()
+        definition != null
+        definition.getTypeArguments("test.AbstractThingManager")[0].getTypeVariables().get("T").getType() == Number.class
+    }
+
+    void "resolves Scala wildcard generic upper bounds"() {
+        when:
+        def definition = buildBeanDefinition('test.NumberThingManager', '''
+package test
+
+import jakarta.inject.Singleton
+
+trait Thing[T]
+
+trait NumberThing[T <: Number & Comparable[T]] extends Thing[T]
+
+class AbstractThingManager[T <: Thing[?]]
+
+@Singleton
+class NumberThingManager extends AbstractThingManager[NumberThing[? <: java.lang.Double]]
+''')
+
+        then:
+        noExceptionThrown()
+        definition != null
+        definition.getTypeArguments("test.AbstractThingManager")[0].getTypeVariables().get("T").getType() == Double.class
+    }
+
     void "exposes Scala named qualifier metadata"() {
         given:
         def definition = buildBeanDefinition('test.Test', '''

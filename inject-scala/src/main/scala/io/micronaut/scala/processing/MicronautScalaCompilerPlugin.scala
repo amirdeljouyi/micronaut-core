@@ -23,6 +23,7 @@ import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.core.Symbols
 import dotty.tools.dotc.core.Symbols.Symbol
 import dotty.tools.dotc.core.Types.AnnotatedType
+import dotty.tools.dotc.core.Types.AndType
 import dotty.tools.dotc.core.Types.AppliedType
 import dotty.tools.dotc.core.Types.ConstantType
 import dotty.tools.dotc.core.Types.MethodType
@@ -931,9 +932,46 @@ private object ScalaModelExtractor:
         val argumentData = argumentTrees.lift(index) match
           case Some(argumentTree) => typeData(argumentTree, visitedTypes)
           case None => typeData(argument, visitedTypes)
-        converted.put(parameter.name.toString, boxPrimitiveTypeArgument(argumentData))
+        converted.put(parameter.name.toString, boxPrimitiveTypeArgument(resolveUnboundedWildcard(argumentData, parameter)))
       }
       converted
+
+  private def resolveUnboundedWildcard(argumentData: ScalaTypeData, parameter: Symbol)(using Context, AnnotationDefaults): ScalaTypeData =
+    if !isObjectWildcard(argumentData) then
+      argumentData
+    else
+      val parameterBounds = typeParameterBounds(parameter)
+      if isObjectOnlyBound(parameterBounds) then
+        argumentData
+      else
+        val primaryBound = parameterBounds.head
+        ScalaTypeData(
+          primaryBound.name(),
+          primaryBound.primitive(),
+          primaryBound.arrayDimensions(),
+          primaryBound.interfaceType(),
+          primaryBound.typeArguments(),
+          primaryBound.superType(),
+          primaryBound.interfaces(),
+          argumentData.annotations(),
+          argumentData.annotatedTypeUse(),
+          argumentData.nativeType(),
+          false,
+          null,
+          Nil.asJava,
+          true,
+          parameterBounds.asJava,
+          argumentData.lowerBounds()
+        )
+
+  private def isObjectWildcard(typeData: ScalaTypeData): Boolean =
+    typeData.wildcard() &&
+      typeData.lowerBounds().isEmpty &&
+      typeData.upperBounds().size() == 1 &&
+      typeData.upperBounds().get(0).name() == classOf[Object].getName
+
+  private def isObjectOnlyBound(bounds: List[ScalaTypeData]): Boolean =
+    bounds.size == 1 && bounds.head.name() == classOf[Object].getName
 
   private def boxPrimitiveTypeArgument(typeData: ScalaTypeData)(using Context): ScalaTypeData =
     val boxedName = BoxedPrimitiveNames.get(typeData.name())
@@ -1019,10 +1057,30 @@ private object ScalaModelExtractor:
 
   private def upperBounds(bounds: TypeBounds)(using Context, AnnotationDefaults): List[ScalaTypeData] =
     val upperBound = bounds.hi.widenDealias
-    if typeName(upperBound) == "scala.Any" then
+    val upperBoundTypes = upperBoundTypesFor(upperBound)
+    if upperBoundTypes.isEmpty then
       List(objectTypeData)
     else
-      List(typeData(upperBound))
+      upperBoundTypes.map(typeData(_))
+
+  private def upperBoundTypesFor(tpe: Type)(using Context): List[Type] =
+    val bounds = intersectionTypes(tpe)
+    if tpe.widenDealias.isInstanceOf[AndType] then
+      // Micronaut's generic metadata needs a JVM type, not a Scala intersection
+      // display name such as Number & Comparable[T]. The first bound is the
+      // primary bound Scala emits for Java-style bounded wildcards.
+      bounds.take(1)
+    else
+      bounds
+
+  private def intersectionTypes(tpe: Type)(using Context): List[Type] =
+    tpe.widenDealias match
+      case andType: AndType =>
+        intersectionTypes(andType.tp1) ++ intersectionTypes(andType.tp2)
+      case widened if typeName(widened) == "scala.Any" =>
+        Nil
+      case widened =>
+        List(widened)
 
   private def lowerBounds(bounds: TypeBounds)(using Context, AnnotationDefaults): List[ScalaTypeData] =
     val lowerBound = bounds.lo.widenDealias

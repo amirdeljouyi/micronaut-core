@@ -87,7 +87,9 @@ classpath Java collection hierarchies such as `List` to `Collection` to
 through the Element API, and method-level generic placeholders are exposed
 through `MethodElement`. Scala wildcard generic type arguments are covered for
 unbounded, upper-bounded, and lower-bounded type arguments, including wildcard
-bounds that reference Scala generic placeholders.
+bounds that reference Scala generic placeholders. Bean-definition generic
+metadata resolves unbounded and upper-bounded wildcard arguments through Scala
+type-parameter bounds.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
@@ -241,7 +243,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - already covered: Scala source-level abstract bean scenarios are covered for collection filtering, abstract definitions with injection points, qualifier-only beans, and AOP-only beans
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups, unbounded and upper-bounded wildcard generic bounds, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy` - already covered: Scala constructor, field, method, collection, array, and named `BeanRegistration` injection are covered
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy` - already covered: Scala source-level dynamic bean definition registration is covered; the remaining runtime builder assertions are not language-adapter-specific
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy` - already covered: Scala introspection handles constructor forwarding through an abstract superclass

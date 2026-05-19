@@ -76,6 +76,7 @@ Reference:
 
 - Implement annotation values, defaults, nested annotations, repeatables, stereotypes, aliases, retention and targets, nullability, class literals, enum constants, arrays, and constants.
 - Implement generics, bounds, variance, trait and interface inheritance, companion and synthetic filtering, enums, arrays, primitives, and Scala property semantics.
+- Scala wildcard generic metadata now resolves unbounded wildcard arguments through the enclosing type parameter bounds for bean-definition generic metadata, including bounded forms such as `NumberThing[?]` and `NumberThing[? <: Double]`.
 
 ### Wave 4: Micronaut Features
 
