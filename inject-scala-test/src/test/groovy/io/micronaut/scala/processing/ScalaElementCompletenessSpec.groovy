@@ -447,6 +447,64 @@ class QueryBean(val name: String, var count: Int):
         ScalaTypeElementQueryVisitor.cleanup()
     }
 
+    void "filters inherited Scala methods with element queries"() {
+        when:
+        def element = buildClassElement('elementquery.Test', '''
+package elementquery
+
+abstract class Test extends SuperType, AnotherInterface, SomeInt:
+  protected var t1: Boolean = false
+  private var t2: Boolean = false
+
+  private def privateMethod(): Boolean = true
+
+  def packagePublicMethod(): Boolean = true
+
+  override def publicMethod(): Boolean = true
+
+  def unimplementedMethod(): Boolean
+
+abstract class SuperType:
+  protected var s1: Boolean = false
+  private var s2: Boolean = false
+
+  private def privateMethod(): Boolean = true
+
+  def publicMethod(): Boolean = true
+
+  def otherSuper(): Boolean = true
+
+  def unimplementedSuperMethod(): Boolean
+
+trait SomeInt:
+  def itfeMethod(): Boolean = true
+
+  def publicMethod(): Boolean
+
+trait AnotherInterface:
+  def publicMethod(): Boolean
+
+  def unimplementedItfeMethod(): Boolean
+''')
+        def allMethods = element.getEnclosedElements(ElementQuery.ALL_METHODS)
+        def abstractMethods = element.getEnclosedElements(ElementQuery.ALL_METHODS.onlyAbstract())
+        def concreteMethods = element.getEnclosedElements(ElementQuery.ALL_METHODS.onlyConcrete().onlyAccessible())
+
+        then:
+        allMethods*.name.containsAll([
+            'privateMethod',
+            'packagePublicMethod',
+            'publicMethod',
+            'unimplementedMethod',
+            'otherSuper',
+            'unimplementedSuperMethod',
+            'itfeMethod',
+            'unimplementedItfeMethod'
+        ])
+        abstractMethods*.name as Set == ['unimplementedItfeMethod', 'unimplementedSuperMethod', 'unimplementedMethod'] as Set
+        concreteMethods*.name as Set == ['packagePublicMethod', 'publicMethod', 'otherSuper', 'itfeMethod'] as Set
+    }
+
     void "exposes generic property type arguments"() {
         when:
         def element = buildClassElement('example.Holder', '''
