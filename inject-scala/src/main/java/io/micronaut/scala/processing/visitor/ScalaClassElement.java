@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -181,6 +182,16 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
 
     @Override
     public Map<String, ClassElement> getTypeArguments() {
+        if (classData != null && typeData.typeArguments().isEmpty() && !classData.typeParameters().isEmpty()) {
+            Map<String, ClassElement> declaredTypeArguments = new LinkedHashMap<>();
+            for (ScalaTypeData typeParameter : classData.typeParameters()) {
+                ClassElement typeParameterElement = elementFactory.newClassElement(typeParameter);
+                if (typeParameterElement instanceof GenericPlaceholderElement placeholderElement) {
+                    declaredTypeArguments.put(placeholderElement.getVariableName(), typeParameterElement);
+                }
+            }
+            return declaredTypeArguments;
+        }
         return elementFactory.typeArguments(typeData);
     }
 

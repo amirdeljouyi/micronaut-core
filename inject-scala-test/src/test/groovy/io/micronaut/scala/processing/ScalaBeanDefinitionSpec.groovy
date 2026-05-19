@@ -16,7 +16,9 @@
 package io.micronaut.scala.processing
 
 import io.micronaut.core.annotation.Order
+import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.type.TypeInformation
+import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 
 class ScalaBeanDefinitionSpec extends AbstractScalaTypeElementSpec {
@@ -197,5 +199,98 @@ trait ChainE[A, B, C, D]
         definition.getTypeArguments("typearguments.ChainC")*.type == [Boolean, Number, Integer]
         definition.getTypeArguments("typearguments.ChainD")*.type == [Boolean, Number, String, Integer]
         definition.getTypeArguments("typearguments.ChainE")*.type == [Boolean, Number, String, Byte]
+    }
+
+    void "exposes declared Scala bean generics from definition"() {
+        when:
+        def definition = buildBeanDefinition('limittypes.Test', '''
+package limittypes
+
+import jakarta.inject.Singleton
+
+@Singleton
+class Test[K, V]
+''')
+
+        then:
+        definition.getGenericBeanType().getTypeString(true) == 'Test<Object, Object>'
+    }
+
+    void "exposes Scala named qualifier metadata"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import jakarta.inject.Named
+
+@Named("foo")
+class Test
+''')
+
+        expect:
+        definition.getDeclaredQualifier() == Qualifiers.byName("foo")
+    }
+
+    void "does not expose a qualifier for Scala scope-only beans"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import jakarta.inject.Singleton
+
+@Singleton
+class Test
+''')
+
+        expect:
+        definition.getDeclaredQualifier() == null
+    }
+
+    void "exposes Scala named qualifier metadata through source-defined alias"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import io.micronaut.context.annotation.AliasFor
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Replaces
+import jakarta.inject.Named
+import scala.annotation.StaticAnnotation
+import scala.annotation.meta.getter
+
+@Bean
+class MockBean(
+  @(AliasFor @getter)(annotation = classOf[Replaces], member = "named")
+  @(AliasFor @getter)(annotation = classOf[Named], member = "value")
+  val named: String = ""
+) extends StaticAnnotation
+
+@MockBean(named = "foo")
+class Test
+''')
+
+        expect:
+        definition.getDeclaredQualifier() == Qualifiers.byName("foo")
+        definition.getAnnotationNameByStereotype(AnnotationUtil.QUALIFIER).get() == AnnotationUtil.NAMED
+    }
+
+    void "exposes Scala qualifier annotation metadata"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import jakarta.inject.Qualifier
+import scala.annotation.StaticAnnotation
+
+@Qualifier
+class MyQualifier extends StaticAnnotation
+
+@MyQualifier
+class Test
+''')
+
+        expect:
+        definition.getDeclaredQualifier() == Qualifiers.byAnnotation(definition.getAnnotationMetadata(), "test.MyQualifier")
+        definition.getAnnotationNameByStereotype(AnnotationUtil.QUALIFIER).get() == "test.MyQualifier"
     }
 }
