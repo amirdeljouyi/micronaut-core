@@ -17,7 +17,6 @@ package io.micronaut.docs.aop.introduction
 
 import io.micronaut.aop.Intercepted
 import io.micronaut.context.ApplicationContext
-import java.util.List as JList
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -48,7 +47,8 @@ class IntroductionSpec:
       assertEquals(classOf[GenericBook], findMethod.getReturnType.getType)
 
       val findAllMethod = definition.getRequiredMethod("findAll")
-      assertEquals(classOf[JList[?]], findAllMethod.getReturnType.getType)
-      assertEquals(classOf[GenericBook], findAllMethod.getReturnType.asArgument().getTypeVariables.get("E").getType)
+      val findAllElementType = findAllMethod.getReturnType.asArgument().getTypeVariables.values().iterator().next().getType
+      assertEquals(classOf[List[?]], findAllMethod.getReturnType.getType)
+      assertEquals(classOf[GenericBook], findAllElementType)
     finally
       context.close()

@@ -21,7 +21,7 @@ case class GenericBook(title: String)
 trait GenericRepository[T]:
   def find(): T
 
-  def findAll(): java.util.List[T]
+  def findAll(): List[T]
 
 @Stub
 trait GenericStubExample extends GenericRepository[GenericBook]
