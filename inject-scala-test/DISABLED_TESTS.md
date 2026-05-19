@@ -42,9 +42,10 @@ class multi-dimensional array properties, companion-object nested class
 introspection, field-access introspection for emitted Scala fields, and custom
 introspection target packages are covered. Executable route methods inherited
 from source-defined Scala traits are covered.
-Scala enum bean introspection is tracked as a pending parity test; generated
-Scala enum introspections currently use the normal introspection path rather
-than `EnumBeanIntrospection`.
+Scala enum bean introspection can instantiate enum values through Scala's
+emitted `valueOf(String)` method and expose enum constructor properties. Scala
+enum constants remain tracked as a pending parity test because
+`EnumBeanIntrospection.EnumConstant#getValue()` is currently Java-enum-bound.
 Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
 idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.Seq`, and

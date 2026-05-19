@@ -194,8 +194,29 @@ class Test(val name: String)
         introspection.getRequiredProperty("name", String).get(introspection.instantiate("Fred")) == "Fred"
     }
 
+    void "instantiates Scala enum bean introspection by value name"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Status', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+enum Status(val code: String):
+  case Active extends Status("A")
+  case Disabled extends Status("D")
+''')
+        def active = introspection.instantiate("Active")
+
+        then:
+        introspection instanceof EnumBeanIntrospection
+        introspection.beanProperties*.name == ['code']
+        active.toString() == "Active"
+        introspection.getRequiredProperty("code", String).get(active) == "A"
+    }
+
     @PendingFeature
-    void "builds Scala enum bean introspection"() {
+    void "exposes Scala enum constants through bean introspection"() {
         when:
         def introspection = buildBeanIntrospection('test.Status', '''
 package test
@@ -206,13 +227,10 @@ import io.micronaut.core.annotation.Introspected
 enum Status:
   case Active, Disabled
 ''')
-        def active = introspection.instantiate("Active")
 
         then:
         introspection instanceof EnumBeanIntrospection
-        introspection.beanProperties.empty
-        active.name() == "Active"
-        introspection.constants*.name == ['Active', 'Disabled']
+        introspection.constants*.value*.toString() == ['Active', 'Disabled']
     }
 
     void "instantiates Scala introspection with byte array constructor forwarding"() {

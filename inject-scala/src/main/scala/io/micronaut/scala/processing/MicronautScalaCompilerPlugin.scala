@@ -450,6 +450,9 @@ private object ScalaModelExtractor:
           val methods = allMethods
             .filterNot(method => skipMethod(method.symbol))
             .map(method => methodData(method, constructor = false, owner = symbol))
+          val enumMethods =
+            if hasFlag(symbol, Flags.Enum) then List(enumValueOfMethodData(symbol))
+            else Nil
           val fields = template.body.collect {
             case field: tpd.ValDef if !skipField(field.symbol) => fieldData(field)
           }
@@ -475,7 +478,7 @@ private object ScalaModelExtractor:
             superType,
             interfaces.asJava,
             constructors.asJava,
-            methods.asJava,
+            (methods ++ enumMethods).asJava,
             allFields.asJava,
             properties.asJava,
             enclosingTypeName,
@@ -725,6 +728,21 @@ private object ScalaModelExtractor:
       true,
       null,
       symbol
+    )
+
+  private def enumValueOfMethodData(symbol: Symbol)(using Context): ScalaMethodData =
+    val enumType = ScalaTypeData(className(symbol), primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
+    val stringType = ScalaTypeData(classOf[String].getName, primitive = false, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
+    ScalaMethodData(
+      "valueOf",
+      enumType,
+      List(ScalaParameterData("name", stringType, Nil.asJava, new Object())).asJava,
+      Nil.asJava,
+      Nil.asJava,
+      Nil.asJava,
+      java.util.Set.of(ElementModifier.PUBLIC, ElementModifier.STATIC),
+      constructor = false,
+      new Object()
     )
 
   private def fieldConstantValue(field: tpd.ValDef)(using Context): Object | Null =

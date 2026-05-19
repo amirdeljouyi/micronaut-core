@@ -84,6 +84,7 @@ Reference:
 - Treat Scala collection support as more than assignability modelling. The generated injection path must supply values that are assignable to the actual Scala constructor, field, or method signature, likely by adding Scala-specific collection conversion or generated adaptation rather than pretending Scala collections are `java.util.Collection`.
 - Scala collection injection currently supports constructor, method, and field injection for common Scala collection types, including idiomatic `List[Foo]` source usage, by generating Java-to-Scala collection adaptation code without adding a compile-time Scala dependency to `core-processor`.
 - Scala field-access introspection should use Micronaut's shared bean-property resolution pattern where possible. Scala source properties still need Scala-native modelling for idiomatic accessors, but `@Introspected(accessKind = FIELD, visibility = ANY)` now resolves emitted Scala fields through the shared `AstBeanPropertiesUtils` path rather than changing core introspection writers.
+- Scala enum introspection currently supports instantiation through Scala's emitted `valueOf(String)` method and enum constructor properties. Enum constant values remain a known gap because the public `EnumBeanIntrospection.EnumConstant` contract is bound to Java `Enum` values.
 - Add focused Scala regressions before each implementation fix.
 - Re-enable parity tests as support lands.
 

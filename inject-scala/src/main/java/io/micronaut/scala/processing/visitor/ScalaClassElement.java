@@ -290,12 +290,23 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (classData == null || classData.constructors().isEmpty()) {
             return Optional.empty();
         }
+        if (classData.enumType()) {
+            return classData.methods().stream()
+                .filter(method -> "valueOf".equals(method.name()))
+                .filter(method -> method.parameters().size() == 1)
+                .filter(method -> String.class.getName().equals(method.parameters().get(0).type().name()))
+                .findFirst()
+                .map(this::methodElement);
+        }
         return Optional.of(constructorElement(classData.constructors().get(0)));
     }
 
     @Override
     public Optional<MethodElement> getDefaultConstructor() {
         if (classData == null) {
+            return Optional.empty();
+        }
+        if (classData.enumType()) {
             return Optional.empty();
         }
         return classData.constructors().stream()
