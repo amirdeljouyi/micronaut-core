@@ -17,6 +17,8 @@ package io.micronaut.scala.processing
 
 import io.micronaut.core.annotation.Order
 import io.micronaut.core.annotation.AnnotationUtil
+import io.micronaut.core.type.Argument
+import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.core.type.TypeInformation
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
@@ -302,6 +304,53 @@ class Test(val deepList: java.util.List[java.util.List[java.util.List[String]]])
         param2.getTypeParameters().length == 1
         def param3 = param2.getTypeParameters()[0]
         param3.getType() == String.class
+    }
+
+    void "resolves Scala bean definition type variables for generic lookups"() {
+        given:
+        def context = buildContext('''
+package test
+
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
+
+@Singleton
+class Test extends Serde[Object]
+
+trait Serde[T] extends Serializer[T], Deserializer[T]
+
+trait Serializer[T]
+
+trait Deserializer[T]
+
+@Singleton
+@Order(-100)
+class ArrayListTest[E] extends Serde[java.util.ArrayList[E]]
+
+@Singleton
+class SetTest[E] extends Serde[java.util.HashSet[E]]
+''')
+        def definition = getBeanDefinition(context, 'test.Test')
+
+        when:
+        def serdeTypeParam = definition.getTypeArguments("test.Serde")[0]
+        def serializerTypeParam = definition.getTypeArguments("test.Serializer")[0]
+        def deserializerTypeParam = definition.getTypeArguments("test.Deserializer")[0]
+        def listDeserializer = context.getBean(Argument.of(context.classLoader.loadClass('test.Deserializer'), Argument.listOf(String)))
+        def collectionDeserializer = context.getBean(Argument.of(context.classLoader.loadClass('test.Deserializer'), Argument.of(Collection.class, String)))
+
+        then:
+        listDeserializer.getClass().name == 'test.ArrayListTest'
+        listDeserializer.is(collectionDeserializer)
+        !serdeTypeParam.isTypeVariable()
+        !(serdeTypeParam instanceof GenericPlaceholder)
+        !serializerTypeParam.isTypeVariable()
+        !(serializerTypeParam instanceof GenericPlaceholder)
+        !deserializerTypeParam.isTypeVariable()
+        !(deserializerTypeParam instanceof GenericPlaceholder)
+
+        cleanup:
+        context?.close()
     }
 
     void "exposes Scala named qualifier metadata"() {
