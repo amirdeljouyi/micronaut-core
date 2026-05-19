@@ -51,7 +51,9 @@ injection with common immutable and base collection types such as
 idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable.Set`,
 `scala.collection.Seq`, `scala.collection.IndexedSeq`, and
 `scala.collection.immutable.Vector`. Scala collection injection also covers
-`BeanRegistration[T]` element semantics.
+`BeanRegistration[T]` element semantics. String-keyed Scala map injection is
+covered for constructor, method, and field injection with
+`scala.collection.Map[String, T]` and `scala.collection.immutable.Map[String, T]`.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,

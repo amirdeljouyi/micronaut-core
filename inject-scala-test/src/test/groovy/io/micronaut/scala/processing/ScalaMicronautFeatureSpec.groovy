@@ -266,6 +266,53 @@ class Vehicle:
         context?.close()
     }
 
+    void "supports Scala Map injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val constructorEngines: scala.collection.immutable.Map[String, Engine]):
+  private var allEngines: scala.collection.Map[String, Engine] = scala.collection.Map.empty
+
+  @(Inject @field)
+  var fieldEngines: scala.collection.immutable.Map[String, Engine] = scala.collection.immutable.Map.empty
+
+  @Inject
+  def setEngines(engines: scala.collection.Map[String, Engine]): Unit =
+    allEngines = engines
+
+  def methodEngines: scala.collection.Map[String, Engine] = allEngines
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        vehicle.constructorEngines().apply('v6Engine').name() == 'v6'
+        vehicle.constructorEngines().apply('v8Engine').name() == 'v8'
+        vehicle.methodEngines().apply('v6Engine').name() == 'v6'
+        vehicle.methodEngines().apply('v8Engine').name() == 'v8'
+        vehicle.fieldEngines().apply('v6Engine').name() == 'v6'
+        vehicle.fieldEngines().apply('v8Engine').name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports bean registration injection"() {
         when:
         def source = '''

@@ -248,6 +248,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
     private static final Method GET_MAP_OF_TYPE_FOR_CONSTRUCTOR_ARGUMENT = getBeanLookupMethod("getMapOfTypeForConstructorArgument", true);
 
+    private static final Method GET_BEAN_MAP_FOR_CONSTRUCTOR_ARGUMENT = getBeanLookupMethod("getBeanMapForConstructorArgument", true);
+
     private static final Method FIND_BEAN_FOR_CONSTRUCTOR_ARGUMENT = getBeanLookupMethod("findBeanForConstructorArgument", true);
 
     private static final Method GET_BEAN_FOR_FIELD = getBeanLookupMethod("getBeanForField", false);
@@ -268,6 +270,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
     private static final Method GET_MAP_OF_TYPE_FOR_FIELD = getBeanLookupMethod("getMapOfTypeForField", true);
 
+    private static final Method GET_BEAN_MAP_FOR_FIELD = getBeanLookupMethod("getBeanMapForField", true);
+
     private static final Method FIND_BEAN_FOR_FIELD = getBeanLookupMethod("findBeanForField", true);
 
     private static final Method GET_VALUE_FOR_PATH = ReflectionUtils.getRequiredInternalMethod(AbstractInitializableBeanDefinition.class, "getValueForPath", BeanResolutionContext.class, BeanContext.class, Argument.class, String.class);
@@ -287,6 +291,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     private static final Method GET_STREAM_OF_TYPE_FOR_METHOD_ARGUMENT = getBeanLookupMethodForArgument("getStreamOfTypeForMethodArgument", true);
 
     private static final Method GET_MAP_OF_TYPE_FOR_METHOD_ARGUMENT = getBeanLookupMethodForArgument("getMapOfTypeForMethodArgument", true);
+
+    private static final Method GET_BEAN_MAP_FOR_METHOD_ARGUMENT = getBeanLookupMethodForArgument("getBeanMapForMethodArgument", true);
 
     private static final Method FIND_BEAN_FOR_METHOD_ARGUMENT = getBeanLookupMethodForArgument("findBeanForMethodArgument", true);
 
@@ -421,6 +427,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_SEQ = scalaInterfaceType("scala.collection.immutable.Seq");
     private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_SET = scalaInterfaceType("scala.collection.immutable.Set");
     private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_VECTOR = ClassTypeDef.of("scala.collection.immutable.Vector");
+    private static final ClassTypeDef TYPE_SCALA_ITERABLE_ONCE = scalaInterfaceType("scala.collection.IterableOnce");
+    private static final ClassTypeDef TYPE_SCALA_MUTABLE_MAP = scalaInterfaceType("scala.collection.mutable.Map");
+    private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_MAP = scalaInterfaceType("scala.collection.immutable.Map");
     private static final ClassTypeDef TYPE_ARRAY_LIST = ClassTypeDef.of(ArrayList.class);
     private static final ClassTypeDef TYPE_LIST = ClassTypeDef.of(List.class);
     private static final Set<String> SCALA_INJECTABLE_COLLECTION_TYPES = Set.of(
@@ -434,6 +443,11 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         "scala.collection.immutable.IndexedSeq",
         "scala.collection.immutable.List",
         "scala.collection.immutable.Vector"
+    );
+    private static final Set<String> SCALA_INJECTABLE_MAP_TYPES = Set.of(
+        "scala.collection.Map",
+        "scala.collection.mutable.Map",
+        "scala.collection.immutable.Map"
     );
 
     private static final Method METHOD_OPTIONAL_EMPTY = ReflectionUtils.getRequiredMethod(Optional.class, "empty");
@@ -1673,6 +1687,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                 requiresReflection,
                 GET_VALUE_FOR_FIELD,
                 isOptional,
+                false,
                 false,
                 false,
                 false,
@@ -3101,10 +3116,11 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         boolean isCollection = genericType.isAssignable(Collection.class);
         boolean isScalaCollection = isScalaInjectableCollection(genericType);
         boolean isScalaBeanRegistrationCollection = false;
-        boolean isMap = isInjectableMap(genericType);
+        boolean isScalaMap = isScalaInjectableMap(genericType);
+        boolean isMap = isInjectableMap(genericType) || isScalaMap;
         if (isMap) {
             requiresGenericType = true;
-            methodToInvoke = GET_MAP_OF_TYPE_FOR_FIELD;
+            methodToInvoke = isScalaMap ? GET_BEAN_MAP_FOR_FIELD : GET_MAP_OF_TYPE_FOR_FIELD;
         } else if (isCollection || isScalaCollection || isArray) {
             requiresGenericType = true;
             ClassElement typeArgument = genericType.isArray() ? genericType.fromArray() : genericType.getFirstTypeArgument().orElse(null);
@@ -3142,6 +3158,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             isArray,
             isScalaCollection,
             isScalaBeanRegistrationCollection,
+            isScalaMap,
             requiresGenericType,
             isRequired
         );
@@ -3150,13 +3167,21 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     private static boolean isInjectableMap(ClassElement genericType) {
         boolean typeMatches = Stream.of(Map.class, HashMap.class, LinkedHashMap.class, TreeMap.class)
             .anyMatch(t -> genericType.getName().equals(t.getName()));
-        if (typeMatches) {
+        return typeMatches && hasCharSequenceKey(genericType);
+    }
 
-            Map<String, ClassElement> typeArgs = genericType.getTypeArguments();
-            if (typeArgs.size() == 2) {
-                ClassElement k = typeArgs.get("K");
-                return k != null && k.isAssignable(CharSequence.class);
+    private static boolean isScalaInjectableMap(ClassElement genericType) {
+        return SCALA_INJECTABLE_MAP_TYPES.contains(genericType.getName()) && hasCharSequenceKey(genericType);
+    }
+
+    private static boolean hasCharSequenceKey(ClassElement genericType) {
+        Map<String, ClassElement> typeArgs = genericType.getTypeArguments();
+        if (typeArgs.size() == 2) {
+            ClassElement keyType = typeArgs.get("K");
+            if (keyType == null) {
+                keyType = typeArgs.values().iterator().next();
             }
+            return keyType != null && keyType.isAssignable(CharSequence.class);
         }
         return false;
     }
@@ -3184,6 +3209,22 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                 scalaIterable.invoke("toSeq", TYPE_SCALA_IMMUTABLE_SEQ);
             default -> scalaIterable;
         };
+    }
+
+    private static ExpressionDef convertToScalaMap(ClassElement targetType, ExpressionDef javaMap) {
+        ExpressionDef scalaMap = TYPE_SCALA_COLLECTION_CONVERTERS.invokeStatic(
+            "asScala",
+            TYPE_SCALA_MUTABLE_MAP,
+            javaMap.cast(ClassTypeDef.of(Map.class))
+        );
+        if (targetType.getName().equals("scala.collection.immutable.Map")) {
+            return TYPE_SCALA_IMMUTABLE_MAP.invokeStatic(
+                "from",
+                TYPE_SCALA_IMMUTABLE_MAP,
+                scalaMap.cast(TYPE_SCALA_ITERABLE_ONCE)
+            );
+        }
+        return scalaMap;
     }
 
     private boolean isInnerType(ClassElement genericType) {
@@ -3337,6 +3378,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                                                           boolean isArray,
                                                           boolean isScalaCollection,
                                                           boolean isScalaBeanRegistrationCollection,
+                                                          boolean isScalaMap,
                                                           boolean requiresGenericType,
                                                           boolean isRequired) {
         evaluatedExpressionProcessor.processEvaluatedExpressions(fieldElement.getAnnotationMetadata(), null);
@@ -3372,6 +3414,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             } else if (isScalaCollection && requiresGenericType) {
                 ExpressionDef javaCollection = isScalaBeanRegistrationCollection ? TYPE_ARRAY_LIST.instantiate(valueExpression).cast(TYPE_LIST) : valueExpression.invoke("toList", TYPE_LIST);
                 valueExpression = convertToScalaCollection(fieldElement.getType(), javaCollection);
+            } else if (isScalaMap && requiresGenericType) {
+                valueExpression = convertToScalaMap(fieldElement.getType(), valueExpression);
             }
             valueExpression = valueExpression.cast(TypeDef.erasure(fieldElement.getType()));
         }
@@ -3446,7 +3490,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     }
 
     private boolean isMultiValueProperty(ClassElement type) {
-        return type.isAssignable(Map.class) || type.isAssignable(Collection.class) || isConfigurationProperties(type);
+        return type.isAssignable(Map.class) || isScalaInjectableMap(type) || type.isAssignable(Collection.class) || isConfigurationProperties(type);
     }
 
     private ExpressionDef getQualifier(Element element, ExpressionDef argumentExpression) {
@@ -3653,7 +3697,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         boolean isCollection = genericType.isAssignable(Collection.class);
         boolean isScalaCollection = isScalaInjectableCollection(genericType);
         boolean isScalaBeanRegistrationCollection = false;
-        boolean isMap = isInjectableMap(genericType);
+        boolean isScalaMap = isScalaInjectableMap(genericType);
+        boolean isMap = isInjectableMap(genericType) || isScalaMap;
         boolean isArray = genericType.isArray();
 
         if (isValueType(argMetadata) && !isInnerType(entry.getGenericType())) {
@@ -3689,7 +3734,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             }
         } else if (isMap) {
             requiresGenericType = true;
-            methodToInvoke = GET_MAP_OF_TYPE_FOR_METHOD_ARGUMENT;
+            methodToInvoke = isScalaMap ? GET_BEAN_MAP_FOR_METHOD_ARGUMENT : GET_MAP_OF_TYPE_FOR_METHOD_ARGUMENT;
         } else if (genericType.isAssignable(Stream.class)) {
             requiresGenericType = true;
             methodToInvoke = GET_STREAM_OF_TYPE_FOR_METHOD_ARGUMENT;
@@ -3734,6 +3779,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         } else if (isScalaCollection && requiresGenericType) {
             ExpressionDef javaCollection = isScalaBeanRegistrationCollection ? TYPE_ARRAY_LIST.instantiate(result).cast(TYPE_LIST) : result.invoke("toList", TYPE_LIST);
             result = convertToScalaCollection(genericType, javaCollection);
+        } else if (isScalaMap && requiresGenericType) {
+            result = convertToScalaMap(genericType, result);
         }
         // cast the return value to the correct type
         return result.cast(TypeDef.erasure(entry.getType()));
@@ -4359,6 +4406,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         isArray = genericType.isArray();
         boolean isScalaCollection = isScalaInjectableCollection(genericType);
         boolean isScalaBeanRegistrationCollection = false;
+        boolean isScalaMap = isScalaInjectableMap(genericType);
         if (genericType.isAssignable(Collection.class) || isScalaCollection || isArray) {
             hasGenericType = true;
             ClassElement typeArgument = genericType.isArray() ? genericType.fromArray() : genericType.getFirstTypeArgument().orElse(null);
@@ -4375,9 +4423,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                 methodToInvoke = GET_BEAN_FOR_CONSTRUCTOR_ARGUMENT;
                 hasGenericType = false;
             }
-        } else if (isInjectableMap(genericType)) {
+        } else if (isInjectableMap(genericType) || isScalaMap) {
             hasGenericType = true;
-            methodToInvoke = GET_MAP_OF_TYPE_FOR_CONSTRUCTOR_ARGUMENT;
+            methodToInvoke = isScalaMap ? GET_BEAN_MAP_FOR_CONSTRUCTOR_ARGUMENT : GET_MAP_OF_TYPE_FOR_CONSTRUCTOR_ARGUMENT;
         } else if (genericType.isAssignable(Stream.class)) {
             hasGenericType = true;
             methodToInvoke = GET_STREAM_OF_TYPE_FOR_CONSTRUCTOR_ARGUMENT;
@@ -4411,6 +4459,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         } else if (isScalaCollection && hasGenericType) {
             ExpressionDef javaCollection = isScalaBeanRegistrationCollection ? TYPE_ARRAY_LIST.instantiate(result).cast(TYPE_LIST) : result.invoke("toList", TYPE_LIST);
             result = convertToScalaCollection(parameter.getGenericType(), javaCollection);
+        } else if (isScalaMap && hasGenericType) {
+            result = convertToScalaMap(parameter.getGenericType(), result);
         }
         return result.cast(TypeDef.erasure(parameter.getType()));
     }
@@ -4467,7 +4517,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             return expressionDef;
         }
         ExpressionDef argumentExpression = resolveConstructorArgument(argumentIndex, constructorMethodVarSupplier.get());
-        if (type.isAssignable(Map.class)) {
+        if (type.isAssignable(Map.class) || isScalaInjectableMap(type)) {
             argumentExpression = resolveSecondTypeArgument(argumentExpression);
         } else {
             argumentExpression = resolveFirstTypeArgument(argumentExpression);
@@ -4487,7 +4537,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             return expressionDef;
         }
         expressionDef = resolveMethodArgument(methodIndex, argumentIndex);
-        if (type.isAssignable(Map.class)) {
+        if (type.isAssignable(Map.class) || isScalaInjectableMap(type)) {
             expressionDef = resolveSecondTypeArgument(expressionDef);
         } else {
             expressionDef = resolveFirstTypeArgument(expressionDef);
@@ -4509,7 +4559,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             return argumentExpression;
         }
         argumentExpression = resolveFieldArgument(fieldIndex);
-        if (type.isAssignable(Map.class)) {
+        if (type.isAssignable(Map.class) || isScalaInjectableMap(type)) {
             argumentExpression = resolveSecondTypeArgument(argumentExpression);
         } else {
             argumentExpression = resolveFirstTypeArgument(argumentExpression);

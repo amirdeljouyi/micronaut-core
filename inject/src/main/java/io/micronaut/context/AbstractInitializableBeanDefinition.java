@@ -1395,6 +1395,37 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
     }
 
     /**
+     * Obtains a map of beans for a method argument without coercing the map type.
+     * <p>
+     * Warning: this method is used by internal generated code and should not be called by user code.
+     *
+     * @param resolutionContext The resolution context
+     * @param context           The context
+     * @param methodIndex       The method index
+     * @param argIndex          The argument index
+     * @param genericType       The generic type
+     * @param qualifier         The qualifier
+     * @return The resolved beans
+     * @param <V>               The bean type
+     */
+    @Internal
+    @UsedByGeneratedCode
+    protected final <V> Map<String, V> getBeanMapForMethodArgument(
+        BeanResolutionContext resolutionContext,
+        BeanContext context,
+        int methodIndex,
+        int argIndex,
+        Argument<V> genericType,
+        Qualifier<V> qualifier) {
+        MethodReference methodRef = Objects.requireNonNull(methodInjection)[methodIndex];
+        Argument<?> argument = resolveArgument(context, argIndex, methodRef.arguments);
+        try (BeanResolutionContext.Path ignored =
+                 resolutionContext.getPath().pushMethodArgumentResolve(this, methodRef.methodName, argument, methodRef.arguments)) {
+            return resolveBeanMapOfType(resolutionContext, argument, resolveArgument(context, genericType), qualifier);
+        }
+    }
+
+    /**
      * Obtains a bean definition for a constructor at the given index
      * <p>
      * Warning: this method is used by internal generated code and should not be called by user code.
@@ -1780,6 +1811,34 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
     }
 
     /**
+     * Obtains a map of beans for a constructor argument without coercing the map type.
+     * <p>
+     * Warning: this method is used by internal generated code and should not be called by user code.
+     *
+     * @param resolutionContext The resolution context
+     * @param context           The context
+     * @param argIndex          The argument index
+     * @param genericType       The generic type
+     * @param qualifier         The qualifier
+     * @return The resolved beans
+     * @param <V>               The bean type
+     */
+    @Internal
+    @UsedByGeneratedCode
+    protected final <V> Map<String, V> getBeanMapForConstructorArgument(
+        BeanResolutionContext resolutionContext,
+        BeanContext context,
+        int argIndex,
+        Argument<V> genericType,
+        Qualifier<V> qualifier) {
+        MethodReference constructorMethodRef = (MethodReference) Objects.requireNonNull(constructor);
+        Argument<?> argument = resolveArgument(context, argIndex, constructorMethodRef.arguments);
+        try (BeanResolutionContext.Path ignored = resolutionContext.getPath().pushConstructorResolve(this, argument)) {
+            return resolveBeanMapOfType(resolutionContext, argument, resolveArgument(context, genericType), qualifier);
+        }
+    }
+
+    /**
      * Obtains all bean definitions for a constructor argument at the given index
      * <p>
      * Warning: this method is used by internal generated code and should not be called by user code.
@@ -2141,6 +2200,33 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
         }
     }
 
+    /**
+     * Obtains a map of beans for a field without coercing the map type.
+     * <p>
+     * Warning: this method is used by internal generated code and should not be called by user code.
+     *
+     * @param resolutionContext The resolution context
+     * @param context           The context
+     * @param fieldIndex        The field index
+     * @param genericType       The generic type
+     * @param qualifier         The qualifier
+     * @param <V>               The bean type
+     * @return The resolved beans
+     */
+    @Internal
+    @UsedByGeneratedCode
+    protected final <V> Map<String, V> getBeanMapForField(
+        BeanResolutionContext resolutionContext,
+        BeanContext context, int fieldIndex,
+        Argument<V> genericType,
+        Qualifier<V> qualifier) {
+        FieldReference fieldRef = Objects.requireNonNull(fieldInjection)[fieldIndex];
+        Argument<?> argument = resolveArgument(context, fieldRef.argument);
+        try (BeanResolutionContext.Path ignored = resolutionContext.getPath().pushFieldResolve(this, argument)) {
+            return resolveBeanMapOfType(resolutionContext, argument, resolveArgument(context, genericType), qualifier);
+        }
+    }
+
     @Internal
     @UsedByGeneratedCode
     protected final boolean containsPropertiesValue(BeanResolutionContext resolutionContext, BeanContext context, String value) {
@@ -2418,6 +2504,18 @@ public abstract class AbstractInitializableBeanDefinition<T> extends AbstractBea
             return map;
         }
         return resolutionContext.getContext().getConversionService().convertRequired(map, returnType);
+    }
+
+    private <V> Map<String, V> resolveBeanMapOfType(
+        BeanResolutionContext resolutionContext,
+        Argument<?> returnType,
+        Argument<V> beanType,
+        Qualifier<V> qualifier) {
+        if (beanType == null) {
+            throw noGenericsError(resolutionContext, returnType);
+        }
+        qualifier = qualifier == null ? resolveQualifier(resolutionContext, beanType, returnType) : qualifier;
+        return resolutionContext.mapOfType(beanType, qualifier);
     }
 
     private <K> Optional<K> resolveOptionalBean(BeanResolutionContext resolutionContext, Argument<K> returnType, @Nullable Argument<K> beanType, @Nullable Qualifier<K> qualifier) {
