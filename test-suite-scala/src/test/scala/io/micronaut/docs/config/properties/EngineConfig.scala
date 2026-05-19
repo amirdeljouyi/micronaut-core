@@ -34,3 +34,9 @@ case class ImmutableEngineConfig(
     manufacturer: String,
     cylinders: Int
 )
+
+@ConfigurationProperties("app")
+case class AppConfig(
+    names: List[String],
+    labels: Map[String, String]
+)

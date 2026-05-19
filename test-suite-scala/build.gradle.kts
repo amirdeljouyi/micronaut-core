@@ -21,6 +21,7 @@ dependencies {
     testImplementation(projects.micronautHttpClient)
     testImplementation(projects.micronautRuntime)
     testImplementation(projects.micronautInject)
+    testRuntimeOnly(projects.micronautInjectScala)
     testImplementation(projects.micronautJacksonDatabind)
     testImplementation(libs.managed.reactor)
     testImplementation(platform(libs.test.boms.micronaut.validation))

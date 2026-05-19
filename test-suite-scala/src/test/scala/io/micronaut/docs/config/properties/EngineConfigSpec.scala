@@ -58,6 +58,24 @@ class EngineConfigSpec:
       context.close()
 
   @Test
+  def bindsScalaCollectionConfigurationProperties(): Unit =
+    val context = ApplicationContext.run(
+      Map[String, Object](
+        "app.names[0]" -> "alpha",
+        "app.names[1]" -> "beta",
+        "app.labels.one" -> "first",
+        "app.labels.two" -> "second"
+      ).asJava
+    )
+    try
+      val config = context.getBean(classOf[AppConfig])
+      assertEquals(List("alpha", "beta"), config.names)
+      assertEquals("first", config.labels("one"))
+      assertEquals("second", config.labels("two"))
+    finally
+      context.close()
+
+  @Test
   def validatesMutableConfigurationProperties(): Unit =
     val context = ApplicationContext.run(
       Map[String, Object](
