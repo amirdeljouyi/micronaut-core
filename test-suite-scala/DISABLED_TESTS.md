@@ -26,6 +26,9 @@ This file tracks Scala documentation examples that are not yet ported to
   carrying scope stereotypes.
 - `io.micronaut.docs.aop.retry.RetrySpec` verifies around advice through
   retry interception.
+- `io.micronaut.docs.aop.retry.BookService` compiles the annotation-style retry
+  docs snippets, including simple, configured, circuit-breaker, and reactive
+  retry examples.
 - `io.micronaut.docs.aop.retry.ProgrammaticRetrySpec` verifies programmatic
   retry and circuit breaker operations.
 - `io.micronaut.docs.aop.around.AroundSpec` verifies a Scala `@Around`
