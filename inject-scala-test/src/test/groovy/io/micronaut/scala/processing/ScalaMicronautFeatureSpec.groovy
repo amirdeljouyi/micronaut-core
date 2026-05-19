@@ -30,6 +30,7 @@ import io.micronaut.inject.writer.BeanDefinitionVisitor
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
 import jakarta.inject.Singleton
+import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
@@ -95,6 +96,76 @@ class Vehicle(val engines: Array[Engine])
         then:
         definition.constructor.arguments.size() == 1
         vehicle.engines()*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
+    @PendingFeature
+    void "supports Scala immutable List constructor injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val engines: scala.collection.immutable.List[Engine])
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        vehicle.engines().iterator().collect { it.name() } as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
+    @PendingFeature
+    void "supports Scala Seq method injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle:
+  private var allEngines: scala.collection.Seq[Engine] = scala.collection.Seq.empty
+
+  @Inject
+  def setEngines(engines: scala.collection.Seq[Engine]): Unit =
+    allEngines = engines
+
+  def engines: scala.collection.Seq[Engine] = allEngines
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        vehicle.engines().iterator().collect { it.name() } as Set == ['v6', 'v8'] as Set
 
         cleanup:
         context?.close()
