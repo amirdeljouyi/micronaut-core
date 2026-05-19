@@ -22,6 +22,7 @@ import io.micronaut.context.annotation.ConfigurationInject
 import io.micronaut.context.annotation.Property
 import io.micronaut.context.annotation.Prototype
 import io.micronaut.context.exceptions.BeanInstantiationException
+import io.micronaut.http.annotation.Get
 import io.micronaut.inject.ValidatedBeanDefinition
 import io.micronaut.inject.processing.ProcessingException
 import io.micronaut.inject.qualifiers.Qualifiers
@@ -888,6 +889,27 @@ class Calculator:
 
         then:
         definition.findMethod('add', Integer.TYPE, Integer.TYPE).present
+    }
+
+    void "preserves empty array annotation members on executable methods"() {
+        when:
+        def definition = buildBeanDefinition('example.TaskController', '''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.http.annotation.Get
+
+@Bean
+class TaskController:
+  @Get(uri = "/tasks", produces = Array("application/json"), consumes = Array())
+  def tasks(): String = "[]"
+''')
+        def method = definition.executableMethods.iterator().next()
+
+        then:
+        method.stringValues(Get, 'produces') == ['application/json'] as String[]
+        method.stringValues(Get, 'consumes') == new String[0]
+        method.getAnnotation(Get).values.get('consumes') == new String[0]
     }
 
     void "supports routes inherited from Scala traits"() {

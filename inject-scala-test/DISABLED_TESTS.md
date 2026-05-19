@@ -68,6 +68,7 @@ compiler symbol/type metadata without classloading.
 proxy methods.
 `TypeElementQuery` field, method, and constructor inclusion is covered for
 Scala type visitors.
+Empty array annotation members are covered on generated executable methods.
 Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
 generated proxy-target beans, interceptor invocation, and target lifecycle.
 Source-defined Scala `@Around(proxyTarget = true, hotswap = true)` advice is
@@ -88,8 +89,8 @@ Bean import is documented as unsupported for Scala.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Java AbstractTypeElementSpec | 15 | 2 | 166 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 3 | 6 | 67 | 0 | 11 | 87 |
-| Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 0 | 3 | 19 |
-| Total | 19 | 11 | 245 | 1 | 25 | 301 |
+| Kotlin AbstractKotlinCompilerSpec | 2 | 2 | 12 | 0 | 3 | 19 |
+| Total | 20 | 10 | 245 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -398,7 +399,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsUnseenRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateArraySpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateArraySpec.groovy` - already covered: empty array annotation members are covered on Scala executable methods
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateFieldTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodParameterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
