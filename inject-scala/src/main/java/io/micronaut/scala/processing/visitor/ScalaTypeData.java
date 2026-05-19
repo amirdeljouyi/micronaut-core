@@ -37,6 +37,9 @@ import java.util.Map;
  * @param genericPlaceholder Whether this type is a generic placeholder
  * @param variableName The generic placeholder variable name
  * @param bounds The generic placeholder bounds
+ * @param wildcard Whether this type is a wildcard
+ * @param upperBounds The wildcard upper bounds
+ * @param lowerBounds The wildcard lower bounds
  */
 public record ScalaTypeData(
     String name,
@@ -51,7 +54,10 @@ public record ScalaTypeData(
     @Nullable Object nativeType,
     boolean genericPlaceholder,
     @Nullable String variableName,
-    List<ScalaTypeData> bounds
+    List<ScalaTypeData> bounds,
+    boolean wildcard,
+    List<ScalaTypeData> upperBounds,
+    List<ScalaTypeData> lowerBounds
 ) implements ScalaAnnotatedElementData {
 
     public ScalaTypeData {
@@ -59,6 +65,8 @@ public record ScalaTypeData(
         interfaces = interfaces == null ? Collections.emptyList() : List.copyOf(interfaces);
         annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
         bounds = bounds == null ? Collections.emptyList() : List.copyOf(bounds);
+        upperBounds = upperBounds == null ? Collections.emptyList() : List.copyOf(upperBounds);
+        lowerBounds = lowerBounds == null ? Collections.emptyList() : List.copyOf(lowerBounds);
     }
 
     public ScalaTypeData(
@@ -73,7 +81,27 @@ public record ScalaTypeData(
         boolean annotatedTypeUse,
         @Nullable Object nativeType
     ) {
-        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, false, null, Collections.emptyList());
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, false, null, Collections.emptyList(),
+            false, Collections.emptyList(), Collections.emptyList());
+    }
+
+    public ScalaTypeData(
+        String name,
+        boolean primitive,
+        int arrayDimensions,
+        boolean interfaceType,
+        Map<String, ScalaTypeData> typeArguments,
+        @Nullable ScalaTypeData superType,
+        List<ScalaTypeData> interfaces,
+        List<ScalaAnnotationData> annotations,
+        boolean annotatedTypeUse,
+        @Nullable Object nativeType,
+        boolean genericPlaceholder,
+        @Nullable String variableName,
+        List<ScalaTypeData> bounds
+    ) {
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, genericPlaceholder, variableName, bounds,
+            false, Collections.emptyList(), Collections.emptyList());
     }
 
     public ScalaTypeData(
@@ -85,7 +113,8 @@ public record ScalaTypeData(
         @Nullable ScalaTypeData superType,
         List<ScalaTypeData> interfaces
     ) {
-        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), false, null, false, null, Collections.emptyList());
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), false, null, false, null, Collections.emptyList(),
+            false, Collections.emptyList(), Collections.emptyList());
     }
 
     public ScalaTypeData(
@@ -99,6 +128,7 @@ public record ScalaTypeData(
     }
 
     public ScalaTypeData withArrayDimensions(int dimensions) {
-        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, genericPlaceholder, variableName, bounds);
+        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, genericPlaceholder,
+            variableName, bounds, wildcard, upperBounds, lowerBounds);
     }
 }

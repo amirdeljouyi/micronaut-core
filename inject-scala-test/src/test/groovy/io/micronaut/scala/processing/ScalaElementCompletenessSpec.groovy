@@ -27,6 +27,7 @@ import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.inject.ast.EnumElement
 import io.micronaut.inject.ast.FieldElement
+import io.micronaut.inject.ast.WildcardElement
 import io.micronaut.inject.validation.RequiresValidation
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaEnumConstantCaptureVisitor
@@ -345,6 +346,33 @@ class GenericMethods:
         method.returnType.variableName == 'T'
         method.parameters[0].type.genericPlaceholder
         method.parameters[0].type.variableName == 'T'
+    }
+
+    void "exposes Scala wildcard generic type arguments"() {
+        when:
+        def element = buildClassElement('example.Holder', '''
+package example
+
+class Holder(
+  val anything: java.util.List[_],
+  val numbers: java.util.List[_ <: Number]
+)
+''')
+        def properties = element.getBeanProperties().collectEntries { [(it.name): it] }
+        def anything = properties.anything.type.typeArguments.E as WildcardElement
+        def numbers = properties.numbers.type.typeArguments.E as WildcardElement
+
+        then:
+        anything.wildcard
+        !anything.bounded
+        anything.name == Object.name
+        anything.upperBounds*.name == [Object.name]
+        anything.lowerBounds.empty
+        numbers.wildcard
+        numbers.bounded
+        numbers.name == Number.name
+        numbers.upperBounds*.name == [Number.name]
+        numbers.lowerBounds.empty
     }
 
     void "exposes Scala field constant values"() {

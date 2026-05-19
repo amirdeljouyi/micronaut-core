@@ -60,6 +60,9 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
     }
 
     ClassElement newClassElement(ScalaTypeData type) {
+        if (type.wildcard()) {
+            return new ScalaWildcardElement(type, visitorContext);
+        }
         if (type.genericPlaceholder()) {
             return new ScalaGenericPlaceholderElement(type, visitorContext);
         }

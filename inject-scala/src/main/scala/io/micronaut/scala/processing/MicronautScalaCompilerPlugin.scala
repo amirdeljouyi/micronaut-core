@@ -753,31 +753,34 @@ private object ScalaModelExtractor:
     val (annotatedWidened, typeAnnotations) = annotatedType(tpe.widenDealiasKeepAnnots)
     val (widened, explicitNullable) = explicitNullableType(annotatedWidened)
     val allTypeAnnotations = extraAnnotations ++ typeAnnotations
-    val widenedSymbol = widened.typeSymbol
-    if widenedSymbol != Symbols.NoSymbol && widenedSymbol.isTypeParam then
-      typeParameterData(widenedSymbol, allTypeAnnotations, explicitNullable)
-    else widened match
-      case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
-        val componentType = typeTree.flatMap(appliedTypeArguments).flatMap(_.headOption) match
-          case Some(componentTree) => typeData(componentTree, visitedTypes)
-          case None => typeData(applied.args.head, visitedTypes)
-        componentType.withArrayDimensions(componentType.arrayDimensions + 1).asInstanceOf[ScalaTypeData]
-      case applied: AppliedType =>
-        val rawName = typeName(applied.tycon)
-        val primitiveName = ScalaPrimitiveNames.get(rawName)
-        val name = primitiveName.getOrElse(rawName)
-        val symbol = applied.tycon.classSymbol
-        val interfaceType = isInterfaceSymbol(symbol)
-        val hierarchy = typeHierarchy(widened, symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes, typeTree.flatMap(appliedTypeArguments).getOrElse(Nil)), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
-      case _ =>
-        val rawName = typeName(widened)
-        val primitiveName = ScalaPrimitiveNames.get(rawName)
-        val name = primitiveName.getOrElse(rawName)
-        val symbol = widened.classSymbol
-        val interfaceType = isInterfaceSymbol(symbol)
-        val hierarchy = typeHierarchy(widened, symbol, name, primitiveName.isDefined, visitedTypes)
-        ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
+    if widened.isInstanceOf[TypeBounds] then
+      wildcardTypeData(widened.asInstanceOf[TypeBounds], allTypeAnnotations, explicitNullable)
+    else
+      val widenedSymbol = widened.typeSymbol
+      if widenedSymbol != Symbols.NoSymbol && widenedSymbol.isTypeParam then
+        typeParameterData(widenedSymbol, allTypeAnnotations, explicitNullable)
+      else widened match
+        case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
+          val componentType = typeTree.flatMap(appliedTypeArguments).flatMap(_.headOption) match
+            case Some(componentTree) => typeData(componentTree, visitedTypes)
+            case None => typeData(applied.args.head, visitedTypes)
+          componentType.withArrayDimensions(componentType.arrayDimensions + 1).asInstanceOf[ScalaTypeData]
+        case applied: AppliedType =>
+          val rawName = typeName(applied.tycon)
+          val primitiveName = ScalaPrimitiveNames.get(rawName)
+          val name = primitiveName.getOrElse(rawName)
+          val symbol = applied.tycon.classSymbol
+          val interfaceType = isInterfaceSymbol(symbol)
+          val hierarchy = typeHierarchy(widened, symbol, name, primitiveName.isDefined, visitedTypes)
+          ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes, typeTree.flatMap(appliedTypeArguments).getOrElse(Nil)), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
+        case _ =>
+          val rawName = typeName(widened)
+          val primitiveName = ScalaPrimitiveNames.get(rawName)
+          val name = primitiveName.getOrElse(rawName)
+          val symbol = widened.classSymbol
+          val interfaceType = isInterfaceSymbol(symbol)
+          val hierarchy = typeHierarchy(widened, symbol, name, primitiveName.isDefined, visitedTypes)
+          ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
 
   private def annotatedTree(tpt: tpd.Tree)(using Context): (tpd.Tree, List[Annotation]) =
     val typeAnnotations = ListBuffer.empty[Annotation]
@@ -915,13 +918,50 @@ private object ScalaModelExtractor:
   private def typeParameterBounds(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaTypeData] =
     symbol.info match
       case bounds: TypeBounds =>
-        val upperBound = bounds.hi.widenDealias
-        if typeName(upperBound) == "scala.Any" then
-          List(objectTypeData)
-        else
-          List(typeData(upperBound))
+        upperBounds(bounds)
       case _ =>
         List(objectTypeData)
+
+  private def wildcardTypeData(
+      bounds: TypeBounds,
+      typeAnnotations: List[Annotation],
+      explicitNullable: Boolean
+  )(using Context, AnnotationDefaults): ScalaTypeData =
+    val upper = upperBounds(bounds)
+    val lower = lowerBounds(bounds)
+    val primaryBound = upper.head
+    ScalaTypeData(
+      primaryBound.name(),
+      primitive = false,
+      arrayDimensions = 0,
+      primaryBound.interfaceType(),
+      java.util.Map.of(),
+      primaryBound.superType(),
+      primaryBound.interfaces(),
+      typeAnnotationsFor(Symbols.NoSymbol, typeAnnotations, explicitNullable).asJava,
+      typeAnnotations.nonEmpty || explicitNullable,
+      bounds,
+      genericPlaceholder = false,
+      null,
+      Nil.asJava,
+      wildcard = true,
+      upper.asJava,
+      lower.asJava
+    )
+
+  private def upperBounds(bounds: TypeBounds)(using Context, AnnotationDefaults): List[ScalaTypeData] =
+    val upperBound = bounds.hi.widenDealias
+    if typeName(upperBound) == "scala.Any" then
+      List(objectTypeData)
+    else
+      List(typeData(upperBound))
+
+  private def lowerBounds(bounds: TypeBounds)(using Context, AnnotationDefaults): List[ScalaTypeData] =
+    val lowerBound = bounds.lo.widenDealias
+    if typeName(lowerBound) == "scala.Nothing" then
+      Nil
+    else
+      List(typeData(lowerBound))
 
   private def objectTypeData(using Context): ScalaTypeData =
     ScalaTypeData(
