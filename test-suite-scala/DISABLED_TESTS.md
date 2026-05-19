@@ -41,7 +41,8 @@ This file tracks Scala documentation examples that are not yet ported to
   advice and generated proxies for a Scala trait, including resolved metadata
   for inherited generic introduction methods.
 - `io.micronaut.docs.aop.lifecycle.LifeCycleAdviseSpec` verifies constructor,
-  post-construct, and pre-destroy lifecycle advice.
+  post-construct, and pre-destroy lifecycle advice with idiomatic Scala
+  `mutable.Map` and `Option` application state lookup.
 - `io.micronaut.docs.aop.scheduled.ScheduledExample` and
   `TaskSchedulerInjectExample` compile the scheduled method and scheduler
   injection docs snippets.

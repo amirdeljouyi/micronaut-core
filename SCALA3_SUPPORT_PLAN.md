@@ -106,6 +106,8 @@ Reference:
   lifecycle, retry, proxy-target, and reactive around advice.
 - Scala retry docs examples now use idiomatic Scala `List` return types for
   ordinary application methods instead of Java collection types.
+- Scala lifecycle advice docs examples now use Scala `mutable.Map` and `Option`
+  for ordinary application state lookup instead of Java collection/optional types.
 - Keep Scala examples idiomatic: constructor parameters, case classes, traits, `val`, and `var`.
 - Do not force JavaBean-style code unless the feature specifically requires Java interop.
 - Maintain `test-suite-scala/DISABLED_TESTS.md` as the docs backlog.

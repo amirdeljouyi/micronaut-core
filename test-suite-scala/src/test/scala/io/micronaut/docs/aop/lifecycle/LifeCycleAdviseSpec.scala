@@ -31,11 +31,11 @@ class LifeCycleAdviseSpec:
 
       val product = applicationContext.createBean(classOf[Product], "Apple") // <1>
       assertTrue(product.active)
-      assertTrue(productService.findProduct("APPLE").isPresent)
+      assertTrue(productService.findProduct("APPLE").nonEmpty)
 
       applicationContext.destroyBean(product) // <2>
       assertFalse(product.active)
-      assertFalse(productService.findProduct("APPLE").isPresent)
+      assertFalse(productService.findProduct("APPLE").nonEmpty)
       // end::test[]
     finally
       applicationContext.close()

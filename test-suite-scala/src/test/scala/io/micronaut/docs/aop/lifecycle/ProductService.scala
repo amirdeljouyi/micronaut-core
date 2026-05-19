@@ -18,22 +18,21 @@ package io.micronaut.docs.aop.lifecycle
 // tag::imports[]
 import jakarta.inject.Singleton
 
-import java.util.HashMap
-import java.util.Optional
+import scala.collection.mutable
 // end::imports[]
 
 // tag::class[]
 @Singleton
 class ProductService:
-  private val products = HashMap[String, Product]()
+  private val products = mutable.Map.empty[String, Product]
 
   def addProduct(product: Product): Unit =
-    products.put(product.productName, product)
+    products.update(product.productName, product)
 
   def removeProduct(product: Product): Unit =
     product.active = false
     products.remove(product.productName)
 
-  def findProduct(name: String): Optional[Product] =
-    Optional.ofNullable(products.get(name))
+  def findProduct(name: String): Option[Product] =
+    products.get(name)
 // end::class[]
