@@ -29,6 +29,7 @@ import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.GenericPlaceholderElement;
 import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
+import io.micronaut.inject.ast.PackageElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.PropertyElementQuery;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
@@ -601,6 +602,11 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
     @Override
     public String getPackageName() {
         return NameUtils.getPackageName(getName());
+    }
+
+    @Override
+    public PackageElement getPackage() {
+        return new ScalaPackageElement(getPackageName(), visitorContext);
     }
 
     @Override

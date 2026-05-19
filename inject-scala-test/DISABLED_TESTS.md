@@ -85,7 +85,10 @@ generic arguments. Inherited generic type arguments are also covered for
 classpath Java collection hierarchies such as `List` to `Collection` to
 `Iterable`. Class-level generic placeholders with upper bounds are exposed
 through the Element API, and method-level generic placeholders are exposed
-through `MethodElement`. Scala wildcard generic type arguments are covered for
+through `MethodElement`. Scala package element metadata is covered for the
+default package and nested packages, including simple package names. Scala
+primitive field types compare equal to shared `PrimitiveElement` constants.
+Scala wildcard generic type arguments are covered for
 unbounded, upper-bounded, and lower-bounded type arguments, including wildcard
 bounds that reference Scala generic placeholders. Bean-definition generic
 metadata resolves unbounded and upper-bounded wildcard arguments through Scala
@@ -419,7 +422,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-groovy/src/test/groovy/io/micronaut/inject/value/ValueParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/AnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/BeanIntrospectionSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ClassElementSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ClassElementSpec.groovy` - portable: partially covered for package element metadata, primitive equality, thrown types, generic type arguments, wildcard and placeholder metadata, type visitor queries, enum elements, nested classes, and element equality; remaining method/field selection, recursive generic, inherited metadata, and annotation propagation cases should be ported incrementally
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/CustomVisitorSpec.groovy` - already covered: basic TypeElementVisitor class/method/property observation is covered by ScalaPoCSpec
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/IntroductionVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support

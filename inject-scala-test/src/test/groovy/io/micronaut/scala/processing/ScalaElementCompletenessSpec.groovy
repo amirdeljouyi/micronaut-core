@@ -28,6 +28,8 @@ import io.micronaut.inject.ast.ClassElement
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.inject.ast.EnumElement
 import io.micronaut.inject.ast.FieldElement
+import io.micronaut.inject.ast.PackageElement
+import io.micronaut.inject.ast.PrimitiveElement
 import io.micronaut.inject.ast.WildcardElement
 import io.micronaut.inject.validation.RequiresValidation
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
@@ -45,6 +47,57 @@ import java.lang.annotation.RetentionPolicy
 import java.lang.annotation.Target
 
 class ScalaElementCompletenessSpec extends AbstractScalaTypeElementSpec {
+
+    void "exposes default package element metadata"() {
+        when:
+        def element = buildClassElement('Test', '''
+class Test
+''')
+        PackageElement packageElement = element.getPackage()
+
+        then:
+        element.packageName == ''
+        packageElement.name == ''
+        packageElement.simpleName == ''
+    }
+
+    void "exposes nested package element metadata"() {
+        when:
+        def element = buildClassElement('abc.my.pkgeltest.PckElementTest', '''
+package abc.my.pkgeltest
+
+class PckElementTest
+''')
+        PackageElement packageElement = element.getPackage()
+
+        then:
+        element.packageName == 'abc.my.pkgeltest'
+        packageElement.name == 'abc.my.pkgeltest'
+        packageElement.simpleName == 'pkgeltest'
+    }
+
+    void "preserves primitive element equality for Scala fields"() {
+        when:
+        def element = buildClassElement('example.Test', '''
+package example
+
+class Test:
+  var test1: Boolean = false
+''')
+        def fieldType = element.getEnclosedElements(ElementQuery.ALL_FIELDS)
+            .find { it.name == 'test1' }
+            .type
+
+        then:
+        element != PrimitiveElement.BOOLEAN
+        element != PrimitiveElement.VOID
+        element != PrimitiveElement.BOOLEAN.withArrayDimensions(4)
+        PrimitiveElement.VOID != element
+        PrimitiveElement.INT != element
+        PrimitiveElement.INT.withArrayDimensions(2) != element
+        fieldType == PrimitiveElement.BOOLEAN
+        PrimitiveElement.BOOLEAN == fieldType
+    }
 
     void "exposes class body val and var properties"() {
         when:
