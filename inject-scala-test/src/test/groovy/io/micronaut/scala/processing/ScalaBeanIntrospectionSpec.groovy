@@ -309,4 +309,26 @@ class Holder[A <: Animal](
         animal instanceof GenericPlaceholder
         animal.isTypeVariable()
     }
+
+    void "handles Scala introspection with protobuf-style generic superclass"() {
+        when:
+        buildBeanIntrospection('test.MyMessage', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class MyMessage extends Message
+
+class Message:
+  def getBuilder(): Builder[?] = Builder()
+
+class Builder[BuilderT <: Builder[BuilderT]]:
+  class BuilderParentImpl
+  private var meAsParent: BuilderParentImpl = _
+''')
+
+        then:
+        noExceptionThrown()
+    }
 }

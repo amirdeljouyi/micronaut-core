@@ -83,6 +83,7 @@ Reference:
 - Scala wildcard generic metadata now resolves unbounded wildcard arguments through the enclosing type parameter bounds for bean-definition generic metadata, including bounded forms such as `NumberThing[?]` and `NumberThing[? <: Double]`.
 - Recursive Scala generic type parameter bounds such as `T <: Test[T]` now terminate during compiler-symbol conversion while preserving a useful bounded placeholder chain for the Element API.
 - Scala bean introspection preserves generic placeholders with upper bounds on generic bean properties and nested Scala collection property type arguments.
+- Scala bean introspection handles protobuf-style generic superclass shapes without recursive generic traversal failures.
 
 ### Wave 4: Micronaut Features
 
