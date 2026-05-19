@@ -1038,11 +1038,18 @@ private object ScalaModelExtractor:
       tpe.show
 
   private def className(symbol: Symbol)(using Context): String =
-    val binaryName = symbol.denot.binaryClassName
-    if binaryName == null || binaryName.isBlank then
-      symbol.showFullName
+    if hasFlag(symbol, Flags.JavaDefined) &&
+        symbol.owner != Symbols.NoSymbol &&
+        symbol.owner.isClass &&
+        !hasFlag(symbol.owner, Flags.PackageClass)
+    then
+      s"${className(symbol.owner)}$$${symbol.name}"
     else
-      binaryName
+      val binaryName = symbol.denot.binaryClassName
+      if binaryName == null || binaryName.isBlank then
+        symbol.showFullName
+      else
+        binaryName
 
   private def companionClassName(symbol: Symbol)(using Context): Option[String] =
     if hasFlag(symbol, Flags.ModuleClass) then
@@ -1429,11 +1436,32 @@ private object ScalaModelExtractor:
       ScalaPrimitiveNames.getOrElse(symbolName, symbolName)
     else
       val aliased = ScalaClassLiteralAliases.getOrElse(name, name)
-      if aliased.contains(".") || aliased.indexOf('$') > -1 || classSymbolForName(aliased) != Symbols.NoSymbol then
+      val symbol = classSymbolForName(aliased)
+      if symbol != Symbols.NoSymbol then
+        className(symbol)
+      else if aliased.contains(".") then
+        javaNestedClassLiteralName(aliased).getOrElse(aliased)
+      else if aliased.indexOf('$') > -1 then
         aliased
       else
         val javaLangName = s"java.lang.$aliased"
         if classSymbolForName(javaLangName) != Symbols.NoSymbol then javaLangName else aliased
+
+  private def javaNestedClassLiteralName(name: String)(using Context): Option[String] =
+    val packageIndex = name.lastIndexOf('.')
+    if packageIndex < 0 then
+      None
+    else
+      val prefix = name.substring(0, packageIndex + 1)
+      val simpleName = name.substring(packageIndex + 1)
+      simpleName.indices.drop(1).iterator
+        .filter(index => simpleName.charAt(index).isUpper)
+        .map { index =>
+          val candidate = s"$prefix${simpleName.substring(0, index)}$$${simpleName.substring(index)}"
+          val symbol = classSymbolForName(candidate)
+          if symbol != Symbols.NoSymbol then Some(className(symbol)) else None
+        }
+        .collectFirst { case Some(resolved) => resolved }
 
   private def renderedClassLiteralValue(rendered: String): Option[String] =
     val start = rendered.indexOf("classOf")

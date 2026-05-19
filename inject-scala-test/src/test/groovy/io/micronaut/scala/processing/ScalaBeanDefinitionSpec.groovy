@@ -306,6 +306,39 @@ class Test(val deepList: java.util.List[java.util.List[java.util.List[String]]])
         param3.getType() == String.class
     }
 
+    void "exposes annotation metadata on deep Scala constructor type parameters in bean definitions"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import jakarta.inject.Singleton
+import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+
+@Singleton
+class Test(
+  val deepList: java.util.List[
+    java.util.List[
+      java.util.List[String @NotNull] @NotEmpty
+    ] @Size(min = 1)
+  ]
+)
+''')
+
+        expect:
+        definition != null
+        def constructor = definition.getConstructor()
+        def param = constructor.getArguments()[0]
+        def param1 = param.getTypeParameters()[0]
+        def param2 = param1.getTypeParameters()[0]
+        def param3 = param2.getTypeParameters()[0]
+        param1.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.Size$List')
+        param2.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.NotEmpty$List')
+        param3.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.NotNull$List')
+        param.getAnnotationMetadata().getAnnotationNames().contains('io.micronaut.validation.annotation.ValidatedElement')
+    }
+
     void "resolves Scala bean definition type variables for generic lookups"() {
         given:
         def context = buildContext('''

@@ -30,6 +30,7 @@ import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.PropertyElementQuery;
+import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -98,6 +99,15 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
     @Override
     public boolean isEnum() {
         return classData != null && classData.enumType();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public MutableAnnotationMetadataDelegate<AnnotationMetadata> getTypeAnnotationMetadata() {
+        if (typeData.annotatedTypeUse()) {
+            return getElementAnnotationMetadata();
+        }
+        return (MutableAnnotationMetadataDelegate<AnnotationMetadata>) MutableAnnotationMetadataDelegate.EMPTY;
     }
 
     @Override
