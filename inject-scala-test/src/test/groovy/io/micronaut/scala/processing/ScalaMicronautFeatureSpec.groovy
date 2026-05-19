@@ -254,24 +254,40 @@ class V8Engine extends Engine:
   override def name(): String = "v8"
 
 @Singleton
-class Vehicle(val constructorEngines: mutable.Buffer[Engine]):
+class Vehicle(
+    val constructorEngines: mutable.Buffer[Engine],
+    val constructorIterableEngines: mutable.Iterable[Engine]
+):
   private var allEngines: mutable.Seq[Engine] = mutable.Buffer.empty
+  private var allIterableEngines: mutable.Iterable[Engine] = mutable.Buffer.empty
 
   @(Inject @field)
   var fieldEngines: mutable.Buffer[Engine] = mutable.Buffer.empty
+
+  @(Inject @field)
+  var fieldIterableEngines: mutable.Iterable[Engine] = mutable.Buffer.empty
 
   @Inject
   def setEngines(engines: mutable.Seq[Engine]): Unit =
     allEngines = engines
 
+  @Inject
+  def setIterableEngines(engines: mutable.Iterable[Engine]): Unit =
+    allIterableEngines = engines
+
   def methodEngines: mutable.Seq[Engine] = allEngines
+
+  def methodIterableEngines: mutable.Iterable[Engine] = allIterableEngines
 ''')
         def vehicle = getBean(context, 'example.Vehicle')
 
         then:
         scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.constructorEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.constructorIterableEngines())*.name() as Set == ['v6', 'v8'] as Set
         scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.methodEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.methodIterableEngines())*.name() as Set == ['v6', 'v8'] as Set
         scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.fieldEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.fieldIterableEngines())*.name() as Set == ['v6', 'v8'] as Set
 
         cleanup:
         context?.close()
