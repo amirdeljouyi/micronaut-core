@@ -289,6 +289,21 @@ class Holder(
         properties.lookup.type.typeArguments.V.name == Integer.name
     }
 
+    void "exposes inherited generic property type arguments"() {
+        when:
+        def element = buildClassElement('example.Holder', '''
+package example
+
+class Holder(val names: java.util.List[String])
+''')
+        def namesType = element.getBeanProperties().find { it.name == 'names' }.type
+
+        then:
+        namesType.getAllTypeArguments().get(List.name).get("E").name == String.name
+        namesType.getAllTypeArguments().get(Collection.name).get("E").name == String.name
+        namesType.getAllTypeArguments().get(Iterable.name).get("T").name == String.name
+    }
+
     void "exposes Scala field constant values"() {
         when:
         def element = buildClassElement('example.Constants', '''
