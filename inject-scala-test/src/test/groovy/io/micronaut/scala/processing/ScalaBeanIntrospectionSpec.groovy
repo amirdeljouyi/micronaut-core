@@ -20,9 +20,46 @@ import io.micronaut.core.beans.BeanIntrospectionReference
 import io.micronaut.core.beans.EnumBeanIntrospection
 import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import spock.lang.PendingFeature
 
 class ScalaBeanIntrospectionSpec extends AbstractScalaTypeElementSpec {
+
+    void "loads Scala introspection reference with validation metadata"() {
+        given:
+        def classLoader = buildClassLoader('test.Address', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import scala.annotation.meta.getter
+
+@Introspected
+class Address(
+  @(NotBlank @getter)(groups = Array(classOf[GroupOne]))
+  @(Size @getter)(min = 5, max = 20, groups = Array(classOf[GroupTwo]))
+  val street: String
+)
+
+trait GroupOne
+trait GroupTwo
+''')
+
+        when:
+        BeanIntrospectionReference reference = classLoader.loadClass('test.$Address$Introspection').getDeclaredConstructor().newInstance()
+        BeanIntrospection introspection = reference.load()
+        def property = introspection.getRequiredProperty("street", String)
+
+        then:
+        reference != null
+        introspection != null
+        property.hasAnnotation(NotBlank)
+        property.hasAnnotation(Size)
+        property.getAnnotationMetadata().getAnnotationValuesByType(NotBlank).first().classValues("groups")*.name == ['test.GroupOne']
+        property.getAnnotationMetadata().getAnnotationValuesByType(Size).first().classValues("groups")*.name == ['test.GroupTwo']
+    }
 
     void "exposes Scala constructor argument generics"() {
         when:
