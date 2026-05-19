@@ -79,6 +79,7 @@ Reference:
 - Scala package element metadata now reports nested package simple names through a Scala-specific `PackageElement` wrapper, and primitive Scala field types compare equal to shared `PrimitiveElement` constants.
 - Scala inherited trait method generic substitution preserves annotations from Scala interface type arguments, including validation annotations on inherited method parameter types.
 - Scala inherited method `ElementQuery` filtering is covered for abstract, concrete, and accessible methods across source-defined class and trait hierarchies.
+- Scala emitted field `ElementQuery` filtering is covered for all, private, and accessible field selection, preserving the Scala-specific model that emitted fields are private and reflection-required.
 - Scala wildcard generic metadata now resolves unbounded wildcard arguments through the enclosing type parameter bounds for bean-definition generic metadata, including bounded forms such as `NumberThing[?]` and `NumberThing[? <: Double]`.
 
 ### Wave 4: Micronaut Features

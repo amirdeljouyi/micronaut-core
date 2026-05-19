@@ -25,6 +25,7 @@ import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.annotation.AnnotationMetadataHierarchy
 import io.micronaut.inject.ast.ClassElement
+import io.micronaut.inject.ast.ElementModifier
 import io.micronaut.inject.ast.ElementQuery
 import io.micronaut.inject.ast.EnumElement
 import io.micronaut.inject.ast.FieldElement
@@ -503,6 +504,31 @@ trait AnotherInterface:
         ])
         abstractMethods*.name as Set == ['unimplementedItfeMethod', 'unimplementedSuperMethod', 'unimplementedMethod'] as Set
         concreteMethods*.name as Set == ['packagePublicMethod', 'publicMethod', 'otherSuper', 'itfeMethod'] as Set
+    }
+
+    void "filters emitted Scala fields with element queries"() {
+        when:
+        def element = buildClassElement('elementquery.FieldQuery', '''
+package elementquery
+
+class FieldQuery:
+  val publicVal: String = "public"
+  protected val protectedVal: String = "protected"
+  private val privateVal: String = "private"
+  var mutableVar: Int = 1
+''')
+        def allFields = element.getEnclosedElements(ElementQuery.ALL_FIELDS)
+        def privateFields = element.getEnclosedElements(ElementQuery.ALL_FIELDS.modifiers({
+            it.contains(ElementModifier.PRIVATE)
+        }))
+        def accessibleFields = element.getEnclosedElements(ElementQuery.ALL_FIELDS.onlyAccessible())
+
+        then:
+        allFields*.name as Set == ['publicVal', 'protectedVal', 'privateVal', 'mutableVar'] as Set
+        allFields.every { it.private }
+        allFields.every { it.reflectionRequired }
+        privateFields*.name as Set == allFields*.name as Set
+        accessibleFields.empty
     }
 
     void "exposes generic property type arguments"() {
