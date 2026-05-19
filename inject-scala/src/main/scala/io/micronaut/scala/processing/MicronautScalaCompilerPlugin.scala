@@ -304,6 +304,18 @@ private object ScalaModelExtractor:
     "Unit" -> "void"
   )
 
+  private val BoxedPrimitiveNames = Map(
+    "boolean" -> classOf[java.lang.Boolean].getName,
+    "byte" -> classOf[java.lang.Byte].getName,
+    "char" -> classOf[java.lang.Character].getName,
+    "double" -> classOf[java.lang.Double].getName,
+    "float" -> classOf[java.lang.Float].getName,
+    "int" -> classOf[java.lang.Integer].getName,
+    "long" -> classOf[java.lang.Long].getName,
+    "short" -> classOf[java.lang.Short].getName,
+    "void" -> classOf[java.lang.Void].getName
+  )
+
   private val VoidTypeData = ScalaTypeData("void", primitive = true, arrayDimensions = 0, interfaceType = false, java.util.Map.of())
 
   private case class AnnotationMemberType(
@@ -446,8 +458,8 @@ private object ScalaModelExtractor:
           val constructors = List(methodData(template.constr, constructor = true, owner = symbol))
           val constructorProps = constructorProperties(template.constr, methodByName, allFields)
           val properties = constructorProps ++ bodyProperties(declarations, methodByName, allFields, constructorProps.map(_.name).toSet)
-          val parents = symbol.info.parents
-            .filterNot(parent => typeName(parent) == classOf[Object].getName)
+          val parents = template.parents
+            .filterNot(parent => typeName(parent.tpe) == classOf[Object].getName)
             .map(typeData)
           val superType = parents.find(parent => !parent.interfaceType()).orNull
           val interfaces = parents.filter(_.interfaceType())
@@ -748,7 +760,7 @@ private object ScalaModelExtractor:
         val name = primitiveName.getOrElse(rawName)
         val symbol = applied.tycon.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
-        val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
+        val hierarchy = typeHierarchy(widened, symbol, name, primitiveName.isDefined, visitedTypes)
         ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, typeArguments(symbol, applied.args, visitedTypes, typeTree.flatMap(appliedTypeArguments).getOrElse(Nil)), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
       case _ =>
         val rawName = typeName(widened)
@@ -756,7 +768,7 @@ private object ScalaModelExtractor:
         val name = primitiveName.getOrElse(rawName)
         val symbol = widened.classSymbol
         val interfaceType = isInterfaceSymbol(symbol)
-        val hierarchy = typeHierarchy(symbol, name, primitiveName.isDefined, visitedTypes)
+        val hierarchy = typeHierarchy(widened, symbol, name, primitiveName.isDefined, visitedTypes)
         ScalaTypeData(name, primitiveName.isDefined, 0, interfaceType, java.util.Map.of(), hierarchy.superType, hierarchy.interfaces.asJava, typeAnnotationsFor(symbol, allTypeAnnotations, explicitNullable).asJava, allTypeAnnotations.nonEmpty || explicitNullable, symbol)
 
   private def annotatedTree(tpt: tpd.Tree)(using Context): (tpd.Tree, List[Annotation]) =
@@ -818,12 +830,12 @@ private object ScalaModelExtractor:
     val nullable = if explicitNullable then List(NullableAnnotationData) else Nil
     nullable ++ typeAnnotations.map(annotationData(_, Set.empty)) ++ annotations(symbol)
 
-  private def typeHierarchy(symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context, AnnotationDefaults): TypeHierarchy =
+  private def typeHierarchy(tpe: Type, symbol: Symbol, name: String, primitive: Boolean, visitedTypes: Set[String])(using Context, AnnotationDefaults): TypeHierarchy =
     if primitive || symbol == Symbols.NoSymbol || visitedTypes.contains(name) then
       TypeHierarchy(null, Nil)
     else
       val nextVisited = visitedTypes + name
-      val parents = symbol.info.parents
+      val parents = tpe.parents
         .filterNot(parent => typeName(parent) == classOf[Object].getName)
         .map(parent => typeData(parent, nextVisited))
       TypeHierarchy(
@@ -840,9 +852,28 @@ private object ScalaModelExtractor:
         val argumentData = argumentTrees.lift(index) match
           case Some(argumentTree) => typeData(argumentTree, visitedTypes)
           case None => typeData(argument, visitedTypes)
-        converted.put(parameter.name.toString, argumentData)
+        converted.put(parameter.name.toString, boxPrimitiveTypeArgument(argumentData))
       }
       converted
+
+  private def boxPrimitiveTypeArgument(typeData: ScalaTypeData)(using Context): ScalaTypeData =
+    val boxedName = BoxedPrimitiveNames.get(typeData.name())
+    if typeData.primitive() && typeData.arrayDimensions() == 0 && boxedName.isDefined then
+      val symbol = classSymbolForName(boxedName.get)
+      ScalaTypeData(
+        boxedName.get,
+        primitive = false,
+        0,
+        interfaceType = false,
+        java.util.Map.of(),
+        null,
+        Nil.asJava,
+        typeData.annotations(),
+        typeData.annotatedTypeUse(),
+        symbol
+      )
+    else
+      typeData
 
   private def typeName(tpe: Type)(using Context): String =
     val symbol = tpe.classSymbol

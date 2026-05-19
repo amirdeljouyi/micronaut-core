@@ -53,6 +53,9 @@ Scala generic type arguments.
 Scala explicit-nulls union types such as `String | Null` are covered for
 method returns, parameters, generic type arguments, and introspection
 constructor argument metadata.
+Scala generic type arguments are resolved through source-defined parent class
+and trait hierarchies, including boxing primitive Scala value types used as
+generic arguments.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction

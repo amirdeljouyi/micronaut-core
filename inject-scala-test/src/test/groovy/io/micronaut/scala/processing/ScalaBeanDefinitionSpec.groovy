@@ -99,4 +99,34 @@ class X extends Test
         def e = thrown(RuntimeException)
         e.message.contains("Bean defines an exposed type [limittypes.X] that is not implemented by the bean type")
     }
+
+    void "passes Scala type arguments through parent hierarchy"() {
+        given:
+        def source = '''
+package typearguments
+
+import jakarta.inject.Singleton
+
+@Singleton
+class ChainA extends ChainB[java.lang.Boolean]
+
+class ChainB[A] extends ChainC[A, Number, Integer]
+
+abstract class ChainC[A, B, E] extends ChainD[A, B, String, E]
+
+trait ChainD[A, B, C, E] extends ChainE[A, B, C, Byte]
+
+trait ChainE[A, B, C, D]
+'''
+        def element = buildClassElement('typearguments.ChainA', source)
+        def definition = buildBeanDefinition('typearguments.ChainA', source)
+
+        expect:
+        element.superType.get().typeArguments*.value*.name == ['java.lang.Boolean']
+        element.getAllTypeArguments()["typearguments.ChainB"]*.value*.name == ['java.lang.Boolean']
+        definition.getTypeArguments("typearguments.ChainB")*.type == [Boolean]
+        definition.getTypeArguments("typearguments.ChainC")*.type == [Boolean, Number, Integer]
+        definition.getTypeArguments("typearguments.ChainD")*.type == [Boolean, Number, String, Integer]
+        definition.getTypeArguments("typearguments.ChainE")*.type == [Boolean, Number, String, Byte]
+    }
 }

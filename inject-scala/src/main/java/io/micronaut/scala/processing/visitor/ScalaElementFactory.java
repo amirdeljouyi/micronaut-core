@@ -74,7 +74,7 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
                 default -> new ScalaClassElement(type, visitorContext, visitorContext.annotationMetadata(type));
             };
         }
-        if (!type.annotatedTypeUse()) {
+        if (!type.annotatedTypeUse() && type.typeArguments().isEmpty()) {
             return visitorContext.sourceClassElement(type.name())
                 .map(classElement -> type.arrayDimensions() == 0 ? classElement : classElement.withArrayDimensions(type.arrayDimensions()))
                 .orElseGet(() -> new ScalaClassElement(type, visitorContext, visitorContext.annotationMetadata(type)));
