@@ -35,6 +35,32 @@ class Test(val properties: java.util.Map[String, String])
         introspection.constructorArguments[0].getTypeVariable("V").get().type == String
     }
 
+    void "exposes Scala generic array introspection types"() {
+        when:
+        def introspection = buildBeanIntrospection('arraygenerics.Test', '''
+package arraygenerics
+
+import io.micronaut.context.annotation.Executable
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Test[T <: CharSequence](
+  var array: Array[T],
+  var starArray: Array[_],
+  var stringArray: Array[String]
+):
+  @Executable
+  def myMethod(): Array[T] = array
+''')
+
+        then:
+        introspection.beanProperties.size() == 3
+        introspection.getRequiredProperty("array", CharSequence[].class).type == CharSequence[].class
+        introspection.getRequiredProperty("starArray", Object[].class).type == Object[].class
+        introspection.getRequiredProperty("stringArray", String[].class).type == String[].class
+        introspection.beanMethods.first().returnType.type == CharSequence[].class
+    }
+
     void "instantiates Scala introspection with byte array constructor forwarding"() {
         when:
         def introspection = buildBeanIntrospection('test.FormulaDto', '''
