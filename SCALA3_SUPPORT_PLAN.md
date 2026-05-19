@@ -95,6 +95,9 @@ Reference:
 
 - Start with simple IOC, introspection, and config examples.
 - Add HTTP, controller, and AOP examples after the basics are working.
+- Scala docs examples now cover simple IOC, introspection, config binding,
+  HTTP/client/filter examples, and AOP examples including around, introduction,
+  lifecycle, retry, proxy-target, and reactive around advice.
 - Keep Scala examples idiomatic: constructor parameters, case classes, traits, `val`, and `var`.
 - Do not force JavaBean-style code unless the feature specifically requires Java interop.
 - Maintain `test-suite-scala/DISABLED_TESTS.md` as the docs backlog.
