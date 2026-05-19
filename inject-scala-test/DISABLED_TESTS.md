@@ -37,6 +37,9 @@ and boxed Boolean values, primitive and class multi-dimensional array
 properties, companion-object nested class introspection, and custom
 introspection target packages are covered. Executable route methods inherited
 from source-defined Scala traits are covered.
+Scala enum bean introspection is tracked as a pending parity test; generated
+Scala enum introspections currently use the normal introspection path rather
+than `EnumBeanIntrospection`.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,

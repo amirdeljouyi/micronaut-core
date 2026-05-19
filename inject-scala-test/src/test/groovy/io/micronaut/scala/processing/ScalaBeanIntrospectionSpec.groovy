@@ -17,7 +17,9 @@ package io.micronaut.scala.processing
 
 import io.micronaut.core.beans.BeanIntrospection
 import io.micronaut.core.beans.BeanIntrospectionReference
+import io.micronaut.core.beans.EnumBeanIntrospection
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+import spock.lang.PendingFeature
 
 class ScalaBeanIntrospectionSpec extends AbstractScalaTypeElementSpec {
 
@@ -120,6 +122,27 @@ class Test(val name: String)
         introspection.beanType.name == 'test.Test'
         introspectionRef.beanType.name == 'test.Test'
         introspection.getRequiredProperty("name", String).get(introspection.instantiate("Fred")) == "Fred"
+    }
+
+    @PendingFeature
+    void "builds Scala enum bean introspection"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Status', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+enum Status:
+  case Active, Disabled
+''')
+        def active = introspection.instantiate("Active")
+
+        then:
+        introspection instanceof EnumBeanIntrospection
+        introspection.beanProperties.empty
+        active.name() == "Active"
+        introspection.constants*.name == ['Active', 'Disabled']
     }
 
     void "instantiates Scala introspection with byte array constructor forwarding"() {
