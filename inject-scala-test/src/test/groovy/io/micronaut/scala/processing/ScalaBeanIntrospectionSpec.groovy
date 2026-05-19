@@ -86,6 +86,51 @@ class Test(
         introspection.getRequiredProperty("stringMatrix", String[][].class).type == String[][].class
     }
 
+    void "exposes annotation metadata on deep Scala introspection property type parameters"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Test', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Size
+
+@Introspected
+class Test(
+  var deepList: java.util.List[
+    java.util.List[
+      java.util.List[String @NotNull] @NotEmpty
+    ] @Size(min = 1, max = 2)
+  ],
+  var deepList2: java.util.List[
+    java.util.List[
+      java.util.List[
+        java.util.List[
+          java.util.List[
+            java.util.List[String]
+          ]
+        ]
+      ]
+    ]
+  ]
+)
+''')
+
+        then:
+        introspection != null
+        def property = introspection.getProperty("deepList").get().asArgument()
+        property.getTypeParameters().length == 1
+        def param1 = property.getTypeParameters()[0]
+        param1.getTypeParameters().length == 1
+        def param2 = param1.getTypeParameters()[0]
+        param2.getTypeParameters().length == 1
+        def param3 = param2.getTypeParameters()[0]
+        param1.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.Size$List')
+        param2.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.NotEmpty$List')
+        param3.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.NotNull$List')
+    }
+
     void "builds Scala introspection for companion nested class"() {
         when:
         def introspection = buildBeanIntrospection('test.Test$Foo', '''
