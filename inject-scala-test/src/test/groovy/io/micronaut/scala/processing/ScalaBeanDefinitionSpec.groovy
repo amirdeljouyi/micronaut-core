@@ -100,6 +100,57 @@ class X extends Test
         e.message.contains("Bean defines an exposed type [limittypes.X] that is not implemented by the bean type")
     }
 
+    void "limits Scala factory exposed bean types"() {
+        when:
+        def context = buildContext('''
+package limittypes
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Singleton
+
+trait X
+class Y extends X
+
+@Factory
+class TestFactory:
+  @Singleton
+  @Bean(typed = Array(classOf[X]))
+  def method(): Y = Y()
+''')
+
+        then:
+        getBean(context, 'limittypes.X') != null
+
+        cleanup:
+        context?.close()
+    }
+
+    void "fails compilation for invalid Scala factory exposed bean type"() {
+        when:
+        buildContext('''
+package limittypes
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Singleton
+
+trait Z
+trait X
+class Y extends X
+
+@Factory
+class TestFactory:
+  @Singleton
+  @Bean(typed = Array(classOf[Z]))
+  def method(): X = Y()
+''')
+
+        then:
+        def e = thrown(RuntimeException)
+        e.message.contains("Bean defines an exposed type [limittypes.Z] that is not implemented by the bean type")
+    }
+
     void "passes Scala type arguments through parent hierarchy"() {
         given:
         def source = '''
