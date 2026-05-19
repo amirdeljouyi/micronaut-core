@@ -597,6 +597,7 @@ private object ScalaModelExtractor:
       if constructor then "<init>" else methodName(method.name.toString),
       returnType,
       method.termParamss.flatten.map(parameterData).asJava,
+      (if constructor then Nil else typeParameters(method)).asJava,
       methodAnnotations.asJava,
       modifiers(method.symbol).asJava,
       constructor,
@@ -614,6 +615,7 @@ private object ScalaModelExtractor:
           methodType.paramNames.zip(methodType.paramInfos)
             .map { case (name, info) => parameterData(name.toString, info, symbol) }
             .asJava,
+          typeParameters(symbol).asJava,
           methodAnnotations.asJava,
           modifiers(symbol).asJava,
           constructor = false,
@@ -626,6 +628,7 @@ private object ScalaModelExtractor:
           methodName(symbol.name.toString),
           returnType,
           java.util.List.of(),
+          typeParameters(symbol).asJava,
           methodAnnotations.asJava,
           modifiers(symbol).asJava,
           constructor = false,
@@ -882,6 +885,9 @@ private object ScalaModelExtractor:
 
   private def typeParameters(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaTypeData] =
     symbol.typeParams.map(typeParameterData(_, Nil, explicitNullable = false))
+
+  private def typeParameters(method: tpd.DefDef)(using Context, AnnotationDefaults): List[ScalaTypeData] =
+    method.leadingTypeParams.map(typeParameter => typeParameterData(typeParameter.symbol, Nil, explicitNullable = false))
 
   private def typeParameterData(
       symbol: Symbol,

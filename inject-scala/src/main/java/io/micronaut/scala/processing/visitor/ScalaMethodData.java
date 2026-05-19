@@ -27,6 +27,7 @@ import java.util.Set;
  * @param name The method name
  * @param returnType The return type
  * @param parameters The parameters
+ * @param typeParameters The declared generic placeholders
  * @param annotations The annotations
  * @param modifiers The modifiers
  * @param constructor Whether this represents a constructor
@@ -36,6 +37,7 @@ public record ScalaMethodData(
     String name,
     ScalaTypeData returnType,
     List<ScalaParameterData> parameters,
+    List<ScalaTypeData> typeParameters,
     List<ScalaAnnotationData> annotations,
     Set<ElementModifier> modifiers,
     boolean constructor,
@@ -44,6 +46,7 @@ public record ScalaMethodData(
 
     public ScalaMethodData {
         parameters = parameters == null ? Collections.emptyList() : List.copyOf(parameters);
+        typeParameters = typeParameters == null ? Collections.emptyList() : List.copyOf(typeParameters);
         annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
         modifiers = modifiers == null ? Collections.emptySet() : Set.copyOf(modifiers);
     }

@@ -325,6 +325,28 @@ class Holder[T <: Number](val value: T)
         propertyType.bounds*.name == [Number.name]
     }
 
+    void "exposes Scala method generic placeholders with upper bounds"() {
+        when:
+        def element = buildClassElement('example.GenericMethods', '''
+package example
+
+class GenericMethods:
+  def identity[T <: Number](value: T): T = value
+''')
+        def method = element.findMethod('identity').get()
+        def placeholder = method.declaredTypeVariables.first()
+
+        then:
+        placeholder.variableName == 'T'
+        placeholder.name == Number.name
+        placeholder.bounds*.name == [Number.name]
+        method.declaredTypeArguments.T.variableName == 'T'
+        method.returnType.genericPlaceholder
+        method.returnType.variableName == 'T'
+        method.parameters[0].type.genericPlaceholder
+        method.parameters[0].type.variableName == 'T'
+    }
+
     void "exposes Scala field constant values"() {
         when:
         def element = buildClassElement('example.Constants', '''

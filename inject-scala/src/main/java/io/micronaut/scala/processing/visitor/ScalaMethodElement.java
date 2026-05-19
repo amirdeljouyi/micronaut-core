@@ -19,6 +19,7 @@ import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.inject.annotation.AnnotationMetadataHierarchy;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.ConstructorElement;
+import io.micronaut.inject.ast.GenericPlaceholderElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
 import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
@@ -28,6 +29,9 @@ import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Scala method element.
@@ -117,6 +121,25 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     @Override
     public ClassElement getReturnType() {
         return visitorContext.getElementFactory().newClassElement(methodData.returnType());
+    }
+
+    @Override
+    public List<? extends GenericPlaceholderElement> getDeclaredTypeVariables() {
+        return methodData.typeParameters().stream()
+            .map(visitorContext.getElementFactory()::newClassElement)
+            .map(GenericPlaceholderElement.class::cast)
+            .toList();
+    }
+
+    @Override
+    public Map<String, ClassElement> getDeclaredTypeArguments() {
+        return getDeclaredTypeVariables().stream()
+            .collect(Collectors.toMap(
+                GenericPlaceholderElement::getVariableName,
+                Function.identity(),
+                (left, right) -> left,
+                java.util.LinkedHashMap::new
+            ));
     }
 
     @Override
