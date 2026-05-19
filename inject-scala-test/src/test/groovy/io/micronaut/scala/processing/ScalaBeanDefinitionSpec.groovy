@@ -254,6 +254,56 @@ class KafkaDefaultConfiguration
         reference.getGenericBeanType().getTypeString(true) == 'DefaultKafkaConsumerConfiguration<Object, Object>'
     }
 
+    void "exposes Scala factory bean generic type metadata"() {
+        when:
+        def context = buildContext('''
+package limittypes
+
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Singleton
+
+@Factory
+class TestFactory:
+  @Singleton
+  def method(): X[Y] = Y()
+
+trait X[T]
+
+class Y extends X[Y]
+''')
+        def definition = getBeanDefinition(context, 'limittypes.X')
+
+        then:
+        definition.getGenericBeanType().getTypeString(true) == 'X<Y>'
+
+        cleanup:
+        context?.close()
+    }
+
+    void "exposes deep Scala constructor type parameters in bean definitions"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import jakarta.inject.Singleton
+
+@Singleton
+class Test(val deepList: java.util.List[java.util.List[java.util.List[String]]])
+''')
+
+        expect:
+        definition != null
+        def constructor = definition.getConstructor()
+        def param = constructor.getArguments()[0]
+        param.getTypeParameters().length == 1
+        def param1 = param.getTypeParameters()[0]
+        param1.getTypeParameters().length == 1
+        def param2 = param1.getTypeParameters()[0]
+        param2.getTypeParameters().length == 1
+        def param3 = param2.getTypeParameters()[0]
+        param3.getType() == String.class
+    }
+
     void "exposes Scala named qualifier metadata"() {
         given:
         def definition = buildBeanDefinition('test.Test', '''
