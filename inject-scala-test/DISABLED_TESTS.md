@@ -54,6 +54,8 @@ idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable
 `BeanRegistration[T]` element semantics. String-keyed Scala map injection is
 covered for constructor, method, and field injection with
 `scala.collection.Map[String, T]` and `scala.collection.immutable.Map[String, T]`.
+Scala `Option[T]` optional bean injection is covered for constructor, method,
+and field injection, including empty options when no bean is present.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,

@@ -313,6 +313,68 @@ class Vehicle(val constructorEngines: scala.collection.immutable.Map[String, Eng
         context?.close()
     }
 
+    void "supports Scala Option injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val constructorEngine: Option[Engine]):
+  private var allEngine: Option[Engine] = Option.empty
+
+  @(Inject @field)
+  var fieldEngine: Option[Engine] = Option.empty
+
+  @Inject
+  def setEngine(engine: Option[Engine]): Unit =
+    allEngine = engine
+
+  def methodEngine: Option[Engine] = allEngine
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        vehicle.constructorEngine().get().name() == 'v8'
+        vehicle.methodEngine().get().name() == 'v8'
+        vehicle.fieldEngine().get().name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports empty Scala Option injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class Vehicle(val engine: Option[Engine])
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        vehicle.engine().isEmpty()
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports bean registration injection"() {
         when:
         def source = '''
