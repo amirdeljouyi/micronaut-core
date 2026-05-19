@@ -423,6 +423,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     private static final ClassTypeDef TYPE_ABSTRACT_BEAN_DEFINITION_AND_REFERENCE = ClassTypeDef.of(AbstractInitializableBeanDefinitionAndReference.class);
     private static final ClassTypeDef TYPE_SCALA_COLLECTION_CONVERTERS = ClassTypeDef.of("scala.jdk.javaapi.CollectionConverters");
     private static final ClassTypeDef TYPE_SCALA_MUTABLE_BUFFER = scalaInterfaceType("scala.collection.mutable.Buffer");
+    private static final ClassTypeDef TYPE_SCALA_MUTABLE_SET = scalaInterfaceType("scala.collection.mutable.Set");
     private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_LIST = ClassTypeDef.of("scala.collection.immutable.List");
     private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_SEQ = scalaInterfaceType("scala.collection.immutable.Seq");
     private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_SET = scalaInterfaceType("scala.collection.immutable.Set");
@@ -440,6 +441,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         "scala.collection.IndexedSeq",
         "scala.collection.mutable.Iterable",
         "scala.collection.mutable.Seq",
+        "scala.collection.mutable.Set",
         "scala.collection.mutable.Buffer",
         "scala.collection.immutable.Iterable",
         "scala.collection.immutable.Seq",
@@ -3215,6 +3217,11 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         return switch (targetType.getName()) {
             case "scala.collection.immutable.List" -> scalaIterable.invoke("toList", TYPE_SCALA_IMMUTABLE_LIST);
             case "scala.collection.Set", "scala.collection.immutable.Set" -> scalaIterable.invoke("toSet", TYPE_SCALA_IMMUTABLE_SET);
+            case "scala.collection.mutable.Set" -> TYPE_SCALA_MUTABLE_SET.invokeStatic(
+                "from",
+                ClassTypeDef.of(Object.class),
+                scalaIterable.cast(TYPE_SCALA_ITERABLE_ONCE)
+            ).cast(TYPE_SCALA_MUTABLE_SET);
             case "scala.collection.IndexedSeq", "scala.collection.immutable.IndexedSeq", "scala.collection.immutable.Vector" ->
                 scalaIterable.invoke("toVector", TYPE_SCALA_IMMUTABLE_VECTOR);
             case "scala.collection.Seq", "scala.collection.immutable.Iterable", "scala.collection.immutable.Seq" ->

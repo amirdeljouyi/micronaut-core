@@ -277,6 +277,51 @@ class Vehicle(val constructorEngines: mutable.Buffer[Engine]):
         context?.close()
     }
 
+    void "supports Scala mutable Set injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+import scala.collection.mutable
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val constructorEngines: mutable.Set[Engine]):
+  private var allEngines: mutable.Set[Engine] = mutable.Set.empty
+
+  @(Inject @field)
+  var fieldEngines: mutable.Set[Engine] = mutable.Set.empty
+
+  @Inject
+  def setEngines(engines: mutable.Set[Engine]): Unit =
+    allEngines = engines
+
+  def methodEngines: mutable.Set[Engine] = allEngines
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.constructorEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.methodEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.fieldEngines())*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports Scala Vector field injection"() {
         when:
         def context = buildContext('''
@@ -1695,6 +1740,7 @@ case class AppConfig(
   names: scala.collection.immutable.List[String],
   labels: scala.collection.immutable.Map[String, String],
   mutableNames: mutable.Buffer[String],
+  mutableTags: mutable.Set[String],
   mutableLabels: mutable.Map[String, String]
 )
 '''
@@ -1705,6 +1751,8 @@ case class AppConfig(
                 'app.labels.two'      : 'second',
                 'app.mutable-names[0]': 'gamma',
                 'app.mutable-names[1]': 'delta',
+                'app.mutable-tags[0]' : 'fast',
+                'app.mutable-tags[1]' : 'blue',
                 'app.mutable-labels.x': 'ex',
                 'app.mutable-labels.y': 'why'
         ], true)
@@ -1715,6 +1763,7 @@ case class AppConfig(
         config.labels().apply('one') == 'first'
         config.labels().apply('two') == 'second'
         scala.jdk.javaapi.CollectionConverters.asJavaCollection(config.mutableNames()).toList() == ['gamma', 'delta']
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(config.mutableTags()) as Set == ['fast', 'blue'] as Set
         config.mutableLabels().apply('x') == 'ex'
         config.mutableLabels().apply('y') == 'why'
 

@@ -43,6 +43,7 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
         conversionService.addConverter(Collection.class, scala.collection.IndexedSeq.class, ScalaCollectionConverterRegistrar::toScalaIndexedSeq);
         conversionService.addConverter(Collection.class, scala.collection.mutable.Iterable.class, ScalaCollectionConverterRegistrar::toMutableIterable);
         conversionService.addConverter(Collection.class, scala.collection.mutable.Seq.class, ScalaCollectionConverterRegistrar::toMutableSeq);
+        conversionService.addConverter(Collection.class, scala.collection.mutable.Set.class, ScalaCollectionConverterRegistrar::toMutableSet);
         conversionService.addConverter(Collection.class, scala.collection.mutable.Buffer.class, ScalaCollectionConverterRegistrar::toMutableBuffer);
         conversionService.addConverter(Collection.class, scala.collection.immutable.Iterable.class, ScalaCollectionConverterRegistrar::toImmutableIterable);
         conversionService.addConverter(Collection.class, scala.collection.immutable.Seq.class, ScalaCollectionConverterRegistrar::toImmutableSeq);
@@ -114,6 +115,13 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
                                                                        Class<scala.collection.mutable.Seq> targetType,
                                                                        ConversionContext context) {
         return Optional.of(asMutableBuffer(collection));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Optional<scala.collection.mutable.Set> toMutableSet(Collection<?> collection,
+                                                                       Class<scala.collection.mutable.Set> targetType,
+                                                                       ConversionContext context) {
+        return Optional.of((scala.collection.mutable.Set) scala.collection.mutable.Set.from(toScalaIterableOnce(collection)));
     }
 
     private static Optional<scala.collection.mutable.Buffer> toMutableBuffer(Collection<?> collection,
