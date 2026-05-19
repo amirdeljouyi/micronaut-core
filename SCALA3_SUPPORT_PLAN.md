@@ -82,7 +82,7 @@ Reference:
 - Incrementally enable DI, qualifiers, `@Requires`, lifecycle methods, factories, `@ConfigurationProperties`, `@EachProperty`, executable methods, introspections, validation metadata, and AOP around and introduction advice.
 - Support idiomatic Scala collection injection where possible. Scala users should be able to request common Scala collection abstractions such as `scala.collection.Seq` and immutable collection implementations such as `scala.collection.immutable.List` for multi-bean injection instead of being forced to use `java.util` collection types.
 - Treat Scala collection support as more than assignability modelling. The generated injection path must supply values that are assignable to the actual Scala constructor, field, or method signature, likely by adding Scala-specific collection conversion or generated adaptation rather than pretending Scala collections are `java.util.Collection`.
-- Scala collection injection currently supports constructor, method, and field injection for common Scala collection types by generating Java-to-Scala collection adaptation code without adding a compile-time Scala dependency to `core-processor`.
+- Scala collection injection currently supports constructor, method, and field injection for common Scala collection types, including idiomatic `List[Foo]` source usage, by generating Java-to-Scala collection adaptation code without adding a compile-time Scala dependency to `core-processor`.
 - Add focused Scala regressions before each implementation fix.
 - Re-enable parity tests as support lands.
 

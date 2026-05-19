@@ -130,6 +130,36 @@ class Vehicle(val engines: scala.collection.immutable.List[Engine])
         context?.close()
     }
 
+    void "supports idiomatic Scala List constructor injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val engines: List[Engine])
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.engines())*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports Scala Seq method injection"() {
         when:
         def context = buildContext('''

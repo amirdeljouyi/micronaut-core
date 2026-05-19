@@ -45,7 +45,7 @@ Scala enum introspections currently use the normal introspection path rather
 than `EnumBeanIntrospection`.
 Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
-`scala.collection.immutable.List`, `scala.collection.Seq`, and
+idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.Seq`, and
 `scala.collection.immutable.Vector`.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
