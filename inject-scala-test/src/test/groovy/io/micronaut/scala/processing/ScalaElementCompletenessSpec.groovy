@@ -382,6 +382,27 @@ class Holder(
         integersOrSuper.lowerBounds*.name == [Integer.name]
     }
 
+    void "exposes Scala wildcard bounds that reference generic placeholders"() {
+        when:
+        def element = buildClassElement('example.Holder', '''
+package example
+
+class Holder[T <: CharSequence](val values: java.util.List[_ <: T])
+''')
+        def values = element.getBeanProperties().find { it.name == 'values' }.type
+        def wildcard = values.typeArguments.E as WildcardElement
+        def upperBound = wildcard.upperBounds.first()
+
+        then:
+        wildcard.wildcard
+        wildcard.bounded
+        wildcard.name == CharSequence.name
+        upperBound.genericPlaceholder
+        upperBound.variableName == 'T'
+        upperBound.name == CharSequence.name
+        upperBound.bounds*.name == [CharSequence.name]
+    }
+
     void "exposes Scala field constant values"() {
         when:
         def element = buildClassElement('example.Constants', '''
