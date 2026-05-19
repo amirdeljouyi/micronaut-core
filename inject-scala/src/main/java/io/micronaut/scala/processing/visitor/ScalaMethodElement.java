@@ -143,6 +143,13 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     }
 
     @Override
+    public ClassElement[] getThrownTypes() {
+        return methodData.thrownTypes().stream()
+            .map(visitorContext.getElementFactory()::newClassElement)
+            .toArray(ClassElement[]::new);
+    }
+
+    @Override
     public ParameterElement[] getParameters() {
         return parameters;
     }

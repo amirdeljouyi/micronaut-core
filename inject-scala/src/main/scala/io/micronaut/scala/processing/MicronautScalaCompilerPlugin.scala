@@ -598,6 +598,7 @@ private object ScalaModelExtractor:
       returnType,
       method.termParamss.flatten.map(parameterData).asJava,
       (if constructor then Nil else typeParameters(method)).asJava,
+      thrownTypes(method.symbol).asJava,
       methodAnnotations.asJava,
       modifiers(method.symbol).asJava,
       constructor,
@@ -616,6 +617,7 @@ private object ScalaModelExtractor:
             .map { case (name, info) => parameterData(name.toString, info, symbol) }
             .asJava,
           typeParameters(symbol).asJava,
+          thrownTypes(symbol).asJava,
           methodAnnotations.asJava,
           modifiers(symbol).asJava,
           constructor = false,
@@ -629,6 +631,7 @@ private object ScalaModelExtractor:
           returnType,
           java.util.List.of(),
           typeParameters(symbol).asJava,
+          thrownTypes(symbol).asJava,
           methodAnnotations.asJava,
           modifiers(symbol).asJava,
           constructor = false,
@@ -652,6 +655,53 @@ private object ScalaModelExtractor:
       VoidTypeData
     else
       typeData(tpt)
+
+  private def thrownTypes(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaTypeData] =
+    if symbol == Symbols.NoSymbol then
+      Nil
+    else
+      symbol.denot.annotations
+        .filter(annotation => className(annotation.symbol) == "scala.throws")
+        .flatMap(annotation => annotation.arguments.flatMap(thrownType))
+
+  private def thrownType(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[ScalaTypeData] =
+    thrownTypeArgument(tree).orElse(annotationClassValueTypeData(tree))
+
+  private def thrownTypeArgument(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[ScalaTypeData] =
+    tree match
+      case typeApply: tpd.TypeApply if typeApply.args.nonEmpty =>
+        Some(typeData(typeApply.args.head.tpe))
+      case typed: tpd.Typed =>
+        thrownTypeArgument(typed.expr)
+      case apply: tpd.Apply =>
+        thrownTypeArgument(apply.fun)
+          .orElse(apply.args.iterator.map(thrownTypeArgument).collectFirst { case Some(thrownType) => thrownType })
+      case _ =>
+        None
+
+  private def classValueTypeData(name: String)(using Context): ScalaTypeData =
+    val symbol = classSymbolForName(name)
+    ScalaTypeData(
+      name,
+      primitive = false,
+      arrayDimensions = 0,
+      interfaceType = isInterfaceSymbol(symbol),
+      java.util.Map.of(),
+      null,
+      Nil.asJava,
+      Nil.asJava,
+      annotatedTypeUse = false,
+      symbol
+    )
+
+  private def annotationClassValueTypeData(tree: tpd.Tree)(using Context, AnnotationDefaults): Option[ScalaTypeData] =
+    annotationValue(tree) match
+      case classValue: ScalaClassValueData =>
+        Some(classValueTypeData(classValue.name()))
+      case value: String if value.nonEmpty =>
+        Some(classValueTypeData(renderedClassLiteralValue(value).getOrElse(value)))
+      case _ =>
+        None
 
   private def fieldData(field: tpd.ValDef)(using Context, AnnotationDefaults): ScalaFieldData =
     val fieldType = typeData(field.tpt)

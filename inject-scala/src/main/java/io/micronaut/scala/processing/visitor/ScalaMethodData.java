@@ -28,6 +28,7 @@ import java.util.Set;
  * @param returnType The return type
  * @param parameters The parameters
  * @param typeParameters The declared generic placeholders
+ * @param thrownTypes The declared thrown types
  * @param annotations The annotations
  * @param modifiers The modifiers
  * @param constructor Whether this represents a constructor
@@ -38,6 +39,7 @@ public record ScalaMethodData(
     ScalaTypeData returnType,
     List<ScalaParameterData> parameters,
     List<ScalaTypeData> typeParameters,
+    List<ScalaTypeData> thrownTypes,
     List<ScalaAnnotationData> annotations,
     Set<ElementModifier> modifiers,
     boolean constructor,
@@ -47,6 +49,7 @@ public record ScalaMethodData(
     public ScalaMethodData {
         parameters = parameters == null ? Collections.emptyList() : List.copyOf(parameters);
         typeParameters = typeParameters == null ? Collections.emptyList() : List.copyOf(typeParameters);
+        thrownTypes = thrownTypes == null ? Collections.emptyList() : List.copyOf(thrownTypes);
         annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
         modifiers = modifiers == null ? Collections.emptySet() : Set.copyOf(modifiers);
     }

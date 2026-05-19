@@ -71,6 +71,8 @@ compiler symbol/type metadata without classloading.
 proxy methods.
 `TypeElementQuery` field, method, and constructor inclusion is covered for
 Scala type visitors.
+Scala `@throws[...]` method declarations are covered through
+`MethodElement.getThrownTypes()`.
 Empty array annotation members are covered on generated executable methods.
 Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
 generated proxy-target beans, interceptor invocation, and target lifecycle.

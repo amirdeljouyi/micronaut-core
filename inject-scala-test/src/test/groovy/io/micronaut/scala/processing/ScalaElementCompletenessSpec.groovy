@@ -20,6 +20,7 @@ import io.micronaut.context.annotation.DefaultScope
 import io.micronaut.context.annotation.Factory
 import io.micronaut.context.annotation.Requires
 import io.micronaut.context.annotation.Requirements
+import io.micronaut.context.exceptions.BeanContextException
 import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.annotation.TypeHint
 import io.micronaut.inject.annotation.AnnotationMetadataHierarchy
@@ -471,6 +472,24 @@ class GenericMethods:
         method.returnType.variableName == 'T'
         method.parameters[0].type.genericPlaceholder
         method.parameters[0].type.variableName == 'T'
+    }
+
+    void "exposes Scala throws annotations as method thrown types"() {
+        when:
+        def element = buildClassElement('throwstest.Test', '''
+package throwstest
+
+import io.micronaut.context.exceptions.BeanContextException
+
+class Test:
+  @throws[java.sql.SQLException]
+  @throws[BeanContextException]
+  def test(): Unit = ()
+''')
+        def method = element.getEnclosedElement(ElementQuery.ALL_METHODS.named({ it == 'test' })).get()
+
+        then:
+        method.thrownTypes*.name as Set == [java.sql.SQLException.name, BeanContextException.name] as Set
     }
 
     void "exposes Scala wildcard generic type arguments"() {
