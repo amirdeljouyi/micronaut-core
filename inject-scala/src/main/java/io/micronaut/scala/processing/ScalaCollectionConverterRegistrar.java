@@ -22,7 +22,9 @@ import io.micronaut.core.convert.TypeConverterRegistrar;
 import scala.collection.IterableOnce;
 import scala.jdk.javaapi.CollectionConverters;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,6 +41,9 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
         conversionService.addConverter(Collection.class, scala.collection.Seq.class, ScalaCollectionConverterRegistrar::toScalaSeq);
         conversionService.addConverter(Collection.class, scala.collection.Set.class, ScalaCollectionConverterRegistrar::toScalaSet);
         conversionService.addConverter(Collection.class, scala.collection.IndexedSeq.class, ScalaCollectionConverterRegistrar::toScalaIndexedSeq);
+        conversionService.addConverter(Collection.class, scala.collection.mutable.Iterable.class, ScalaCollectionConverterRegistrar::toMutableIterable);
+        conversionService.addConverter(Collection.class, scala.collection.mutable.Seq.class, ScalaCollectionConverterRegistrar::toMutableSeq);
+        conversionService.addConverter(Collection.class, scala.collection.mutable.Buffer.class, ScalaCollectionConverterRegistrar::toMutableBuffer);
         conversionService.addConverter(Collection.class, scala.collection.immutable.Iterable.class, ScalaCollectionConverterRegistrar::toImmutableIterable);
         conversionService.addConverter(Collection.class, scala.collection.immutable.Seq.class, ScalaCollectionConverterRegistrar::toImmutableSeq);
         conversionService.addConverter(Collection.class, scala.collection.immutable.Set.class, ScalaCollectionConverterRegistrar::toImmutableSet);
@@ -99,6 +104,24 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
         return Optional.of(scala.collection.immutable.Vector.from(toScalaIterableOnce(collection)));
     }
 
+    private static Optional<scala.collection.mutable.Iterable> toMutableIterable(Collection<?> collection,
+                                                                                 Class<scala.collection.mutable.Iterable> targetType,
+                                                                                 ConversionContext context) {
+        return Optional.of(asMutableBuffer(collection));
+    }
+
+    private static Optional<scala.collection.mutable.Seq> toMutableSeq(Collection<?> collection,
+                                                                       Class<scala.collection.mutable.Seq> targetType,
+                                                                       ConversionContext context) {
+        return Optional.of(asMutableBuffer(collection));
+    }
+
+    private static Optional<scala.collection.mutable.Buffer> toMutableBuffer(Collection<?> collection,
+                                                                             Class<scala.collection.mutable.Buffer> targetType,
+                                                                             ConversionContext context) {
+        return Optional.of(asMutableBuffer(collection));
+    }
+
     private static Optional<scala.collection.immutable.List> toImmutableList(Collection<?> collection,
                                                                              Class<scala.collection.immutable.List> targetType,
                                                                              ConversionContext context) {
@@ -131,5 +154,12 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
 
     private static IterableOnce<?> toScalaIterableOnce(Collection<?> collection) {
         return CollectionConverters.asScala(collection);
+    }
+
+    private static scala.collection.mutable.Buffer<?> asMutableBuffer(Collection<?> collection) {
+        if (collection instanceof List<?> list) {
+            return CollectionConverters.asScala(list);
+        }
+        return CollectionConverters.asScala(new ArrayList<>(collection));
     }
 }

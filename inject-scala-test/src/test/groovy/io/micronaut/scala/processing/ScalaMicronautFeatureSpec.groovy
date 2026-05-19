@@ -1688,18 +1688,25 @@ case class AppConfig(name: String, port: Int)
 package example
 
 import io.micronaut.context.annotation.ConfigurationProperties
+import scala.collection.mutable
 
 @ConfigurationProperties("app")
 case class AppConfig(
   names: scala.collection.immutable.List[String],
-  labels: scala.collection.immutable.Map[String, String]
+  labels: scala.collection.immutable.Map[String, String],
+  mutableNames: mutable.Buffer[String],
+  mutableLabels: mutable.Map[String, String]
 )
 '''
         def context = buildContext(source, [
-                'app.names[0]'  : 'alpha',
-                'app.names[1]'  : 'beta',
-                'app.labels.one': 'first',
-                'app.labels.two': 'second'
+                'app.names[0]'        : 'alpha',
+                'app.names[1]'        : 'beta',
+                'app.labels.one'      : 'first',
+                'app.labels.two'      : 'second',
+                'app.mutable-names[0]': 'gamma',
+                'app.mutable-names[1]': 'delta',
+                'app.mutable-labels.x': 'ex',
+                'app.mutable-labels.y': 'why'
         ], true)
         def config = getBean(context, 'example.AppConfig')
 
@@ -1707,6 +1714,9 @@ case class AppConfig(
         scala.jdk.javaapi.CollectionConverters.asJavaCollection(config.names()).toList() == ['alpha', 'beta']
         config.labels().apply('one') == 'first'
         config.labels().apply('two') == 'second'
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(config.mutableNames()).toList() == ['gamma', 'delta']
+        config.mutableLabels().apply('x') == 'ex'
+        config.mutableLabels().apply('y') == 'why'
 
         cleanup:
         context?.close()
