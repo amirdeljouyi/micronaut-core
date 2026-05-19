@@ -173,6 +173,26 @@ class TestOrder
         definition.intValue(Order).getAsInt() == 10
     }
 
+    void "exposes Scala nested bean definition order metadata"() {
+        given:
+        def definition = buildBeanDefinition('test.OuterBean$TestOrder', '''
+package test
+
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
+
+object OuterBean:
+  trait OrderedBean
+
+  @Singleton
+  @Order(10)
+  class TestOrder extends OrderedBean
+''')
+
+        expect:
+        definition.intValue(Order).getAsInt() == 10
+    }
+
     void "passes Scala type arguments through parent hierarchy"() {
         given:
         def source = '''
