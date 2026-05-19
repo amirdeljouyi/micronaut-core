@@ -131,6 +131,31 @@ class Test(
         param3.getAnnotationMetadata().getAnnotationNames().contains('jakarta.validation.constraints.NotNull$List')
     }
 
+    void "supports Scala field access bean introspection"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Test', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected(
+  accessKind = Array(Introspected.AccessKind.FIELD),
+  visibility = Array(Introspected.Visibility.ANY)
+)
+class Test:
+  private var secret: String = "hidden"
+  var visible: String = "shown"
+  def reveal: String = secret
+''')
+        def bean = introspection.instantiate()
+        def properties = introspection.beanProperties.collectEntries { [(it.name): it] }
+
+        then:
+        properties.keySet() == ['secret', 'visible'] as Set
+        properties.secret.get(bean) == 'hidden'
+        properties.visible.get(bean) == 'shown'
+    }
+
     void "builds Scala introspection for companion nested class"() {
         when:
         def introspection = buildBeanIntrospection('test.Test$Foo', '''

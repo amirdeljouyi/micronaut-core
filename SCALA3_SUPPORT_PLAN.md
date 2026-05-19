@@ -1,6 +1,6 @@
 # Scala 3 Support for Micronaut Core
 
-Last updated: 2026-05-15
+Last updated: 2026-05-19
 
 ## Summary
 
@@ -83,6 +83,7 @@ Reference:
 - Support idiomatic Scala collection injection where possible. Scala users should be able to request common Scala collection abstractions such as `scala.collection.Seq` and immutable collection implementations such as `scala.collection.immutable.List` for multi-bean injection instead of being forced to use `java.util` collection types.
 - Treat Scala collection support as more than assignability modelling. The generated injection path must supply values that are assignable to the actual Scala constructor, field, or method signature, likely by adding Scala-specific collection conversion or generated adaptation rather than pretending Scala collections are `java.util.Collection`.
 - Scala collection injection currently supports constructor, method, and field injection for common Scala collection types, including idiomatic `List[Foo]` source usage, by generating Java-to-Scala collection adaptation code without adding a compile-time Scala dependency to `core-processor`.
+- Scala field-access introspection should use Micronaut's shared bean-property resolution pattern where possible. Scala source properties still need Scala-native modelling for idiomatic accessors, but `@Introspected(accessKind = FIELD, visibility = ANY)` now resolves emitted Scala fields through the shared `AstBeanPropertiesUtils` path rather than changing core introspection writers.
 - Add focused Scala regressions before each implementation fix.
 - Re-enable parity tests as support lands.
 

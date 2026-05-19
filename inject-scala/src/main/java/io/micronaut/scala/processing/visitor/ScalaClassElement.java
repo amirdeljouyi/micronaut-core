@@ -15,6 +15,7 @@
  */
 package io.micronaut.scala.processing.visitor;
 
+import io.micronaut.context.annotation.BeanProperties;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.core.naming.NameUtils;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
@@ -31,10 +32,12 @@ import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.PropertyElementQuery;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
+import io.micronaut.inject.ast.utils.AstBeanPropertiesUtils;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -237,10 +240,49 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (classData == null) {
             return List.of();
         }
+        Set<BeanProperties.AccessKind> accessKinds = propertyElementQuery.getAccessKinds();
+        if (accessKinds.contains(BeanProperties.AccessKind.FIELD) && !accessKinds.contains(BeanProperties.AccessKind.METHOD)) {
+            return AstBeanPropertiesUtils.resolveBeanProperties(
+                propertyElementQuery,
+                this,
+                () -> List.of(),
+                () -> getEnclosedElements(ElementQuery.ALL_FIELDS),
+                false,
+                Collections.emptySet(),
+                methodElement -> Optional.empty(),
+                methodElement -> Optional.empty(),
+                this::mapFieldAccessPropertyElement
+            );
+        }
         return classData.properties().stream()
             .map(this::propertyElement)
             .map(PropertyElement.class::cast)
             .toList();
+    }
+
+    private @Nullable PropertyElement mapFieldAccessPropertyElement(AstBeanPropertiesUtils.BeanPropertyData value) {
+        if (value.isExcluded) {
+            return null;
+        }
+        return new ScalaPropertyElement(
+            this,
+            value.type,
+            value.propertyName,
+            value.getter,
+            value.setter,
+            value.field,
+            accessKind(value.readAccessKind),
+            accessKind(value.writeAccessKind),
+            false,
+            visitorContext
+        );
+    }
+
+    private static PropertyElement.AccessKind accessKind(BeanProperties.AccessKind accessKind) {
+        if (accessKind == BeanProperties.AccessKind.FIELD) {
+            return PropertyElement.AccessKind.FIELD;
+        }
+        return PropertyElement.AccessKind.METHOD;
     }
 
     @Override

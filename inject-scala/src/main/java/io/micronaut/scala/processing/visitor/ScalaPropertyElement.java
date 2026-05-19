@@ -35,6 +35,7 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Scala property element.
@@ -45,7 +46,18 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
 
     private final ScalaClassElement declaringType;
     private final ScalaVisitorContext visitorContext;
+    @Nullable
     private final ScalaPropertyData propertyData;
+    private final ClassElement type;
+    @Nullable
+    private final MethodElement readMethod;
+    @Nullable
+    private final MethodElement writeMethod;
+    @Nullable
+    private final FieldElement field;
+    private final AccessKind readAccessKind;
+    private final AccessKind writeAccessKind;
+    private final boolean excluded;
     private final ElementAnnotationMetadata annotationMetadata;
 
     ScalaPropertyElement(ScalaClassElement declaringType, ScalaPropertyData propertyData, ScalaVisitorContext visitorContext) {
@@ -58,62 +70,125 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
         ScalaVisitorContext visitorContext,
         @Nullable
         AnnotationMetadata annotationMetadata) {
-        super(
+        this(
             declaringType,
+            propertyData,
+            visitorContext.getElementFactory().newClassElement(propertyData.type()),
             propertyData.name(),
+            propertyData.readMethod() == null ? null : declaringType.methodElement(propertyData.readMethod()),
+            propertyData.writeMethod() == null ? null : declaringType.methodElement(propertyData.writeMethod()),
+            propertyData.field() == null ? null : declaringType.fieldElement(propertyData.field()),
+            AccessKind.METHOD,
+            AccessKind.METHOD,
+            false,
             propertyData.nativeType(),
             propertyData.modifiers(),
-            annotationMetadata == null ? visitorContext.annotationMetadata(propertyData) : MutableAnnotationMetadata.of(annotationMetadata),
+            visitorContext.annotationMetadata(propertyData),
+            annotationMetadata,
+            visitorContext
+        );
+    }
+
+    ScalaPropertyElement(
+        ScalaClassElement declaringType,
+        ClassElement type,
+        String name,
+        @Nullable MethodElement readMethod,
+        @Nullable MethodElement writeMethod,
+        @Nullable FieldElement field,
+        AccessKind readAccessKind,
+        AccessKind writeAccessKind,
+        boolean excluded,
+        ScalaVisitorContext visitorContext) {
+        this(
+            declaringType,
+            null,
+            type,
+            name,
+            readMethod,
+            writeMethod,
+            field,
+            readAccessKind,
+            writeAccessKind,
+            excluded,
+            selectNativeType(readMethod, writeMethod, field),
+            selectModifiers(readMethod, writeMethod, field),
+            AnnotationMetadata.EMPTY_METADATA,
+            null,
+            visitorContext
+        );
+    }
+
+    private ScalaPropertyElement(
+        ScalaClassElement declaringType,
+        @Nullable ScalaPropertyData propertyData,
+        ClassElement type,
+        String name,
+        @Nullable MethodElement readMethod,
+        @Nullable MethodElement writeMethod,
+        @Nullable FieldElement field,
+        AccessKind readAccessKind,
+        AccessKind writeAccessKind,
+        boolean excluded,
+        Object nativeType,
+        Set<io.micronaut.inject.ast.ElementModifier> modifiers,
+        AnnotationMetadata baseAnnotationMetadata,
+        @Nullable AnnotationMetadata presetAnnotationMetadata,
+        ScalaVisitorContext visitorContext) {
+        super(
+            declaringType,
+            name,
+            nativeType,
+            modifiers,
+            MutableAnnotationMetadata.of(baseAnnotationMetadata),
             visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringType = declaringType;
         this.visitorContext = visitorContext;
         this.propertyData = propertyData;
-        this.annotationMetadata = annotationMetadata == null
+        this.type = type;
+        this.readMethod = readMethod;
+        this.writeMethod = writeMethod;
+        this.field = field;
+        this.readAccessKind = readAccessKind;
+        this.writeAccessKind = writeAccessKind;
+        this.excluded = excluded;
+        this.annotationMetadata = presetAnnotationMetadata == null
             ? new PropertyElementAnnotationMetadata(
                 this,
-                getReadMethod().orElse(null),
-                getWriteMethod().orElse(null),
-                getField().orElse(null),
+                readMethod,
+                writeMethod,
+                field,
                 null,
-                visitorContext.annotationMetadata(propertyData),
+                baseAnnotationMetadata,
                 true
             )
-            : new SimpleElementAnnotationMetadata(MutableAnnotationMetadata.of(annotationMetadata), false, visitorContext.getScalaAnnotationMetadataBuilder());
+            : new SimpleElementAnnotationMetadata(MutableAnnotationMetadata.of(presetAnnotationMetadata), false, visitorContext.getScalaAnnotationMetadataBuilder());
     }
 
     @Override
     public ClassElement getType() {
-        return visitorContext.getElementFactory().newClassElement(propertyData.type());
+        return type;
     }
 
     @Override
     public Optional<FieldElement> getField() {
-        if (propertyData.field() == null) {
-            return Optional.empty();
-        }
-        return Optional.of(declaringType.fieldElement(propertyData.field()));
+        return Optional.ofNullable(field);
     }
 
     @Override
     public Optional<MethodElement> getWriteMethod() {
-        if (propertyData.writeMethod() == null) {
-            return Optional.empty();
-        }
-        return Optional.of(declaringType.methodElement(propertyData.writeMethod()));
+        return Optional.ofNullable(writeMethod);
     }
 
     @Override
     public Optional<MethodElement> getReadMethod() {
-        if (propertyData.readMethod() == null) {
-            return Optional.empty();
-        }
-        return Optional.of(declaringType.methodElement(propertyData.readMethod()));
+        return Optional.ofNullable(readMethod);
     }
 
     @Override
     public Optional<? extends MemberElement> getReadMember() {
-        if (propertyData.readMethod() == null) {
+        if (readAccessKind == AccessKind.FIELD) {
             return getField();
         }
         return getReadMethod()
@@ -122,7 +197,10 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
 
     @Override
     public Optional<? extends MemberElement> getWriteMember() {
-        if (propertyData.writeMethod() != null) {
+        if (writeAccessKind == AccessKind.FIELD) {
+            return getField().filter(fieldElement -> !fieldElement.isFinal());
+        }
+        if (writeMethod != null) {
             return getWriteMethod()
                 .map(this::writeMember);
         }
@@ -138,10 +216,10 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
 
     private Optional<ParameterElement[]> writeMemberParameters(MethodElement methodElement) {
         ParameterElement[] parameters = methodElement.getParameters();
-        if (parameters.length != 1 || propertyData.field() == null) {
+        if (parameters.length != 1 || field == null) {
             return Optional.empty();
         }
-        AnnotationMetadata qualifierAnnotationMetadata = qualifierAnnotationMetadata(visitorContext.annotationMetadata(propertyData.field()));
+        AnnotationMetadata qualifierAnnotationMetadata = qualifierAnnotationMetadata(field.getAnnotationMetadata());
         if (qualifierAnnotationMetadata.isEmpty()) {
             return Optional.empty();
         }
@@ -178,21 +256,21 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
     }
 
     private AnnotationMetadata readMemberAnnotationMetadata() {
-        if (propertyData.readMethod() != null && !propertyData.readMethod().annotations().isEmpty()) {
+        if (propertyData != null && propertyData.readMethod() != null && !propertyData.readMethod().annotations().isEmpty()) {
             return visitorContext.annotationMetadata(propertyData.readMethod());
         }
-        if (propertyData.field() != null) {
-            return visitorContext.annotationMetadata(propertyData.field());
+        if (field != null) {
+            return field.getAnnotationMetadata();
         }
         return getAnnotationMetadata();
     }
 
     private AnnotationMetadata writeMemberAnnotationMetadata() {
-        if (propertyData.writeMethod() != null && !propertyData.writeMethod().annotations().isEmpty()) {
+        if (propertyData != null && propertyData.writeMethod() != null && !propertyData.writeMethod().annotations().isEmpty()) {
             return visitorContext.annotationMetadata(propertyData.writeMethod());
         }
-        if (propertyData.field() != null) {
-            return visitorContext.annotationMetadata(propertyData.field());
+        if (field != null) {
+            return field.getAnnotationMetadata();
         }
         return getAnnotationMetadata();
     }
@@ -209,6 +287,85 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
 
     @Override
     public PropertyElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
-        return new ScalaPropertyElement(declaringType, propertyData, visitorContext, annotationMetadata);
+        if (propertyData != null) {
+            return new ScalaPropertyElement(declaringType, propertyData, visitorContext, annotationMetadata);
+        }
+        return new ScalaPropertyElement(
+            declaringType,
+            propertyData,
+            type,
+            getName(),
+            readMethod,
+            writeMethod,
+            field,
+            readAccessKind,
+            writeAccessKind,
+            excluded,
+            getNativeType(),
+            getModifiers(),
+            annotationMetadata,
+            annotationMetadata,
+            visitorContext
+        );
+    }
+
+    @Override
+    public AccessKind getReadAccessKind() {
+        return readAccessKind;
+    }
+
+    @Override
+    public AccessKind getWriteAccessKind() {
+        return writeAccessKind;
+    }
+
+    @Override
+    public boolean isExcluded() {
+        return excluded;
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return switch (writeAccessKind) {
+            case METHOD -> writeMethod == null;
+            case FIELD -> field == null || field.isFinal();
+        };
+    }
+
+    @Override
+    public boolean isWriteOnly() {
+        return switch (readAccessKind) {
+            case METHOD -> readMethod == null;
+            case FIELD -> field == null;
+        };
+    }
+
+    private static Object selectNativeType(@Nullable MethodElement readMethod, @Nullable MethodElement writeMethod, @Nullable FieldElement field) {
+        if (readMethod != null) {
+            return readMethod.getNativeType();
+        }
+        if (writeMethod != null) {
+            return writeMethod.getNativeType();
+        }
+        if (field != null) {
+            return field.getNativeType();
+        }
+        throw new IllegalStateException("A Scala property requires a backing field or method");
+    }
+
+    private static Set<io.micronaut.inject.ast.ElementModifier> selectModifiers(
+        @Nullable MethodElement readMethod,
+        @Nullable MethodElement writeMethod,
+        @Nullable FieldElement field) {
+        if (readMethod != null) {
+            return readMethod.getModifiers();
+        }
+        if (writeMethod != null) {
+            return writeMethod.getModifiers();
+        }
+        if (field != null) {
+            return field.getModifiers();
+        }
+        return Set.of();
     }
 }
