@@ -1589,6 +1589,36 @@ case class AppConfig(name: String, port: Int)
         context?.close()
     }
 
+    void "supports Scala collection configuration properties"() {
+        when:
+        def source = '''
+package example
+
+import io.micronaut.context.annotation.ConfigurationProperties
+
+@ConfigurationProperties("app")
+case class AppConfig(
+  names: scala.collection.immutable.List[String],
+  labels: scala.collection.immutable.Map[String, String]
+)
+'''
+        def context = buildContext(source, [
+                'app.names[0]'  : 'alpha',
+                'app.names[1]'  : 'beta',
+                'app.labels.one': 'first',
+                'app.labels.two': 'second'
+        ], true)
+        def config = getBean(context, 'example.AppConfig')
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(config.names()).toList() == ['alpha', 'beta']
+        config.labels().apply('one') == 'first'
+        config.labels().apply('two') == 'second'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports configuration inject constructors with bean dependencies"() {
         when:
         def source = '''
