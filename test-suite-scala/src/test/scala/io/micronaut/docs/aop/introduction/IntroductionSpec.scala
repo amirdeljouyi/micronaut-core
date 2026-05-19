@@ -17,6 +17,7 @@ package io.micronaut.docs.aop.introduction
 
 import io.micronaut.aop.Intercepted
 import io.micronaut.context.ApplicationContext
+import java.util.List as JList
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -35,5 +36,19 @@ class IntroductionSpec:
 
       assertTrue(stubExample.isInstanceOf[Intercepted])
       assertEquals(1, context.getBean(classOf[StubIntroduction]).invocations)
+    finally
+      context.close()
+
+  @Test
+  def genericIntroductionMethodsExposeResolvedMetadata(): Unit =
+    val context = ApplicationContext.run()
+    try
+      val definition = context.getBeanDefinition(classOf[GenericStubExample])
+      val findMethod = definition.getRequiredMethod("find")
+      assertEquals(classOf[GenericBook], findMethod.getReturnType.getType)
+
+      val findAllMethod = definition.getRequiredMethod("findAll")
+      assertEquals(classOf[JList[?]], findAllMethod.getReturnType.getType)
+      assertEquals(classOf[GenericBook], findAllMethod.getReturnType.asArgument().getTypeVariables.get("E").getType)
     finally
       context.close()

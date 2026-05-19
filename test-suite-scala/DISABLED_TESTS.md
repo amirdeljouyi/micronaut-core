@@ -34,7 +34,8 @@ This file tracks Scala documentation examples that are not yet ported to
 - `io.micronaut.docs.aop.around.AroundSpec` verifies a Scala `@Around`
   stereotype annotation, method interceptor, and generated proxy.
 - `io.micronaut.docs.aop.introduction.IntroductionSpec` verifies introduction
-  advice and generated proxies for a Scala trait.
+  advice and generated proxies for a Scala trait, including resolved metadata
+  for inherited generic introduction methods.
 - `io.micronaut.docs.aop.lifecycle.LifeCycleAdviseSpec` verifies constructor,
   post-construct, and pre-destroy lifecycle advice.
 - `io.micronaut.docs.aop.scheduled.ScheduledExample` and
@@ -65,8 +66,7 @@ This file tracks Scala documentation examples that are not yet ported to
 
 ## Backlog
 
-- Additional AOP examples: reactive around advice and generic introduction
-  variants.
+- Additional AOP examples: reactive around advice.
 
 Scala examples should stay idiomatic: primary constructors, case classes,
 traits, `val`, and `var` should be preferred over JavaBean-style code unless
