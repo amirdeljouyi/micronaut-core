@@ -422,6 +422,40 @@ class SetTest[E] extends Serde[java.util.HashSet[E]]
         context?.close()
     }
 
+    void "resolves Scala array bean definition type variables for generic lookups"() {
+        given:
+        def definition = buildBeanDefinition('test.Test', '''
+package test
+
+import jakarta.inject.Singleton
+
+@Singleton
+class Test extends Serde[Array[String]]
+
+trait Serde[T] extends Serializer[T], Deserializer[T]
+
+trait Serializer[T]
+
+trait Deserializer[T]
+''')
+
+        when:
+        def serdeTypeParam = definition.getTypeArguments("test.Serde")[0]
+        def serializerTypeParam = definition.getTypeArguments("test.Serializer")[0]
+        def deserializerTypeParam = definition.getTypeArguments("test.Deserializer")[0]
+
+        then:
+        serdeTypeParam.simpleName == "String[]"
+        !serdeTypeParam.isTypeVariable()
+        !(serdeTypeParam instanceof GenericPlaceholder)
+        serializerTypeParam.simpleName == "String[]"
+        !serializerTypeParam.isTypeVariable()
+        !(serializerTypeParam instanceof GenericPlaceholder)
+        deserializerTypeParam.simpleName == "String[]"
+        !deserializerTypeParam.isTypeVariable()
+        !(deserializerTypeParam instanceof GenericPlaceholder)
+    }
+
     void "resolves Scala wildcard generic bounds without concrete type arguments"() {
         when:
         def definition = buildBeanDefinition('test.NumberThingManager', '''

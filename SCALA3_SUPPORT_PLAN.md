@@ -94,6 +94,7 @@ Reference:
 - Scala field-access introspection should use Micronaut's shared bean-property resolution pattern where possible. Scala source properties still need Scala-native modelling for idiomatic accessors, but `@Introspected(accessKind = FIELD, visibility = ANY)` now resolves emitted Scala fields through the shared `AstBeanPropertiesUtils` path rather than changing core introspection writers.
 - Scala bean-definition `@Order` metadata is covered for top-level beans and companion-object nested beans.
 - Scala bean definitions are covered for packages with uppercase path segments.
+- Scala bean-definition type-variable resolution is covered for concrete array type arguments inherited through parent generic interfaces.
 - Scala enum introspection currently supports instantiation through Scala's emitted `valueOf(String)` method and enum constructor properties. Enum constant values remain a known gap because the public `EnumBeanIntrospection.EnumConstant` contract is bound to Java `Enum` values.
 - Scala introduction proxies resolve inherited generic method metadata through source-defined trait type arguments, including nested generics, method type variables, and arrays. Visitor-added metadata is covered on inherited generated introduction methods for generic return types, generic publisher parameters, resolved generic parameters, and `@InterceptorBean` bindings.
 - Add focused Scala regressions before each implementation fix.
