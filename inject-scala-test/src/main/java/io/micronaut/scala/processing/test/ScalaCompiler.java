@@ -147,6 +147,25 @@ public final class ScalaCompiler {
     }
 
     /**
+     * Builds a bean definition reference for the given source.
+     *
+     * @param className The class name
+     * @param source The source
+     * @return The bean definition reference
+     */
+    public static @Nullable BeanDefinitionReference<?> buildBeanDefinitionReference(String className, String source) {
+        URLClassLoader classLoader = buildClassLoader(className, source);
+        String simpleName = NameUtils.getSimpleName(className);
+        String beanDefName = (simpleName.startsWith("$") ? "" : "$") + simpleName + BeanDefinitionWriter.CLASS_SUFFIX;
+        String beanFullName = NameUtils.getPackageName(className) + "." + beanDefName;
+        try {
+            return (BeanDefinitionReference<?>) loadDefinition(classLoader, beanFullName);
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * Builds an application context for the given source.
      *
      * @param source The source

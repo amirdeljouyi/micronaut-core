@@ -19,6 +19,7 @@ import io.micronaut.context.ApplicationContext
 import io.micronaut.context.Qualifier
 import io.micronaut.core.beans.BeanIntrospection
 import io.micronaut.inject.BeanDefinition
+import io.micronaut.inject.BeanDefinitionReference
 import io.micronaut.inject.ast.ClassElement
 import spock.lang.Specification
 
@@ -51,6 +52,10 @@ abstract class AbstractScalaTypeElementSpec extends Specification {
 
     protected BeanDefinition<?> buildBeanDefinition(String className, String source) {
         ScalaCompiler.buildBeanDefinition(className, source)
+    }
+
+    protected BeanDefinitionReference<?> buildBeanDefinitionReference(String className, String source) {
+        ScalaCompiler.buildBeanDefinitionReference(className, source)
     }
 
     protected BeanIntrospection<?> buildBeanIntrospection(String className, String source) {

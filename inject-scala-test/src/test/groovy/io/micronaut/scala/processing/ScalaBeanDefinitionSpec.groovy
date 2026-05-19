@@ -216,6 +216,44 @@ class Test[K, V]
         definition.getGenericBeanType().getTypeString(true) == 'Test<Object, Object>'
     }
 
+    void "exposes declared Scala bean generics from reference"() {
+        when:
+        def reference = buildBeanDefinitionReference('limittypes.Test', '''
+package limittypes
+
+import jakarta.inject.Singleton
+
+@Singleton
+class Test[K, V]
+''')
+
+        then:
+        reference.getGenericBeanType().getTypeString(true) == 'Test<Object, Object>'
+    }
+
+    void "exposes declared Scala bean generics from inherited reference"() {
+        when:
+        def reference = buildBeanDefinitionReference('test.DefaultKafkaConsumerConfiguration', '''
+package test
+
+import io.micronaut.context.annotation.Requires
+import jakarta.inject.Singleton
+
+@Singleton
+@Requires(beans = Array(classOf[KafkaDefaultConfiguration]))
+class DefaultKafkaConsumerConfiguration[K, V] extends AbstractKafkaConsumerConfiguration[K, V]
+
+abstract class AbstractKafkaConsumerConfiguration[K, V] extends AbstractKafkaConfiguration[K, V]
+
+abstract class AbstractKafkaConfiguration[K, V]
+
+class KafkaDefaultConfiguration
+''')
+
+        then:
+        reference.getGenericBeanType().getTypeString(true) == 'DefaultKafkaConsumerConfiguration<Object, Object>'
+    }
+
     void "exposes Scala named qualifier metadata"() {
         given:
         def definition = buildBeanDefinition('test.Test', '''
