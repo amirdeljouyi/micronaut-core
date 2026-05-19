@@ -267,6 +267,45 @@ class Test(val name: String | Null, val title: String)
         !introspection.constructorArguments[1].isNullable()
     }
 
+    void "maps Scala explicit null constructor properties to bean property metadata"() {
+        when:
+        def element = buildClassElement('example.Test', '''
+package example
+
+class Test(
+  var name: String | Null,
+  val title: String,
+  val aliases: java.util.List[String | Null]
+)
+''', ['-Yexplicit-nulls'])
+        def properties = element.beanProperties.collectEntries { [(it.name): it] }
+
+        then:
+        properties.name.isNullable()
+        properties.name.type.isNullable()
+        !properties.title.isNullable()
+        !properties.title.type.isNullable()
+        properties.aliases.type.firstTypeArgument.get().isNullable()
+
+        when:
+        def introspection = buildBeanIntrospection('example.Test', '''
+package example
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Test(
+  var name: String | Null,
+  val title: String
+)
+''', ['-Yexplicit-nulls'])
+        def introspectionProperties = introspection.beanProperties.collectEntries { [(it.name): it] }
+
+        then:
+        introspectionProperties.name.isNullable()
+        !introspectionProperties.title.isNullable()
+    }
+
     void "exposes generic property type arguments"() {
         when:
         def element = buildClassElement('example.Holder', '''

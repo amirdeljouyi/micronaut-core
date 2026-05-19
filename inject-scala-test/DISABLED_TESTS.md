@@ -51,8 +51,8 @@ through both `ClassElement` and bean introspection metadata.
 Generic type argument nullability is covered for Java type-use annotations on
 Scala generic type arguments.
 Scala explicit-nulls union types such as `String | Null` are covered for
-method returns, parameters, generic type arguments, and introspection
-constructor argument metadata.
+method returns, parameters, generic type arguments, constructor properties,
+and introspection constructor argument and bean property metadata.
 Scala generic type arguments are resolved through source-defined parent class
 and trait hierarchies, including boxing primitive Scala value types used as
 generic arguments. Inherited generic type arguments are also covered for
