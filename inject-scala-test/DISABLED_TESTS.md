@@ -58,7 +58,8 @@ idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable
 and `scala.collection.mutable.Seq`. Scala collection injection also covers
 `BeanRegistration[T]` element semantics. String-keyed Scala map injection is
 covered for constructor, method, and field injection with
-`scala.collection.Map[String, T]` and `scala.collection.immutable.Map[String, T]`.
+`scala.collection.Map[String, T]`, `scala.collection.immutable.Map[String, T]`,
+and `scala.collection.mutable.Map[String, T]`.
 Scala `Option[T]` optional bean injection is covered for constructor, method,
 and field injection, including empty options when no bean is present.
 Scala collection configuration binding is covered for immutable list and

@@ -358,6 +358,54 @@ class Vehicle(val constructorEngines: scala.collection.immutable.Map[String, Eng
         context?.close()
     }
 
+    void "supports Scala mutable Map injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+import scala.collection.mutable
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val constructorEngines: mutable.Map[String, Engine]):
+  private var allEngines: mutable.Map[String, Engine] = mutable.Map.empty
+
+  @(Inject @field)
+  var fieldEngines: mutable.Map[String, Engine] = mutable.Map.empty
+
+  @Inject
+  def setEngines(engines: mutable.Map[String, Engine]): Unit =
+    allEngines = engines
+
+  def methodEngines: mutable.Map[String, Engine] = allEngines
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        vehicle.constructorEngines().apply('v6Engine').name() == 'v6'
+        vehicle.constructorEngines().apply('v8Engine').name() == 'v8'
+        vehicle.methodEngines().apply('v6Engine').name() == 'v6'
+        vehicle.methodEngines().apply('v8Engine').name() == 'v8'
+        vehicle.fieldEngines().apply('v6Engine').name() == 'v6'
+        vehicle.fieldEngines().apply('v8Engine').name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports Scala Option injection"() {
         when:
         def context = buildContext('''
