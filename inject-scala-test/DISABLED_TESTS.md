@@ -33,9 +33,10 @@ and executable methods are covered for Graal build-time initialization. Construc
 introspection through an abstract Scala superclass is covered. Bean-introspection
 constructor argument generics and generic array property/method return types
 are covered; superclass introspection constructor forwarding for byte arrays
-and boxed Boolean values, companion-object nested class introspection, and
-custom introspection target packages are covered. Executable route methods
-inherited from source-defined Scala traits are covered.
+and boxed Boolean values, primitive and class multi-dimensional array
+properties, companion-object nested class introspection, and custom
+introspection target packages are covered. Executable route methods inherited
+from source-defined Scala traits are covered.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,
@@ -122,7 +123,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/InheritanceVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/AnnotatedIntrospectedSpec.groovy` - already covered: basic @Introspected class metadata is covered by ScalaPoCSpec
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionGenericsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - portable: partially covered for constructor argument generics, generic array property/method types, superclass constructor forwarding, companion-object nested class introspection, and custom introspection target packages; remaining introspection, access-kind, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - portable: partially covered for constructor argument generics, generic array property/method types, multi-dimensional array properties, superclass constructor forwarding, companion-object nested class introspection, and custom introspection target packages; remaining introspection, access-kind, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BuildClassElementSpec.groovy` - already covered: basic buildClassElement coverage is present in ScalaPoCSpec
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support

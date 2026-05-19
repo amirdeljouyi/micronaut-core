@@ -63,6 +63,27 @@ class Test[T <: CharSequence](
         introspection.beanMethods.first().returnType.type == CharSequence[].class
     }
 
+    void "exposes Scala multi-dimensional array introspection types"() {
+        when:
+        def introspection = buildBeanIntrospection('arraygenerics.Test', '''
+package arraygenerics
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Test(
+  var oneDimension: Array[Int],
+  var twoDimensions: Array[Array[Int]],
+  var stringMatrix: Array[Array[String]]
+)
+''')
+
+        then:
+        introspection.getRequiredProperty("oneDimension", int[].class).type == int[].class
+        introspection.getRequiredProperty("twoDimensions", int[][].class).type == int[][].class
+        introspection.getRequiredProperty("stringMatrix", String[][].class).type == String[][].class
+    }
+
     void "builds Scala introspection for companion nested class"() {
         when:
         def introspection = buildBeanIntrospection('test.Test$Foo', '''
