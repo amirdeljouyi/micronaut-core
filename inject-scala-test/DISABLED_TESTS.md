@@ -101,6 +101,9 @@ Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
 generated proxy-target beans, interceptor invocation, and target lifecycle.
 Source-defined Scala `@Around(proxyTarget = true, hotswap = true)` advice is
 covered for generated hot-swappable proxy-target beans and target swapping.
+Scala introduction proxy method metadata resolves inherited generic return
+types through source-defined trait type arguments, including nested generics,
+method type variables, and arrays.
 Bean import is documented as unsupported for Scala.
 
 ## Classification Rules
@@ -115,10 +118,10 @@ Bean import is documented as unsupported for Scala.
 
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 15 | 2 | 166 | 1 | 11 | 195 |
-| Groovy AbstractBeanDefinitionSpec | 4 | 5 | 67 | 0 | 11 | 87 |
+| Java AbstractTypeElementSpec | 16 | 2 | 165 | 1 | 11 | 195 |
+| Groovy AbstractBeanDefinitionSpec | 5 | 5 | 66 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 2 | 2 | 12 | 0 | 3 | 19 |
-| Total | 21 | 9 | 245 | 1 | 25 | 301 |
+| Total | 23 | 9 | 243 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -186,7 +189,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/InjectFieldAbstractIntroductionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - already covered: Scala introduction proxy method metadata resolves inherited generic return types through source-defined trait type arguments, including nested generics, method type variables, and arrays
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
@@ -341,7 +344,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ExecutableSuperclassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/FinalModifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/InheritedAnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - already covered: Scala introduction proxy method metadata resolves inherited generic return types through source-defined trait type arguments, including nested generics, method type variables, and arrays
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/PropertyAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support

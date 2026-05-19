@@ -43,6 +43,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -377,9 +378,10 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         if (inheritedData == null) {
             return;
         }
-        inheritedData.methods().forEach(method -> addMethodElement(method, inheritedElement, signatures, elements));
-        collectInheritedMethods(inheritedData.superType(), signatures, elements, visited);
-        inheritedData.interfaces().forEach(interfaceType -> collectInheritedMethods(interfaceType, signatures, elements, visited));
+        Map<String, ScalaTypeData> substitutions = type.typeArguments();
+        inheritedData.methods().forEach(method -> addMethodElement(substitute(method, substitutions), inheritedElement, signatures, elements));
+        collectInheritedMethods(substitute(inheritedData.superType(), substitutions), signatures, elements, visited);
+        inheritedData.interfaces().forEach(interfaceType -> collectInheritedMethods(substitute(interfaceType, substitutions), signatures, elements, visited));
     }
 
     private void addMethodElement(
@@ -399,6 +401,113 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
                 .map(parameter -> new TypeSignature(parameter.type().name(), parameter.type().arrayDimensions()))
                 .toList()
         );
+    }
+
+    private ScalaMethodData substitute(ScalaMethodData method, Map<String, ScalaTypeData> substitutions) {
+        if (substitutions.isEmpty()) {
+            return method;
+        }
+        return new ScalaMethodData(
+            method.name(),
+            Objects.requireNonNull(substitute(method.returnType(), substitutions)),
+            method.parameters().stream()
+                .map(parameter -> substitute(parameter, substitutions))
+                .toList(),
+            method.typeParameters().stream()
+                .map(typeParameter -> substitute(typeParameter, substitutions))
+                .toList(),
+            method.thrownTypes().stream()
+                .map(thrownType -> substitute(thrownType, substitutions))
+                .toList(),
+            method.annotations(),
+            method.modifiers(),
+            method.constructor(),
+            method.nativeType()
+        );
+    }
+
+    private ScalaParameterData substitute(ScalaParameterData parameter, Map<String, ScalaTypeData> substitutions) {
+        return new ScalaParameterData(
+            parameter.name(),
+            Objects.requireNonNull(substitute(parameter.type(), substitutions)),
+            parameter.annotations(),
+            parameter.nativeType()
+        );
+    }
+
+    private @Nullable ScalaTypeData substitute(@Nullable ScalaTypeData type, Map<String, ScalaTypeData> substitutions) {
+        if (type == null || substitutions.isEmpty()) {
+            return type;
+        }
+        if (type.genericPlaceholder() && type.variableName() != null) {
+            ScalaTypeData replacement = substitutions.get(type.variableName());
+            if (replacement != null) {
+                return type.arrayDimensions() == replacement.arrayDimensions()
+                    ? replacement
+                    : replacement.withArrayDimensions(type.arrayDimensions());
+            }
+        }
+        Map<String, ScalaTypeData> typeArguments = substitute(type.typeArguments(), substitutions);
+        ScalaTypeData superType = substitute(type.superType(), substitutions);
+        List<ScalaTypeData> interfaces = substitute(type.interfaces(), substitutions);
+        List<ScalaTypeData> bounds = substitute(type.bounds(), substitutions);
+        List<ScalaTypeData> upperBounds = substitute(type.upperBounds(), substitutions);
+        List<ScalaTypeData> lowerBounds = substitute(type.lowerBounds(), substitutions);
+        if (typeArguments.equals(type.typeArguments())
+            && Objects.equals(superType, type.superType())
+            && interfaces.equals(type.interfaces())
+            && bounds.equals(type.bounds())
+            && upperBounds.equals(type.upperBounds())
+            && lowerBounds.equals(type.lowerBounds())) {
+            return type;
+        }
+        return new ScalaTypeData(
+            type.name(),
+            type.primitive(),
+            type.arrayDimensions(),
+            type.interfaceType(),
+            typeArguments,
+            superType,
+            interfaces,
+            type.annotations(),
+            type.annotatedTypeUse(),
+            type.nativeType(),
+            type.genericPlaceholder(),
+            type.variableName(),
+            bounds,
+            type.wildcard(),
+            upperBounds,
+            lowerBounds
+        );
+    }
+
+    private Map<String, ScalaTypeData> substitute(Map<String, ScalaTypeData> types, Map<String, ScalaTypeData> substitutions) {
+        if (types.isEmpty()) {
+            return types;
+        }
+        Map<String, ScalaTypeData> substituted = new LinkedHashMap<>(types.size());
+        boolean changed = false;
+        for (Map.Entry<String, ScalaTypeData> entry : types.entrySet()) {
+            ScalaTypeData original = entry.getValue();
+            ScalaTypeData replacement = substitute(original, substitutions);
+            substituted.put(entry.getKey(), replacement);
+            changed |= !Objects.equals(replacement, original);
+        }
+        return changed ? substituted : types;
+    }
+
+    private List<ScalaTypeData> substitute(List<ScalaTypeData> types, Map<String, ScalaTypeData> substitutions) {
+        if (types.isEmpty()) {
+            return types;
+        }
+        List<ScalaTypeData> substituted = new ArrayList<>(types.size());
+        boolean changed = false;
+        for (ScalaTypeData type : types) {
+            ScalaTypeData replacement = substitute(type, substitutions);
+            substituted.add(replacement);
+            changed |= !Objects.equals(replacement, type);
+        }
+        return changed ? substituted : types;
     }
 
     private <T extends Element> void addFieldElements(ElementQuery.Result<T> result, List<Element> elements) {

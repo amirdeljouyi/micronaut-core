@@ -87,6 +87,7 @@ Reference:
 - Scala optional bean injection currently supports `Option[T]` for constructor, method, and field injection by reusing Micronaut's existing optional bean lookup and adapting the generated value to `scala.Option`.
 - Scala field-access introspection should use Micronaut's shared bean-property resolution pattern where possible. Scala source properties still need Scala-native modelling for idiomatic accessors, but `@Introspected(accessKind = FIELD, visibility = ANY)` now resolves emitted Scala fields through the shared `AstBeanPropertiesUtils` path rather than changing core introspection writers.
 - Scala enum introspection currently supports instantiation through Scala's emitted `valueOf(String)` method and enum constructor properties. Enum constant values remain a known gap because the public `EnumBeanIntrospection.EnumConstant` contract is bound to Java `Enum` values.
+- Scala introduction proxies resolve inherited generic method metadata through source-defined trait type arguments, including nested generics, method type variables, and arrays.
 - Add focused Scala regressions before each implementation fix.
 - Re-enable parity tests as support lands.
 
