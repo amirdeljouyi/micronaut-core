@@ -15,6 +15,8 @@
  */
 package io.micronaut.scala.processing
 
+import io.micronaut.core.beans.BeanIntrospection
+import io.micronaut.core.beans.BeanIntrospectionReference
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 
 class ScalaBeanIntrospectionSpec extends AbstractScalaTypeElementSpec {
@@ -59,6 +61,44 @@ class Test[T <: CharSequence](
         introspection.getRequiredProperty("starArray", Object[].class).type == Object[].class
         introspection.getRequiredProperty("stringArray", String[].class).type == String[].class
         introspection.beanMethods.first().returnType.type == CharSequence[].class
+    }
+
+    void "builds Scala introspection for companion nested class"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Test$Foo', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+object Test:
+  @Introspected
+  class Foo(val name: String)
+''')
+
+        then:
+        introspection != null
+        introspection.beanType.simpleName == 'Foo'
+        introspection.getRequiredProperty("name", String).get(introspection.instantiate("Fred")) == "Fred"
+    }
+
+    void "writes Scala introspection to custom target package"() {
+        when:
+        def classLoader = buildClassLoader('test.Test', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected(targetPackage = "test.introspections")
+class Test(val name: String)
+''')
+        def introspectionName = 'test.introspections.$Test$Introspection'
+        def introspection = classLoader.loadClass(introspectionName).getDeclaredConstructor().newInstance() as BeanIntrospection
+        def introspectionRef = classLoader.loadClass(introspectionName).getDeclaredConstructor().newInstance() as BeanIntrospectionReference
+
+        then:
+        introspection.beanType.name == 'test.Test'
+        introspectionRef.beanType.name == 'test.Test'
+        introspection.getRequiredProperty("name", String).get(introspection.instantiate("Fred")) == "Fred"
     }
 
     void "instantiates Scala introspection with byte array constructor forwarding"() {
