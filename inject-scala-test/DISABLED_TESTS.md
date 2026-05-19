@@ -48,8 +48,10 @@ enum constants remain tracked as a pending parity test because
 `EnumBeanIntrospection.EnumConstant#getValue()` is currently Java-enum-bound.
 Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
-idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.Seq`, and
-`scala.collection.immutable.Vector`.
+idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable.Set`,
+`scala.collection.Seq`, `scala.collection.IndexedSeq`, and
+`scala.collection.immutable.Vector`. Scala collection injection also covers
+`BeanRegistration[T]` element semantics.
 
 Recent Wave 3 coverage also includes class-body `val`/`var` properties,
 generic type arguments, annotation arrays/class literals/enum constants,

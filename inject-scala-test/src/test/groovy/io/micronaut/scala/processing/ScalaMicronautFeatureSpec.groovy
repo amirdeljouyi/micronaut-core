@@ -160,6 +160,40 @@ class Vehicle(val engines: List[Engine])
         context?.close()
     }
 
+    void "supports Scala Set and IndexedSeq constructor injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(
+  val engineSet: scala.collection.immutable.Set[Engine],
+  val indexedEngines: scala.collection.IndexedSeq[Engine]
+)
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.engineSet())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.indexedEngines())*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports Scala Seq method injection"() {
         when:
         def context = buildContext('''
@@ -242,26 +276,24 @@ import io.micronaut.context.annotation.Primary
 import jakarta.inject.Inject
 import jakarta.inject.Named
 import jakarta.inject.Singleton
-import java.util.Collection
-import java.util.List
 import scala.annotation.meta.field
 
 @Singleton
 class Test(
-  val registrations: Collection[BeanRegistration[Foo]],
+  val registrations: scala.collection.immutable.List[BeanRegistration[Foo]],
   val primaryBean: BeanRegistration[Foo],
   @Named("two") val secondaryBean: BeanRegistration[Foo]
 ):
   @(Inject @field)
-  var fieldRegistrations: Collection[BeanRegistration[Foo]] = _
+  var fieldRegistrations: scala.collection.Seq[BeanRegistration[Foo]] = _
 
   @(Inject @field)
   var fieldArrayRegistrations: Array[BeanRegistration[Foo]] = _
 
-  var methodRegistrations: List[BeanRegistration[Foo]] = _
+  var methodRegistrations: scala.collection.immutable.Vector[BeanRegistration[Foo]] = _
 
   @Inject
-  def setRegs(registrations: List[BeanRegistration[Foo]]): Unit =
+  def setRegs(registrations: scala.collection.immutable.Vector[BeanRegistration[Foo]]): Unit =
     methodRegistrations = registrations
 
 trait Foo
@@ -276,9 +308,9 @@ class Foo2 extends Foo
 '''
         def context = buildContext(source)
         def bean = getBean(context, 'beanreg.Test')
-        def registrations = bean.registrations()
-        def fieldRegistrations = bean.fieldRegistrations()
-        def methodRegistrations = bean.methodRegistrations()
+        def registrations = scala.jdk.javaapi.CollectionConverters.asJavaCollection(bean.registrations())
+        def fieldRegistrations = scala.jdk.javaapi.CollectionConverters.asJavaCollection(bean.fieldRegistrations())
+        def methodRegistrations = scala.jdk.javaapi.CollectionConverters.asJavaCollection(bean.methodRegistrations())
         def fieldArrayRegistrations = bean.fieldArrayRegistrations().toList()
 
         then:
@@ -286,9 +318,9 @@ class Foo2 extends Foo
         bean.secondaryBean().bean.getClass().name == 'beanreg.Foo2'
         registrations.size() == 2
         fieldRegistrations.size() == 2
-        fieldRegistrations == registrations
-        fieldRegistrations as List == methodRegistrations
-        fieldRegistrations as List == fieldArrayRegistrations
+        fieldRegistrations as Set == registrations as Set
+        fieldRegistrations as Set == methodRegistrations as Set
+        fieldRegistrations as Set == fieldArrayRegistrations as Set
         registrations.any { it.bean.getClass().name == 'beanreg.Foo1' }
         registrations.any { it.bean.getClass().name == 'beanreg.Foo2' }
 
@@ -303,13 +335,12 @@ package abstractbeans
 
 import jakarta.inject.Inject
 import jakarta.inject.Singleton
-import java.util.List
 import scala.annotation.meta.field
 
 @Singleton
 class Test:
   @(Inject @field)
-  var rules: List[InterceptRule] = _
+  var rules: scala.collection.immutable.List[InterceptRule] = _
 
 @Singleton
 abstract class AbstractRule extends InterceptRule
@@ -322,8 +353,9 @@ trait InterceptRule
         def bean = getBean(context, 'abstractbeans.Test')
 
         then:
-        bean.rules().size() == 1
-        bean.rules().first().getClass().name == 'abstractbeans.ConcreteRule'
+        def rules = scala.jdk.javaapi.CollectionConverters.asJavaCollection(bean.rules())
+        rules.size() == 1
+        rules.first().getClass().name == 'abstractbeans.ConcreteRule'
 
         cleanup:
         context?.close()
