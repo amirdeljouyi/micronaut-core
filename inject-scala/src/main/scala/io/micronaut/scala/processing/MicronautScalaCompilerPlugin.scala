@@ -28,6 +28,7 @@ import dotty.tools.dotc.core.Types.ConstantType
 import dotty.tools.dotc.core.Types.MethodType
 import dotty.tools.dotc.core.Types.OrType
 import dotty.tools.dotc.core.Types.Type
+import dotty.tools.dotc.core.Types.TypeBounds
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.plugins.StandardPlugin
 import dotty.tools.dotc.report
@@ -470,6 +471,7 @@ private object ScalaModelExtractor:
             isAnnotationSymbol(symbol),
             isInterfaceSymbol(symbol),
             hasFlag(symbol, Flags.Enum),
+            typeParameters(symbol).asJava,
             superType,
             interfaces.asJava,
             constructors.asJava,
@@ -748,7 +750,10 @@ private object ScalaModelExtractor:
     val (annotatedWidened, typeAnnotations) = annotatedType(tpe.widenDealiasKeepAnnots)
     val (widened, explicitNullable) = explicitNullableType(annotatedWidened)
     val allTypeAnnotations = extraAnnotations ++ typeAnnotations
-    widened match
+    val widenedSymbol = widened.typeSymbol
+    if widenedSymbol != Symbols.NoSymbol && widenedSymbol.isTypeParam then
+      typeParameterData(widenedSymbol, allTypeAnnotations, explicitNullable)
+    else widened match
       case applied: AppliedType if typeName(applied.tycon) == "scala.Array" && applied.args.nonEmpty =>
         val componentType = typeTree.flatMap(appliedTypeArguments).flatMap(_.headOption) match
           case Some(componentTree) => typeData(componentTree, visitedTypes)
@@ -863,7 +868,7 @@ private object ScalaModelExtractor:
       ScalaTypeData(
         boxedName.get,
         primitive = false,
-        0,
+        arrayDimensions = 0,
         interfaceType = false,
         java.util.Map.of(),
         null,
@@ -874,6 +879,60 @@ private object ScalaModelExtractor:
       )
     else
       typeData
+
+  private def typeParameters(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaTypeData] =
+    symbol.typeParams.map(typeParameterData(_, Nil, explicitNullable = false))
+
+  private def typeParameterData(
+      symbol: Symbol,
+      typeAnnotations: List[Annotation],
+      explicitNullable: Boolean
+  )(using Context, AnnotationDefaults): ScalaTypeData =
+    val bounds = typeParameterBounds(symbol)
+    val primaryBound = bounds.head
+    ScalaTypeData(
+      primaryBound.name(),
+      primitive = false,
+      arrayDimensions = 0,
+      primaryBound.interfaceType(),
+      java.util.Map.of(),
+      primaryBound.superType(),
+      primaryBound.interfaces(),
+      typeAnnotationsFor(symbol, typeAnnotations, explicitNullable).asJava,
+      typeAnnotations.nonEmpty || explicitNullable,
+      symbol,
+      genericPlaceholder = true,
+      symbol.name.toString,
+      bounds.asJava
+    )
+
+  private def typeParameterBounds(symbol: Symbol)(using Context, AnnotationDefaults): List[ScalaTypeData] =
+    symbol.info match
+      case bounds: TypeBounds =>
+        val upperBound = bounds.hi.widenDealias
+        if typeName(upperBound) == "scala.Any" then
+          List(objectTypeData)
+        else
+          List(typeData(upperBound))
+      case _ =>
+        List(objectTypeData)
+
+  private def objectTypeData(using Context): ScalaTypeData =
+    ScalaTypeData(
+      classOf[Object].getName,
+      primitive = false,
+      arrayDimensions = 0,
+      interfaceType = false,
+      java.util.Map.of(),
+      null,
+      Nil.asJava,
+      Nil.asJava,
+      annotatedTypeUse = false,
+      classSymbolForName(classOf[Object].getName),
+      genericPlaceholder = false,
+      null,
+      Nil.asJava
+    )
 
   private def typeName(tpe: Type)(using Context): String =
     val symbol = tpe.classSymbol

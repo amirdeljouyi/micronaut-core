@@ -30,6 +30,7 @@ import java.util.Set;
  * @param annotationType Whether this class is an annotation type
  * @param interfaceType Whether this class is an interface or trait
  * @param enumType Whether this class is an enum
+ * @param typeParameters The declared generic placeholders
  * @param superType The super type
  * @param interfaces The interface types
  * @param constructors The constructors
@@ -46,6 +47,7 @@ public record ScalaClassData(
     boolean annotationType,
     boolean interfaceType,
     boolean enumType,
+    List<ScalaTypeData> typeParameters,
     ScalaTypeData superType,
     List<ScalaTypeData> interfaces,
     List<ScalaMethodData> constructors,
@@ -59,6 +61,7 @@ public record ScalaClassData(
     public ScalaClassData {
         annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
         modifiers = modifiers == null ? Collections.emptySet() : Set.copyOf(modifiers);
+        typeParameters = typeParameters == null ? Collections.emptyList() : List.copyOf(typeParameters);
         interfaces = interfaces == null ? Collections.emptyList() : List.copyOf(interfaces);
         constructors = constructors == null ? Collections.emptyList() : List.copyOf(constructors);
         methods = methods == null ? Collections.emptyList() : List.copyOf(methods);

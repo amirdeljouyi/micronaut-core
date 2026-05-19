@@ -60,6 +60,9 @@ public final class ScalaElementFactory implements ElementFactory<Object, ScalaCl
     }
 
     ClassElement newClassElement(ScalaTypeData type) {
+        if (type.genericPlaceholder()) {
+            return new ScalaGenericPlaceholderElement(type, visitorContext);
+        }
         if (type.primitive()) {
             return switch (type.name()) {
                 case "boolean" -> primitiveElement(PrimitiveElement.BOOLEAN, type.arrayDimensions());

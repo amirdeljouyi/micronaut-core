@@ -57,7 +57,8 @@ Scala generic type arguments are resolved through source-defined parent class
 and trait hierarchies, including boxing primitive Scala value types used as
 generic arguments. Inherited generic type arguments are also covered for
 classpath Java collection hierarchies such as `List` to `Collection` to
-`Iterable`.
+`Iterable`. Class-level generic placeholders with upper bounds are exposed
+through the Element API.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction

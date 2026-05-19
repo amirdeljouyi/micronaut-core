@@ -25,6 +25,7 @@ import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.ElementModifier;
 import io.micronaut.inject.ast.ElementQuery;
 import io.micronaut.inject.ast.FieldElement;
+import io.micronaut.inject.ast.GenericPlaceholderElement;
 import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.PropertyElement;
@@ -181,6 +182,17 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
     @Override
     public Map<String, ClassElement> getTypeArguments() {
         return elementFactory.typeArguments(typeData);
+    }
+
+    @Override
+    public List<? extends GenericPlaceholderElement> getDeclaredGenericPlaceholders() {
+        if (classData == null) {
+            return List.of();
+        }
+        return classData.typeParameters().stream()
+            .map(elementFactory::newClassElement)
+            .map(GenericPlaceholderElement.class::cast)
+            .toList();
     }
 
     @Override

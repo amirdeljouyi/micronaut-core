@@ -304,6 +304,27 @@ class Holder(val names: java.util.List[String])
         namesType.getAllTypeArguments().get(Iterable.name).get("T").name == String.name
     }
 
+    void "exposes Scala generic placeholders with upper bounds"() {
+        when:
+        def element = buildClassElement('example.Holder', '''
+package example
+
+class Holder[T <: Number](val value: T)
+''')
+        def placeholder = element.declaredGenericPlaceholders.first()
+        def propertyType = element.getBeanProperties().find { it.name == 'value' }.type
+
+        then:
+        placeholder.variableName == 'T'
+        placeholder.name == Number.name
+        placeholder.bounds*.name == [Number.name]
+        propertyType.genericPlaceholder
+        propertyType.typeVariable
+        propertyType.variableName == 'T'
+        propertyType.name == Number.name
+        propertyType.bounds*.name == [Number.name]
+    }
+
     void "exposes Scala field constant values"() {
         when:
         def element = buildClassElement('example.Constants', '''

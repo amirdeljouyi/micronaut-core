@@ -34,6 +34,9 @@ import java.util.Map;
  * @param annotations The compiler-resolved annotations
  * @param annotatedTypeUse Whether the type reference has type-use annotations
  * @param nativeType The native Scala compiler object
+ * @param genericPlaceholder Whether this type is a generic placeholder
+ * @param variableName The generic placeholder variable name
+ * @param bounds The generic placeholder bounds
  */
 public record ScalaTypeData(
     String name,
@@ -45,13 +48,32 @@ public record ScalaTypeData(
     List<ScalaTypeData> interfaces,
     List<ScalaAnnotationData> annotations,
     boolean annotatedTypeUse,
-    @Nullable Object nativeType
+    @Nullable Object nativeType,
+    boolean genericPlaceholder,
+    @Nullable String variableName,
+    List<ScalaTypeData> bounds
 ) implements ScalaAnnotatedElementData {
 
     public ScalaTypeData {
         typeArguments = typeArguments == null ? Collections.emptyMap() : Collections.unmodifiableMap(typeArguments);
         interfaces = interfaces == null ? Collections.emptyList() : List.copyOf(interfaces);
         annotations = annotations == null ? Collections.emptyList() : List.copyOf(annotations);
+        bounds = bounds == null ? Collections.emptyList() : List.copyOf(bounds);
+    }
+
+    public ScalaTypeData(
+        String name,
+        boolean primitive,
+        int arrayDimensions,
+        boolean interfaceType,
+        Map<String, ScalaTypeData> typeArguments,
+        @Nullable ScalaTypeData superType,
+        List<ScalaTypeData> interfaces,
+        List<ScalaAnnotationData> annotations,
+        boolean annotatedTypeUse,
+        @Nullable Object nativeType
+    ) {
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, false, null, Collections.emptyList());
     }
 
     public ScalaTypeData(
@@ -63,7 +85,7 @@ public record ScalaTypeData(
         @Nullable ScalaTypeData superType,
         List<ScalaTypeData> interfaces
     ) {
-        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), false, null);
+        this(name, primitive, arrayDimensions, interfaceType, typeArguments, superType, interfaces, Collections.emptyList(), false, null, false, null, Collections.emptyList());
     }
 
     public ScalaTypeData(
@@ -77,6 +99,6 @@ public record ScalaTypeData(
     }
 
     public ScalaTypeData withArrayDimensions(int dimensions) {
-        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType);
+        return new ScalaTypeData(name, primitive, dimensions, interfaceType, typeArguments, superType, interfaces, annotations, annotatedTypeUse, nativeType, genericPlaceholder, variableName, bounds);
     }
 }
