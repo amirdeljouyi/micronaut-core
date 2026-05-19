@@ -60,7 +60,7 @@ classpath Java collection hierarchies such as `List` to `Collection` to
 `Iterable`. Class-level generic placeholders with upper bounds are exposed
 through the Element API, and method-level generic placeholders are exposed
 through `MethodElement`. Scala wildcard generic type arguments are covered for
-unbounded and upper-bounded type arguments.
+unbounded, upper-bounded, and lower-bounded type arguments.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction

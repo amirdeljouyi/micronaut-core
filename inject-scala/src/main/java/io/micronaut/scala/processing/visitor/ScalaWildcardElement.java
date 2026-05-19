@@ -51,6 +51,11 @@ final class ScalaWildcardElement extends ScalaClassElement implements WildcardEl
     }
 
     @Override
+    public boolean isBounded() {
+        return !getLowerBounds().isEmpty() || WildcardElement.super.isBounded();
+    }
+
+    @Override
     public MutableAnnotationMetadataDelegate<AnnotationMetadata> getGenericTypeAnnotationMetadata() {
         return getElementAnnotationMetadata();
     }

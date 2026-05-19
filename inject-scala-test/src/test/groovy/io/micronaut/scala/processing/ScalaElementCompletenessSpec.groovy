@@ -355,12 +355,14 @@ package example
 
 class Holder(
   val anything: java.util.List[_],
-  val numbers: java.util.List[_ <: Number]
+  val numbers: java.util.List[_ <: Number],
+  val integersOrSuper: java.util.List[_ >: Integer]
 )
 ''')
         def properties = element.getBeanProperties().collectEntries { [(it.name): it] }
         def anything = properties.anything.type.typeArguments.E as WildcardElement
         def numbers = properties.numbers.type.typeArguments.E as WildcardElement
+        def integersOrSuper = properties.integersOrSuper.type.typeArguments.E as WildcardElement
 
         then:
         anything.wildcard
@@ -373,6 +375,11 @@ class Holder(
         numbers.name == Number.name
         numbers.upperBounds*.name == [Number.name]
         numbers.lowerBounds.empty
+        integersOrSuper.wildcard
+        integersOrSuper.bounded
+        integersOrSuper.name == Object.name
+        integersOrSuper.upperBounds*.name == [Object.name]
+        integersOrSuper.lowerBounds*.name == [Integer.name]
     }
 
     void "exposes Scala field constant values"() {
