@@ -28,9 +28,10 @@ This file tracks Scala documentation examples that are not yet ported to
   retry interception.
 - `io.micronaut.docs.aop.retry.BookService` compiles the annotation-style retry
   docs snippets, including simple, configured, circuit-breaker, and reactive
-  retry examples.
+  retry examples with idiomatic Scala `List` return values.
 - `io.micronaut.docs.aop.retry.ProgrammaticRetrySpec` verifies programmatic
-  retry and circuit breaker operations.
+  retry and circuit breaker operations with idiomatic Scala `List` return
+  values for ordinary application methods.
 - `io.micronaut.docs.aop.around.AroundSpec` verifies a Scala `@Around`
   stereotype annotation, method interceptor, and generated proxy.
 - `io.micronaut.docs.aop.around_reactive.TxSpec` verifies reactive around

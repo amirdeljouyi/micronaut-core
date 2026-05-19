@@ -26,8 +26,6 @@ import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 
 import java.time.Duration
-import java.util.Collections
-import java.util.List as JList
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.atomic.AtomicInteger
@@ -66,11 +64,11 @@ class ProgrammaticBookService(
     circuitCounter.set(0)
 
   // tag::programmatic-sync[]
-  def listBooks(): JList[Book] =
+  def listBooks(): List[Book] =
     retryOperations.execute(() =>
       if syncCounter.incrementAndGet() < 3 then
         throw IllegalStateException("Temporary failure")
-      Collections.singletonList(Book("The Stand"))
+      List(Book("The Stand"))
     )
   // end::programmatic-sync[]
 

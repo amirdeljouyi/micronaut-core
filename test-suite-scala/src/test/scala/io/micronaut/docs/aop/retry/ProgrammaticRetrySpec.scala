@@ -29,7 +29,7 @@ class ProgrammaticRetrySpec:
       val service = context.getBean(classOf[ProgrammaticBookService])
 
       service.reset()
-      assertEquals("The Stand", service.listBooks().get(0).title)
+      assertEquals("The Stand", service.listBooks().head.title)
 
       service.reset()
       assertEquals("The Stand", Mono.from(service.streamBooks()).block().title)

@@ -104,6 +104,8 @@ Reference:
 - Scala docs examples now cover simple IOC, introspection, config binding,
   HTTP/client/filter examples, and AOP examples including around, introduction,
   lifecycle, retry, proxy-target, and reactive around advice.
+- Scala retry docs examples now use idiomatic Scala `List` return types for
+  ordinary application methods instead of Java collection types.
 - Keep Scala examples idiomatic: constructor parameters, case classes, traits, `val`, and `var`.
 - Do not force JavaBean-style code unless the feature specifically requires Java interop.
 - Maintain `test-suite-scala/DISABLED_TESTS.md` as the docs backlog.

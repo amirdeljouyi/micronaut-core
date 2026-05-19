@@ -20,9 +20,6 @@ import io.micronaut.retry.annotation.Retryable
 import org.reactivestreams.Publisher
 import reactor.core.publisher.Flux
 
-import java.util.Collections
-import java.util.List
-
 class BookService:
 
   // tag::simple[]
@@ -30,14 +27,14 @@ class BookService:
   def listBooks(): List[Book] =
     // ...
   // end::simple[]
-    Collections.singletonList(Book("The Stand"))
+    List(Book("The Stand"))
 
   // tag::circuit[]
   @CircuitBreaker(reset = "30s")
   def findBooks(): List[Book] =
     // ...
   // end::circuit[]
-    Collections.singletonList(Book("The Stand"))
+    List(Book("The Stand"))
 
   // tag::attempts[]
   @Retryable(attempts = "5",
