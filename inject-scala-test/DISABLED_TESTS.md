@@ -66,6 +66,8 @@ Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
 proxy methods.
+`TypeElementQuery` field, method, and constructor inclusion is covered for
+Scala type visitors.
 Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
 generated proxy-target beans, interceptor invocation, and target lifecycle.
 Source-defined Scala `@Around(proxyTarget = true, hotswap = true)` advice is
@@ -84,10 +86,10 @@ Bean import is documented as unsupported for Scala.
 
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 14 | 2 | 167 | 1 | 11 | 195 |
-| Groovy AbstractBeanDefinitionSpec | 2 | 7 | 67 | 0 | 11 | 87 |
+| Java AbstractTypeElementSpec | 15 | 2 | 166 | 1 | 11 | 195 |
+| Groovy AbstractBeanDefinitionSpec | 3 | 6 | 67 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 1 | 3 | 12 | 0 | 3 | 19 |
-| Total | 17 | 12 | 246 | 1 | 25 | 301 |
+| Total | 19 | 11 | 245 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -299,7 +301,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/visitors/NullableElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/visitors/PostponedVisitorsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/visitors/PropertyElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/query/TypeElementQuerySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/visitors/query/TypeElementQuerySpec.groovy` - already covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
 
 ### Groovy AbstractBeanDefinitionSpec
 
@@ -388,7 +390,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/IntroductionVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/PropertyElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/TypeElementQuerySpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/TypeElementQuerySpec.groovy` - already covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
 - `inject-groovy/src/test/groovy/io/micronaut/validation/ValidatedParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 
 ### Kotlin AbstractKotlinCompilerSpec

@@ -31,6 +31,7 @@ import io.micronaut.inject.ast.WildcardElement
 import io.micronaut.inject.validation.RequiresValidation
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaEnumConstantCaptureVisitor
+import io.micronaut.scala.processing.test.ScalaTypeElementQueryVisitor
 import jakarta.inject.Named
 import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
@@ -304,6 +305,91 @@ class Test(
         then:
         introspectionProperties.name.isNullable()
         !introspectionProperties.title.isNullable()
+    }
+
+    void "type element query includes Scala fields"() {
+        when:
+        ScalaTypeElementQueryVisitor.enabled = true
+        ScalaTypeElementQueryVisitor.query = ScalaTypeElementQueryVisitor.query.excludeAll().includeFields()
+        def definition = buildBeanDefinition('example.QueryBean', '''
+package example
+
+import jakarta.inject.Singleton
+
+@Singleton
+class QueryBean(val name: String, var count: Int):
+  private val internal: String = "hidden"
+  def one(): String = name
+  def two(): Int = count
+''')
+
+        then:
+        definition
+        ScalaTypeElementQueryVisitor.visitedClasses*.name == ['example.QueryBean']
+        ScalaTypeElementQueryVisitor.visitedFields*.name as Set == ['name', 'count', 'internal'] as Set
+        ScalaTypeElementQueryVisitor.visitedConstructors.empty
+        ScalaTypeElementQueryVisitor.visitedMethods.empty
+        ScalaTypeElementQueryVisitor.visitedEnumConstants.empty
+
+        cleanup:
+        ScalaTypeElementQueryVisitor.cleanup()
+    }
+
+    void "type element query includes Scala methods"() {
+        when:
+        ScalaTypeElementQueryVisitor.enabled = true
+        ScalaTypeElementQueryVisitor.query = ScalaTypeElementQueryVisitor.query.excludeAll().includeMethods()
+        def definition = buildBeanDefinition('example.QueryBean', '''
+package example
+
+import jakarta.inject.Singleton
+
+@Singleton
+class QueryBean(val name: String, var count: Int):
+  private val internal: String = "hidden"
+  def one(): String = name
+  def two(): Int = count
+''')
+
+        then:
+        definition
+        ScalaTypeElementQueryVisitor.visitedClasses*.name == ['example.QueryBean']
+        ScalaTypeElementQueryVisitor.visitedFields.empty
+        ScalaTypeElementQueryVisitor.visitedConstructors.empty
+        ScalaTypeElementQueryVisitor.visitedMethods*.name as Set == ['one', 'two'] as Set
+        ScalaTypeElementQueryVisitor.visitedEnumConstants.empty
+
+        cleanup:
+        ScalaTypeElementQueryVisitor.cleanup()
+    }
+
+    void "type element query includes Scala constructors"() {
+        when:
+        ScalaTypeElementQueryVisitor.enabled = true
+        ScalaTypeElementQueryVisitor.query = ScalaTypeElementQueryVisitor.query.excludeAll().includeConstructors()
+        def definition = buildBeanDefinition('example.QueryBean', '''
+package example
+
+import jakarta.inject.Singleton
+
+@Singleton
+class QueryBean(val name: String, var count: Int):
+  private val internal: String = "hidden"
+  def one(): String = name
+  def two(): Int = count
+''')
+
+        then:
+        definition
+        ScalaTypeElementQueryVisitor.visitedClasses*.name == ['example.QueryBean']
+        ScalaTypeElementQueryVisitor.visitedFields.empty
+        ScalaTypeElementQueryVisitor.visitedMethods.empty
+        ScalaTypeElementQueryVisitor.visitedConstructors.size() == 1
+        ScalaTypeElementQueryVisitor.visitedConstructors[0].parameters*.name == ['name', 'count']
+        ScalaTypeElementQueryVisitor.visitedEnumConstants.empty
+
+        cleanup:
+        ScalaTypeElementQueryVisitor.cleanup()
     }
 
     void "exposes generic property type arguments"() {
