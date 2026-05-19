@@ -25,11 +25,11 @@ covered for Scala. Bean-definition type-string formatting and class-level
 partially covered for Scala. Factory method `@Bean(typed=...)` exposed type
 validation is covered for valid and invalid factory return types. Bean
 definition `@Order` metadata for top-level and companion-object nested beans,
-declared generic bean type metadata on bean definitions and references, factory
-generic bean type metadata, deep constructor generic argument metadata including
-nested type-use validation annotation metadata, resolved type variables for
-generic bean lookups, and named, alias-driven, and custom qualifier metadata
-are covered.
+bean definitions in packages with uppercase path segments, declared generic
+bean type metadata on bean definitions and references, factory generic bean type
+metadata, deep constructor generic argument metadata including nested type-use
+validation annotation metadata, resolved type variables for generic bean
+lookups, and named, alias-driven, and custom qualifier metadata are covered.
 Required and optional `@Autowired` field and method injection are covered for
 Scala. Dynamic `RuntimeBeanDefinition` registration from Scala source is
 covered. Qualifier metadata on field-targeted Scala `var` injection is covered
@@ -256,7 +256,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - already covered: Scala source-level abstract bean scenarios are covered for collection filtering, abstract definitions with injection points, qualifier-only beans, and AOP-only beans
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups, unbounded and upper-bounded wildcard generic bounds, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, uppercase package names, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups, unbounded and upper-bounded wildcard generic bounds, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy` - already covered: Scala constructor, field, method, collection, array, and named `BeanRegistration` injection are covered
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy` - already covered: Scala source-level dynamic bean definition registration is covered; the remaining runtime builder assertions are not language-adapter-specific
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy` - already covered: Scala introspection handles constructor forwarding through an abstract superclass
@@ -397,7 +397,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - already covered: Scala abstract bean definitions with injection points are covered
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for exposed type validation, factory exposed types, top-level and nested bean definition order metadata, declared bean generics, factory bean generics, resolved type-variable lookups, wildcard generic bounds, and qualifier metadata; remaining bean definition cases should be ported incrementally
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for exposed type validation, factory exposed types, top-level and nested bean definition order metadata, uppercase package names, declared bean generics, factory bean generics, resolved type-variable lookups, wildcard generic bounds, and qualifier metadata; remaining bean definition cases should be ported incrementally
 - `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigPropertiesParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ImmutableConfigurationPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support

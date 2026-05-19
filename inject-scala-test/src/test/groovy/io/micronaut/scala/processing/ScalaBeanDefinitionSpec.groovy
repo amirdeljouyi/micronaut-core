@@ -193,6 +193,22 @@ object OuterBean:
         definition.intValue(Order).getAsInt() == 10
     }
 
+    void "builds Scala bean definition in package with uppercase letters"() {
+        when:
+        def definition = buildBeanDefinition('test.A.TestBean', '''
+package test.A
+
+import jakarta.inject.Singleton
+
+@Singleton
+class TestBean
+''')
+
+        then:
+        noExceptionThrown()
+        definition != null
+    }
+
     void "passes Scala type arguments through parent hierarchy"() {
         given:
         def source = '''
