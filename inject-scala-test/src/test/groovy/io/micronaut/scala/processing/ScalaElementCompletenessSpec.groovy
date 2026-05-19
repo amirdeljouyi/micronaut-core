@@ -39,6 +39,7 @@ import jakarta.inject.Named
 import jakarta.inject.Qualifier
 import jakarta.inject.Singleton
 import jakarta.validation.Constraint
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
 
 import java.lang.annotation.ElementType
@@ -655,6 +656,31 @@ class TimingInterceptor extends MethodInterceptor[AnyRef, Object]:
         methodInterceptor.interfaces*.name == ['io.micronaut.aop.Interceptor']
         element.isAssignable('io.micronaut.aop.MethodInterceptor')
         element.isAssignable('io.micronaut.aop.Interceptor')
+    }
+
+    void "propagates annotations from inherited Scala interface type arguments"() {
+        when:
+        def element = buildClassElement('example.MyRepo', '''
+package example
+
+import jakarta.validation.Valid
+
+trait MyRepo extends Repo[MyBean @Valid, java.lang.Long]
+
+trait Repo[E, ID] extends GenericRepository[E, ID]:
+  def save(entity: E): Unit
+
+trait GenericRepository[E, ID]
+
+class MyBean:
+  var name: String = ""
+''')
+        def method = element.findMethod('save').get()
+        def parameterType = method.parameters[0].genericType
+
+        then:
+        parameterType.name == 'example.MyBean'
+        parameterType.hasAnnotation(Valid)
     }
 
     void "exposes Scala inner classes through enclosed elements"() {
