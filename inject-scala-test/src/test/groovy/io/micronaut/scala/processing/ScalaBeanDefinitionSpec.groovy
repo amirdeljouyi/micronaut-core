@@ -15,6 +15,7 @@
  */
 package io.micronaut.scala.processing
 
+import io.micronaut.core.annotation.Order
 import io.micronaut.core.type.TypeInformation
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 
@@ -149,6 +150,23 @@ class TestFactory:
         then:
         def e = thrown(RuntimeException)
         e.message.contains("Bean defines an exposed type [limittypes.Z] that is not implemented by the bean type")
+    }
+
+    void "exposes Scala bean definition order metadata"() {
+        given:
+        def definition = buildBeanDefinition('test.TestOrder', '''
+package test
+
+import io.micronaut.core.annotation.Order
+import jakarta.inject.Singleton
+
+@Singleton
+@Order(10)
+class TestOrder
+''')
+
+        expect:
+        definition.intValue(Order).getAsInt() == 10
     }
 
     void "passes Scala type arguments through parent hierarchy"() {
