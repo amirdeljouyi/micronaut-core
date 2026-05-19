@@ -685,6 +685,27 @@ class Holder[T <: CharSequence](val values: java.util.List[_ <: T])
         upperBound.bounds*.name == [CharSequence.name]
     }
 
+    void "terminates recursive Scala generic type parameter bounds"() {
+        when:
+        def element = buildClassElement('test.Test', '''
+package test
+
+final class Test[T <: Test[T]]
+''')
+        def typeArguments = element.typeArguments
+        def typeArgument = typeArguments.T
+        def nextTypeArguments = typeArgument.typeArguments
+        def nextTypeArgument = nextTypeArguments.T
+        def nextNextTypeArguments = nextTypeArgument.typeArguments
+        def nextNextTypeArgument = nextNextTypeArguments.T
+
+        then:
+        typeArguments.size() == 1
+        typeArgument.name == 'test.Test'
+        nextTypeArgument.name == 'test.Test'
+        nextNextTypeArgument.name == Object.name
+    }
+
     void "exposes Scala field constant values"() {
         when:
         def element = buildClassElement('example.Constants', '''
