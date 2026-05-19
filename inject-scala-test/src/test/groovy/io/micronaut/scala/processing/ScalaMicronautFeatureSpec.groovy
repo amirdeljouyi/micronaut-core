@@ -30,7 +30,6 @@ import io.micronaut.inject.writer.BeanDefinitionVisitor
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
 import jakarta.inject.Singleton
-import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
@@ -101,7 +100,6 @@ class Vehicle(val engines: Array[Engine])
         context?.close()
     }
 
-    @PendingFeature
     void "supports Scala immutable List constructor injection"() {
         when:
         def context = buildContext('''
@@ -126,13 +124,12 @@ class Vehicle(val engines: scala.collection.immutable.List[Engine])
         def vehicle = getBean(context, 'example.Vehicle')
 
         then:
-        vehicle.engines().iterator().collect { it.name() } as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.engines())*.name() as Set == ['v6', 'v8'] as Set
 
         cleanup:
         context?.close()
     }
 
-    @PendingFeature
     void "supports Scala Seq method injection"() {
         when:
         def context = buildContext('''
@@ -165,7 +162,41 @@ class Vehicle:
         def vehicle = getBean(context, 'example.Vehicle')
 
         then:
-        vehicle.engines().iterator().collect { it.name() } as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.engines())*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala Vector field injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle:
+  @(Inject @field)
+  var engines: scala.collection.immutable.Vector[Engine] = scala.collection.immutable.Vector.empty
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.engines())*.name() as Set == ['v6', 'v8'] as Set
 
         cleanup:
         context?.close()

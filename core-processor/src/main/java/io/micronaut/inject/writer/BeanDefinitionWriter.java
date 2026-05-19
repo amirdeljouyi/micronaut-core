@@ -409,6 +409,25 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         String.class);
 
     private static final ClassTypeDef TYPE_ABSTRACT_BEAN_DEFINITION_AND_REFERENCE = ClassTypeDef.of(AbstractInitializableBeanDefinitionAndReference.class);
+    private static final ClassTypeDef TYPE_SCALA_COLLECTION_CONVERTERS = ClassTypeDef.of("scala.jdk.javaapi.CollectionConverters");
+    private static final ClassTypeDef TYPE_SCALA_MUTABLE_BUFFER = scalaInterfaceType("scala.collection.mutable.Buffer");
+    private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_LIST = ClassTypeDef.of("scala.collection.immutable.List");
+    private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_SEQ = scalaInterfaceType("scala.collection.immutable.Seq");
+    private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_SET = scalaInterfaceType("scala.collection.immutable.Set");
+    private static final ClassTypeDef TYPE_SCALA_IMMUTABLE_VECTOR = ClassTypeDef.of("scala.collection.immutable.Vector");
+    private static final ClassTypeDef TYPE_LIST = ClassTypeDef.of(List.class);
+    private static final Set<String> SCALA_INJECTABLE_COLLECTION_TYPES = Set.of(
+        "scala.collection.Iterable",
+        "scala.collection.Seq",
+        "scala.collection.Set",
+        "scala.collection.IndexedSeq",
+        "scala.collection.immutable.Iterable",
+        "scala.collection.immutable.Seq",
+        "scala.collection.immutable.Set",
+        "scala.collection.immutable.IndexedSeq",
+        "scala.collection.immutable.List",
+        "scala.collection.immutable.Vector"
+    );
 
     private static final Method METHOD_OPTIONAL_EMPTY = ReflectionUtils.getRequiredMethod(Optional.class, "empty");
     private static final ClassTypeDef TYPE_OPTIONAL = ClassTypeDef.of(Optional.class);
@@ -1648,6 +1667,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                 GET_VALUE_FOR_FIELD,
                 isOptional,
                 false,
+                false,
                 isRequired
             );
         }
@@ -2842,7 +2862,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             if (isInnerType(genericType)) {
                 boolean isArray = genericType.isArray();
                 boolean isCollection = genericType.isAssignable(Collection.class);
-                if (isCollection || isArray) {
+                boolean isScalaCollection = isScalaInjectableCollection(genericType);
+                if (isCollection || isScalaCollection || isArray) {
                     ClassElement typeArgument = genericType.isArray() ? genericType.fromArray() : genericType.getFirstTypeArgument().orElse(null);
                     if (typeArgument != null && !typeArgument.isPrimitive()) {
                         return getInvokeGetBeansOfTypeForSetter(injectMethodSignature, methodElement.getName(), parameter, annotationMetadata, onValue, methodIndex);
@@ -3070,15 +3091,18 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         final ClassElement genericType = fieldElement.getGenericType();
         boolean isArray = genericType.isArray();
         boolean isCollection = genericType.isAssignable(Collection.class);
+        boolean isScalaCollection = isScalaInjectableCollection(genericType);
         boolean isMap = isInjectableMap(genericType);
         if (isMap) {
             requiresGenericType = true;
             methodToInvoke = GET_MAP_OF_TYPE_FOR_FIELD;
-        } else if (isCollection || isArray) {
+        } else if (isCollection || isScalaCollection || isArray) {
             requiresGenericType = true;
             ClassElement typeArgument = genericType.isArray() ? genericType.fromArray() : genericType.getFirstTypeArgument().orElse(null);
             if (typeArgument != null && !typeArgument.isPrimitive()) {
-                if (typeArgument.isAssignable(BeanRegistration.class)) {
+                if (isScalaCollection) {
+                    methodToInvoke = GET_STREAM_OF_TYPE_FOR_FIELD;
+                } else if (typeArgument.isAssignable(BeanRegistration.class)) {
                     methodToInvoke = GET_BEAN_REGISTRATIONS_FOR_FIELD;
                 } else {
                     methodToInvoke = GET_BEANS_OF_TYPE_FOR_FIELD;
@@ -3106,6 +3130,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             requiresReflection,
             methodToInvoke,
             isArray,
+            isScalaCollection,
             requiresGenericType,
             isRequired
         );
@@ -3123,6 +3148,31 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             }
         }
         return false;
+    }
+
+    private static boolean isScalaInjectableCollection(ClassElement genericType) {
+        return SCALA_INJECTABLE_COLLECTION_TYPES.contains(genericType.getName());
+    }
+
+    private static ClassTypeDef scalaInterfaceType(String name) {
+        return ClassTypeDef.of(ClassElement.of(name, true, AnnotationMetadata.EMPTY_METADATA));
+    }
+
+    private static ExpressionDef convertToScalaCollection(ClassElement targetType, ExpressionDef javaCollection) {
+        ExpressionDef scalaIterable = TYPE_SCALA_COLLECTION_CONVERTERS.invokeStatic(
+            "asScala",
+            TYPE_SCALA_MUTABLE_BUFFER,
+            javaCollection
+        );
+        return switch (targetType.getName()) {
+            case "scala.collection.immutable.List" -> scalaIterable.invoke("toList", TYPE_SCALA_IMMUTABLE_LIST);
+            case "scala.collection.Set", "scala.collection.immutable.Set" -> scalaIterable.invoke("toSet", TYPE_SCALA_IMMUTABLE_SET);
+            case "scala.collection.IndexedSeq", "scala.collection.immutable.IndexedSeq", "scala.collection.immutable.Vector" ->
+                scalaIterable.invoke("toVector", TYPE_SCALA_IMMUTABLE_VECTOR);
+            case "scala.collection.Seq", "scala.collection.immutable.Iterable", "scala.collection.immutable.Seq" ->
+                scalaIterable.invoke("toSeq", TYPE_SCALA_IMMUTABLE_SEQ);
+            default -> scalaIterable;
+        };
     }
 
     private boolean isInnerType(ClassElement genericType) {
@@ -3274,6 +3324,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                                                           boolean requiresReflection,
                                                           Method methodToInvoke,
                                                           boolean isArray,
+                                                          boolean isScalaCollection,
                                                           boolean requiresGenericType,
                                                           boolean isRequired) {
         evaluatedExpressionProcessor.processEvaluatedExpressions(fieldElement.getAnnotationMetadata(), null);
@@ -3306,6 +3357,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
             if (isArray && requiresGenericType) {
                 valueExpression = convertToArray(fieldElement.getType().fromArray(), valueExpression);
+            } else if (isScalaCollection && requiresGenericType) {
+                valueExpression = convertToScalaCollection(fieldElement.getType(), valueExpression.invoke("toList", TYPE_LIST));
             }
             valueExpression = valueExpression.cast(TypeDef.erasure(fieldElement.getType()));
         }
@@ -3585,6 +3638,7 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         final ClassElement genericType = entry.getGenericType();
         Method methodToInvoke;
         boolean isCollection = genericType.isAssignable(Collection.class);
+        boolean isScalaCollection = isScalaInjectableCollection(genericType);
         boolean isMap = isInjectableMap(genericType);
         boolean isArray = genericType.isArray();
 
@@ -3603,11 +3657,13 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                 }
                 return ExpressionDef.nullValue();
             }
-        } else if (isCollection || isArray) {
+        } else if (isCollection || isScalaCollection || isArray) {
             requiresGenericType = true;
             ClassElement typeArgument = genericType.isArray() ? genericType.fromArray() : genericType.getFirstTypeArgument().orElse(null);
             if (typeArgument != null && !typeArgument.isPrimitive()) {
-                if (typeArgument.isAssignable(BeanRegistration.class)) {
+                if (isScalaCollection) {
+                    methodToInvoke = GET_STREAM_OF_TYPE_FOR_METHOD_ARGUMENT;
+                } else if (typeArgument.isAssignable(BeanRegistration.class)) {
                     methodToInvoke = GET_BEAN_REGISTRATIONS_FOR_METHOD_ARGUMENT;
                 } else {
                     methodToInvoke = GET_BEANS_OF_TYPE_FOR_METHOD_ARGUMENT;
@@ -3660,6 +3716,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
         if (isArray && requiresGenericType) {
             result = convertToArray(genericType.fromArray(), result);
+        } else if (isScalaCollection && requiresGenericType) {
+            result = convertToScalaCollection(genericType, result.invoke("toList", TYPE_LIST));
         }
         // cast the return value to the correct type
         return result.cast(TypeDef.erasure(entry.getType()));
@@ -3833,7 +3891,11 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
                 resolveGenericType(argumentVar, genericType),
                 // push qualifier
                 getQualifier(entry.getGenericType(), argumentVar)
-            ).cast(TypeDef.erasure(entry.getType()));
+            );
+            if (isScalaInjectableCollection(entry.getGenericType())) {
+                value = convertToScalaCollection(entry.getType(), value);
+            }
+            value = value.cast(TypeDef.erasure(entry.getType()));
             return onValue.apply(value);
         });
     }
@@ -4279,11 +4341,14 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
             return ExpressionDef.nullValue();
         }
         isArray = genericType.isArray();
-        if (genericType.isAssignable(Collection.class) || isArray) {
+        boolean isScalaCollection = isScalaInjectableCollection(genericType);
+        if (genericType.isAssignable(Collection.class) || isScalaCollection || isArray) {
             hasGenericType = true;
             ClassElement typeArgument = genericType.isArray() ? genericType.fromArray() : genericType.getFirstTypeArgument().orElse(null);
             if (typeArgument != null && !typeArgument.isPrimitive()) {
-                if (typeArgument.isAssignable(BeanRegistration.class)) {
+                if (isScalaCollection) {
+                    methodToInvoke = GET_STREAM_OF_TYPE_FOR_CONSTRUCTOR_ARGUMENT;
+                } else if (typeArgument.isAssignable(BeanRegistration.class)) {
                     methodToInvoke = GET_BEAN_REGISTRATIONS_FOR_CONSTRUCTOR_ARGUMENT;
                 } else {
                     methodToInvoke = GET_BEANS_OF_TYPE_FOR_CONSTRUCTOR_ARGUMENT;
@@ -4325,6 +4390,8 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         ExpressionDef result = aThis.superRef().invoke(methodToInvoke, values);
         if (isArray && hasGenericType) {
             result = convertToArray(parameter.getGenericType().fromArray(), result);
+        } else if (isScalaCollection && hasGenericType) {
+            result = convertToScalaCollection(parameter.getGenericType(), result.invoke("toList", TYPE_LIST));
         }
         return result.cast(TypeDef.erasure(parameter.getType()));
     }
