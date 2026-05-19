@@ -34,7 +34,11 @@ final class ScalaGenericPlaceholderElement extends ScalaClassElement implements 
     private final ScalaVisitorContext visitorContext;
 
     ScalaGenericPlaceholderElement(ScalaTypeData typeData, ScalaVisitorContext visitorContext) {
-        super(typeData, visitorContext, visitorContext.annotationMetadata(typeData));
+        this(typeData, visitorContext, visitorContext.annotationMetadata(typeData));
+    }
+
+    private ScalaGenericPlaceholderElement(ScalaTypeData typeData, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
+        super(typeData, visitorContext, annotationMetadata);
         this.typeData = typeData;
         this.visitorContext = visitorContext;
     }
@@ -59,6 +63,19 @@ final class ScalaGenericPlaceholderElement extends ScalaClassElement implements 
     @Override
     public Optional<Element> getDeclaringElement() {
         return Optional.empty();
+    }
+
+    @Override
+    public ClassElement withArrayDimensions(int arrayDimensions) {
+        if (arrayDimensions == getArrayDimensions()) {
+            return this;
+        }
+        return new ScalaGenericPlaceholderElement(typeData.withArrayDimensions(arrayDimensions), visitorContext, getAnnotationMetadata());
+    }
+
+    @Override
+    public ClassElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
+        return new ScalaGenericPlaceholderElement(typeData, visitorContext, annotationMetadata);
     }
 
     @Override

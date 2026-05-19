@@ -18,6 +18,7 @@ package io.micronaut.scala.processing
 import io.micronaut.core.beans.BeanIntrospection
 import io.micronaut.core.beans.BeanIntrospectionReference
 import io.micronaut.core.beans.EnumBeanIntrospection
+import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import spock.lang.PendingFeature
 
@@ -275,5 +276,37 @@ class FormulaCreationDto(percentValue: java.util.Optional[java.lang.Boolean]):
         then:
         bean.otherColumns() == List.of("percent")
         bean.percent()
+    }
+
+    void "exposes Scala introspection subtype generic placeholders"() {
+        given:
+        def introspection = buildBeanIntrospection('test.Holder', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Animal
+
+@Introspected
+class Cat(val lives: Int) extends Animal
+
+@Introspected
+class Holder[A <: Animal](
+  val animalNonGeneric: Animal,
+  val animalsNonGeneric: List[Animal],
+  val animal: A,
+  val animals: List[A]
+)
+''')
+
+        expect:
+        def animalListArgument = introspection.getProperty("animals").get().asArgument().getTypeParameters()[0]
+        animalListArgument instanceof GenericPlaceholder
+        animalListArgument.isTypeVariable()
+
+        def animal = introspection.getProperty("animal").get().asArgument()
+        animal instanceof GenericPlaceholder
+        animal.isTypeVariable()
     }
 }

@@ -82,6 +82,7 @@ Reference:
 - Scala emitted field `ElementQuery` filtering is covered for all, private, and accessible field selection, preserving the Scala-specific model that emitted fields are private and reflection-required.
 - Scala wildcard generic metadata now resolves unbounded wildcard arguments through the enclosing type parameter bounds for bean-definition generic metadata, including bounded forms such as `NumberThing[?]` and `NumberThing[? <: Double]`.
 - Recursive Scala generic type parameter bounds such as `T <: Test[T]` now terminate during compiler-symbol conversion while preserving a useful bounded placeholder chain for the Element API.
+- Scala bean introspection preserves generic placeholders with upper bounds on generic bean properties and nested Scala collection property type arguments.
 
 ### Wave 4: Micronaut Features
 
