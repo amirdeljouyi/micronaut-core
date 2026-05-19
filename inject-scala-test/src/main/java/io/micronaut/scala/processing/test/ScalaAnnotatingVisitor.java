@@ -38,6 +38,7 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
 
     private static final ThreadLocal<Boolean> ENABLED = new ThreadLocal<>();
     private static final ThreadLocal<String> CLASS_ANNOTATION = new ThreadLocal<>();
+    private static final ThreadLocal<String> METHOD_ANNOTATION = new ThreadLocal<>();
     private static final ThreadLocal<RuntimeException> START_FAILURE = new ThreadLocal<>();
     private static final ThreadLocal<RuntimeException> CLASS_FAILURE = new ThreadLocal<>();
     private static final ThreadLocal<RuntimeException> FINISH_FAILURE = new ThreadLocal<>();
@@ -73,6 +74,25 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
             return supplier.get();
         } finally {
             CLASS_ANNOTATION.remove();
+            ENABLED.remove();
+        }
+    }
+
+    /**
+     * Executes a compilation with this visitor adding the given annotation to methods.
+     *
+     * @param annotationName The annotation name
+     * @param supplier The compilation work
+     * @param <T> The result type
+     * @return The supplier result
+     */
+    public static <T> T withMethodAnnotation(String annotationName, Supplier<T> supplier) {
+        ENABLED.set(Boolean.TRUE);
+        METHOD_ANNOTATION.set(annotationName);
+        try {
+            return supplier.get();
+        } finally {
+            METHOD_ANNOTATION.remove();
             ENABLED.remove();
         }
     }
@@ -175,6 +195,10 @@ public final class ScalaAnnotatingVisitor implements TypeElementVisitor<Object, 
             return;
         }
         annotate(element, "method");
+        String methodAnnotation = METHOD_ANNOTATION.get();
+        if (methodAnnotation != null) {
+            element.annotate(methodAnnotation);
+        }
         for (ParameterElement parameter : element.getParameters()) {
             annotate(parameter, "parameter");
         }

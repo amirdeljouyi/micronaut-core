@@ -91,7 +91,8 @@ bounds that reference Scala generic placeholders.
 Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
-proxy methods.
+proxy methods, including inherited generic introduction methods with visitor-added
+source-defined annotation metadata.
 `TypeElementQuery` field, method, and constructor inclusion is covered for
 Scala type visitors.
 Scala `@throws[...]` method declarations are covered through
@@ -118,10 +119,10 @@ Bean import is documented as unsupported for Scala.
 
 | Source | already covered | portable | blocked | unsupported | scala-specific | total |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 16 | 2 | 165 | 1 | 11 | 195 |
+| Java AbstractTypeElementSpec | 17 | 2 | 164 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 5 | 5 | 66 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 2 | 2 | 12 | 0 | 3 | 19 |
-| Total | 23 | 9 | 243 | 1 | 25 | 301 |
+| Total | 24 | 9 | 242 | 1 | 25 | 301 |
 
 ## First Portable Ports
 
@@ -205,7 +206,7 @@ Start with small tests that exercise already-supported Scala forms before enabli
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/IntroductionAdviceWithNewInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/MappedIntroductionOnConcreteClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/MyAbstractRepoSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/beans/IntroducedBeanVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/beans/IntroducedBeanVisitorSpec.groovy` - already covered: Scala inherited introduction methods with generic return types, generic publisher parameters, resolved generic parameters, and `@InterceptorBean` bindings are covered by `ScalaIntroducedBeanVisitorSpec`
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/repeatable/IntroducedWithRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
