@@ -54,7 +54,8 @@ Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
 idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable.Set`,
 `scala.collection.Seq`, `scala.collection.IndexedSeq`, and
-`scala.collection.immutable.Vector`. Scala collection injection also covers
+`scala.collection.immutable.Vector`, plus mutable `scala.collection.mutable.Buffer`
+and `scala.collection.mutable.Seq`. Scala collection injection also covers
 `BeanRegistration[T]` element semantics. String-keyed Scala map injection is
 covered for constructor, method, and field injection with
 `scala.collection.Map[String, T]` and `scala.collection.immutable.Map[String, T]`.

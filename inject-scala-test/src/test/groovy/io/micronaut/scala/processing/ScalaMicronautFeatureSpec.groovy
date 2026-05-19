@@ -232,6 +232,51 @@ class Vehicle:
         context?.close()
     }
 
+    void "supports Scala mutable collection injection"() {
+        when:
+        def context = buildContext('''
+package example
+
+import jakarta.inject.Inject
+import jakarta.inject.Singleton
+import scala.annotation.meta.field
+import scala.collection.mutable
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V6Engine extends Engine:
+  override def name(): String = "v6"
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val constructorEngines: mutable.Buffer[Engine]):
+  private var allEngines: mutable.Seq[Engine] = mutable.Buffer.empty
+
+  @(Inject @field)
+  var fieldEngines: mutable.Buffer[Engine] = mutable.Buffer.empty
+
+  @Inject
+  def setEngines(engines: mutable.Seq[Engine]): Unit =
+    allEngines = engines
+
+  def methodEngines: mutable.Seq[Engine] = allEngines
+''')
+        def vehicle = getBean(context, 'example.Vehicle')
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.constructorEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.methodEngines())*.name() as Set == ['v6', 'v8'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(vehicle.fieldEngines())*.name() as Set == ['v6', 'v8'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports Scala Vector field injection"() {
         when:
         def context = buildContext('''
