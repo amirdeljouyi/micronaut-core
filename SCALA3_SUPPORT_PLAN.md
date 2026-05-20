@@ -43,13 +43,14 @@ Add `test-suite-scala`.
 
 ### `micronaut-build` Docs Tooling
 
-Add Scala support to the docs snippet tooling in the sibling `micronaut-build` repository before relying on Scala snippets from Micronaut Core docs.
+Add Scala support to the docs snippet tooling in the sibling `micronaut-build` repository before relying on Scala snippets from Micronaut Core docs. Treat this as a companion branch in `/Users/graemerocher/dev/micronaut/build` or the active local `micronaut-build` checkout, and keep its commits separate from Micronaut Core commits so the required build-plugin changes are reviewable on their own.
 
 - Extend `LanguageSnippetMacro` to treat `scala` as a first-class snippet language.
 - Use `test-suite-scala` as the default Scala snippet project, `src/<source>/scala` as the source folder, and `.scala` as the file extension.
 - Keep existing Java, Groovy, Kotlin, and Python snippet behavior unchanged.
 - Add focused `LanguageSnippetMacroSpec` coverage that proves Scala snippets resolve from `test-suite-scala` and from explicit `project` / `project-base` attributes.
-- Publish or otherwise consume the updated `micronaut-build` snapshot from this checkout before validating Scala docs in Micronaut Core.
+- Add a Scala-only snippet selection mechanism, such as a `language="scala"` or `languages="scala"` attribute, so Scala-only guide pages do not emit missing-snippet warnings while the macro checks Java, Python, Kotlin, and Groovy fallbacks.
+- Validate Micronaut Core docs against the updated build plugin with `--include-build ../build` when working from the standard sibling checkout, then publish or otherwise consume the updated `micronaut-build` snapshot before validating without the included build.
 - Do not hard-code Scala feature examples in `.adoc` files as a fallback. If a Scala feature is documented with code, it must be backed by a real snippet source.
 - Treat build-tool setup examples the same way: Maven, Gradle, sbt, and Mill examples should come from maintained fixture files or docs example sources. If the current snippet macro cannot address those files, add the minimal docs-tooling support instead of inlining stale configuration blocks.
 
@@ -64,6 +65,7 @@ Reference:
 - Add Scala 3 catalog entries, module includes, build files, package metadata, plugin descriptor, and minimal compile tasks.
 - Prefer `managed-scala3` in the version catalog and use one Scala 3 line only.
 - Add the required `micronaut-build` docs-snippet support for Scala so documentation can use source-backed `snippet::` macros from the start.
+- Commit the companion `micronaut-build` work in focused checkpoints before the Core docs commits that depend on it.
 
 ### Wave 1: Proof of Concept
 
@@ -157,7 +159,7 @@ Reference:
 ### Per-Feature Validation
 
 - For Scala docs changes, first run the focused `micronaut-build` `LanguageSnippetMacroSpec` after adding Scala snippet support.
-- Publish or include the updated `micronaut-build` snapshot before running Micronaut Core docs validation.
+- Publish or include the updated `micronaut-build` snapshot before running Micronaut Core docs validation; when using the sibling checkout, prefer `./gradlew --include-build ../build publishGuide` or `./gradlew --include-build ../build docs` for local proof.
 - Run the focused `inject-scala-test` spec first.
 - Run the equivalent Java, Groovy, or Kotlin source spec when useful for behavioral comparison.
 - Run `:micronaut-inject-scala-test:test` after each feature group.
