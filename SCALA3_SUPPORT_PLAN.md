@@ -1,6 +1,6 @@
 # Scala 3 Support for Micronaut Core
 
-Last updated: 2026-05-19
+Last updated: 2026-05-20
 
 ## Summary
 
@@ -41,6 +41,18 @@ Add `test-suite-scala`.
 - Mirror the docs snippet layout used by `test-suite-groovy`, `test-suite-kotlin`, and `test-suite-python`.
 - Add Scala snippet sources to the root docs `languageSnippetSources` input.
 
+### `micronaut-build` Docs Tooling
+
+Add Scala support to the docs snippet tooling in the sibling `micronaut-build` repository before relying on Scala snippets from Micronaut Core docs.
+
+- Extend `LanguageSnippetMacro` to treat `scala` as a first-class snippet language.
+- Use `test-suite-scala` as the default Scala snippet project, `src/<source>/scala` as the source folder, and `.scala` as the file extension.
+- Keep existing Java, Groovy, Kotlin, and Python snippet behavior unchanged.
+- Add focused `LanguageSnippetMacroSpec` coverage that proves Scala snippets resolve from `test-suite-scala` and from explicit `project` / `project-base` attributes.
+- Publish or otherwise consume the updated `micronaut-build` snapshot from this checkout before validating Scala docs in Micronaut Core.
+- Do not hard-code Scala feature examples in `.adoc` files as a fallback. If a Scala feature is documented with code, it must be backed by a real snippet source.
+- Treat build-tool setup examples the same way: Maven, Gradle, sbt, and Mill examples should come from maintained fixture files or docs example sources. If the current snippet macro cannot address those files, add the minimal docs-tooling support instead of inlining stale configuration blocks.
+
 Reference:
 
 - https://docs.gradle.org/current/userguide/scala_plugin.html
@@ -51,6 +63,7 @@ Reference:
 
 - Add Scala 3 catalog entries, module includes, build files, package metadata, plugin descriptor, and minimal compile tasks.
 - Prefer `managed-scala3` in the version catalog and use one Scala 3 line only.
+- Add the required `micronaut-build` docs-snippet support for Scala so documentation can use source-backed `snippet::` macros from the start.
 
 ### Wave 1: Proof of Concept
 
@@ -104,6 +117,18 @@ Reference:
 
 ### Wave 5: Docs and Examples
 
+- Add a dedicated Scala section under `src/main/docs/guide/languageSupport`.
+- Wire the Scala section into `src/main/docs/guide/toc.yml` under `languageSupport`.
+- Explain how Micronaut Scala support is implemented: Scala 3 compiler plugin, typed compiler trees, Scala Element API wrappers, shared annotation metadata builder model, shared bean-definition writers, and reflection-free compiler-symbol processing where possible.
+- Explain build setup for Maven, Gradle, sbt, and Mill. Keep these examples backed by real fixture files or source snippets rather than hard-coded `.adoc` listings.
+- Document Scala-specific support:
+  - Scala collection injection and configuration binding for common immutable and mutable collection types.
+  - `Option[T]` bean injection.
+  - Scala explicit nulls / union type nullability such as `T | Null`.
+  - Case classes for DTOs, bean introspections, immutable configuration properties, and request/response bodies.
+  - Scala annotation target syntax such as `@(Constraint @field)` when Java annotations need to land on generated fields.
+  - Traits for interfaces and AOP introduction advice.
+  - `val` and `var` property semantics, including when JavaBean-style mutable properties are still required.
 - Start with simple IOC, introspection, and config examples.
 - Add HTTP, controller, and AOP examples after the basics are working.
 - Scala docs examples now cover simple IOC, introspection, config binding,
@@ -131,6 +156,8 @@ Reference:
 
 ### Per-Feature Validation
 
+- For Scala docs changes, first run the focused `micronaut-build` `LanguageSnippetMacroSpec` after adding Scala snippet support.
+- Publish or include the updated `micronaut-build` snapshot before running Micronaut Core docs validation.
 - Run the focused `inject-scala-test` spec first.
 - Run the equivalent Java, Groovy, or Kotlin source spec when useful for behavioral comparison.
 - Run `:micronaut-inject-scala-test:test` after each feature group.
