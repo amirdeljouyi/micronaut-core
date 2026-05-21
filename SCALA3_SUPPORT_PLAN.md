@@ -186,6 +186,11 @@ Priority 3 covers visitor-generated beans and build-time behavior:
 - Add evaluated-expression parity for `@Requires` expressions,
   context/property/environment expressions, expression injection, and
   annotation-level expressions.
+- Focused evaluated-expression parity now covers constructor, method, and
+  factory `@Value` expression injection, evaluated `@Requires` env/property
+  values, and context-value `@Requires` expressions. Field-level Scala
+  `@Value` expression injection remains a pending test because field-targeted
+  metadata is not propagated to the generated setter injection point.
 
 Iteration rules:
 

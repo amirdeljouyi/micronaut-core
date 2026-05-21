@@ -44,7 +44,13 @@ Required and optional `@Autowired` field and method injection are covered for
 Scala. Dynamic `RuntimeBeanDefinition` registration from Scala source is
 covered. Qualifier metadata on field-targeted Scala `var` injection is covered
 for property setter injection. Evaluated expressions on Scala bean definitions
-and executable methods are covered for Graal build-time initialization. Constructor-copy
+and executable methods are covered for Graal build-time initialization.
+Focused P3 expression parity now covers constructor, method, and factory
+`@Value` expression injection, `@Requires` env/property expression values, and
+context-value `@Requires` expressions through a test expression-context
+registrar. Field-level Scala `@Value` expression injection remains pending
+because field-targeted `@Value` metadata is not propagated to the generated
+Scala setter injection point. Constructor-copy
 introspection through an abstract Scala superclass is covered. Bean-introspection
 constructor argument generics, generic array property/method return types, and
 deep property type-use annotation metadata are covered; superclass introspection
@@ -243,7 +249,9 @@ Bean import is documented as unsupported for Scala.
   compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
 - Add evaluated-expression parity for `@Requires` expressions,
   context/property/environment expressions, expression injection, and
-  annotation-level expressions.
+  annotation-level expressions. Constructor, method, and factory expression
+  injection plus `@Requires` env/property/context expressions are now covered;
+  field expression injection remains a pending Scala setter metadata gap.
 
 ## First Candidate Ports
 
@@ -260,7 +268,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 
 ### Java AbstractTypeElementSpec
 
-- `inject-java-test/src/main/groovy/io/micronaut/annotation/processing/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/main/groovy/io/micronaut/annotation/processing/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: partially covered by focused Scala expression injection and `@Requires` expression parity; direct generated-expression class evaluation and expression type collection remain comparison candidates
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationTransformerSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/InheritedNullableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
@@ -458,7 +466,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 
 ### Groovy AbstractBeanDefinitionSpec
 
-- `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: source comparison for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: partially covered by focused Scala expression injection and `@Requires` expression parity; direct generated-expression class evaluation and expression type collection remain comparison candidates
 - `inject-groovy/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
@@ -482,8 +490,8 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyEnclosedElementsSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsUsageSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsInjectionSpec.groovy` - candidate: partially covered by Scala constructor, method, and factory `@Value` expression injection; field expression injection is pending because field-targeted `@Value` metadata is not propagated to the Scala setter injection point
+- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsUsageSpec.groovy` - covered: Scala covers evaluated `@Requires` env/property values, context-value expressions, and disabled bean behavior
 - `inject-groovy/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataWriterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/GroovyAnnotationInheritanceSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
