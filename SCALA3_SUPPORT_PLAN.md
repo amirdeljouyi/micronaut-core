@@ -106,20 +106,24 @@ package-private behavior unless there is a Scala-native equivalent.
 
 Priority 0 also includes Element API and annotation parity tests:
 
-- Add `ScalaReconstructionSpec` for field, method, parameter, and return
+- Maintain `ScalaReconstructionSpec` for field, method, parameter, and return
   reconstruction; arrays; wildcards; type variables on classes and methods;
   inherited type arguments; traits/interfaces; enums; and inner/nested classes.
-- Add `ScalaVisitorContextSpec` for `getClassElement`, `getClassElements`, enum
+- Maintain `ScalaVisitorContextSpec` for `getClassElement`, `getClassElements`, enum
   lookup, nested-class lookup, missing-class behavior, and no classloading
   assumptions.
-- Add `ScalaElementMutationParitySpec` for visitor-added annotations on class,
+- Maintain `ScalaElementMutationParitySpec` for visitor-added annotations on class,
   method, field, property, parameter, return type, field type, and type
   arguments; repeatables; empty arrays; and stereotypes.
-- Add `ScalaAnnotationMetadataParitySpec` for annotation defaults, nested
+- Maintain `ScalaAnnotationMetadataParitySpec` for annotation defaults, nested
   annotations, class literals, enum constants, arrays, retention/target
   filtering, source-defined stereotypes, aliasing,
   mapper/transformer/remapper behavior, removal behavior, and
   `ProcessingException` messages with originating elements.
+- Visitor-added annotations on Scala return/parameter type `ClassElement`
+  wrappers and generic type arguments remain tracked as pending feature tests
+  because mutation metadata is not preserved when those wrapper copies are
+  re-read from the captured Scala element.
 
 Priority 1 extends introspection, bean definition, and configuration parity:
 

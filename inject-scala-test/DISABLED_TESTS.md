@@ -118,7 +118,14 @@ Scala object constants referenced from annotation values are resolved from
 compiler symbol/type metadata without classloading.
 `TypeElementVisitor` annotation mutations are covered for generated introduction
 proxy methods, including inherited generic introduction methods with visitor-added
-source-defined annotation metadata.
+source-defined annotation metadata. Focused P0 mutation parity now also covers
+visitor-added annotations on Scala classes, methods, fields, field types,
+properties, and parameters, plus visitor-added repeatables, empty arrays, and
+source-defined stereotypes.
+Visitor-added annotations on Scala return/parameter type `ClassElement`
+wrappers and generic type arguments remain pending because mutation metadata is
+not preserved when those wrapper copies are re-read from the captured Scala
+element.
 `TypeElementQuery` field, method, and constructor inclusion is covered for
 Scala type visitors. Scala `ElementQuery` filtering is covered for inherited
 methods, including abstract/concrete and accessible method selection across
