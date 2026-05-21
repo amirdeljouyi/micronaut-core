@@ -183,6 +183,9 @@ Priority 3 covers visitor-generated beans and build-time behavior:
   do not support adding associated beans at compilation time.
 - Add visitor-order and postponed-visitor coverage only where Scala's
   compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
+- `ScalaVisitorOrderingSpec` covers Scala `TypeElementVisitor` ordering across
+  `start`, `visitClass`, and `finish`; Java annotation-processing postponed
+  round behavior does not map directly to the Scala compiler-plugin phase model.
 - Add evaluated-expression parity for `@Requires` expressions,
   context/property/environment expressions, expression injection, and
   annotation-level expressions.

@@ -247,6 +247,10 @@ Bean import is documented as unsupported for Scala.
   pass.
 - Add visitor-order and postponed-visitor coverage only where Scala's
   compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
+  Scala visitor ordering is covered by `ScalaVisitorOrderingSpec`; Java
+  annotation-processing postponed rounds are Scala-specific and are not ported
+  where they depend on generated types appearing in later annotation-processing
+  rounds.
 - Add evaluated-expression parity for `@Requires` expressions,
   context/property/environment expressions, expression injection, and
   annotation-level expressions. Constructor, method, and factory expression
@@ -460,7 +464,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/visitors/IntroductionVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/visitors/MixinSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/visitors/NullableElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/visitors/PostponedVisitorsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/PostponedVisitorsSpec.groovy` - scala-specific: Java annotation-processing round postponement does not map directly to Scala compiler-plugin phases; Scala visitor ordering is covered by `ScalaVisitorOrderingSpec`, while generated-bean behavior remains tracked by the pending bean builder parity tests
 - `inject-java/src/test/groovy/io/micronaut/visitors/PropertyElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/visitors/query/TypeElementQuerySpec.groovy` - covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
 
