@@ -258,6 +258,10 @@ Iteration rules:
 - Scala docs examples now cover simple IOC, introspection, config binding,
   HTTP/client/filter examples, and AOP examples including around, introduction,
   lifecycle, retry, proxy-target, and reactive around advice.
+- The language-support guide now includes a dedicated Scala 3 page, wired into
+  the main language-support TOC, with source-backed build-tool setup snippets
+  and tagged Scala examples for collection/`Option` injection, configuration
+  binding, explicit-null DTOs, and field-targeted validation annotations.
 - Scala retry docs examples now use idiomatic Scala `List` return types for
   ordinary application methods instead of Java collection types.
 - Scala introduction docs examples now use idiomatic Scala `List` return types
