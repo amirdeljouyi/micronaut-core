@@ -204,9 +204,12 @@ Bean import is documented as unsupported for Scala.
   arguments; repeatables; empty arrays; and stereotypes.
 - Add `ScalaAnnotationMetadataParitySpec`: annotation defaults, nested
   annotations, class literals, enum constants, arrays, retention/target
-  filtering, source-defined stereotypes, aliasing, mapper/transformer/remapper
-  behavior, removal behavior, and `ProcessingException` messages with
-  originating elements.
+  filtering, source-defined stereotypes, aliasing, and `ProcessingException`
+  messages with originating elements.
+- Add `ScalaAnnotationMappingParitySpec`: typed annotation mapper,
+  transformer, and package remapper behavior on Scala class annotations,
+  including mapper retention and transformer/remapper removal. Repeatable
+  outputs from mapping remain a comparison candidate.
 
 ### P1: Introspection, Bean Definition, and Configuration Parity
 
@@ -274,7 +277,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 
 - `inject-java-test/src/main/groovy/io/micronaut/annotation/processing/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: partially covered by focused Scala expression injection and `@Requires` expression parity; direct generated-expression class evaluation and expression type collection remain comparison candidates
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationTransformerSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationTransformerSpec.groovy` - candidate: partially covered by `ScalaAnnotationMappingParitySpec` for transformer removal; retention-level transformer behavior remains a comparison candidate
 - `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/InheritedNullableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java-test/src/test/groovy/io/micronaut/inject/beanimport/BeanImportSpec.groovy` - unsupported: bean import is not implemented for Scala and should be documented as unsupported in a future docs pass
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - covered: Scala `TypeElementVisitor` annotation mutations are covered for classes, methods, parameters, introspection properties, source-defined stereotypes, and introduction proxy methods
@@ -298,15 +301,15 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AnnotationMappingSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MapToRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MappedValueHasDefaultSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/RemapToRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AnnotationMappingSpec.groovy` - candidate: partially covered by `ScalaAnnotationMappingParitySpec` for typed mapper execution and mapper-retained source annotations; domain-specific stereotype mapping remains a comparison candidate
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MapToRepeatableAnnotationSpec.groovy` - candidate: partially covered by `ScalaAnnotationMappingParitySpec` for typed mapper execution; repeatable mapped outputs remain a comparison candidate
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MappedValueHasDefaultSpec.groovy` - candidate: partially covered by `ScalaAnnotationMappingParitySpec` for explicit Scala annotation member values; Java annotation default member visibility to mappers remains a comparison candidate
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/RemapToRepeatableAnnotationSpec.groovy` - candidate: partially covered by `ScalaAnnotationMappingParitySpec` for package remapper removal; repeatable remapped outputs remain a comparison candidate
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/ReplacesRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/SourceAnnotationHasDefaultsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/SourceAnnotationHasDefaultsSpec.groovy` - candidate: Scala source-defined annotation defaults are covered by `ScalaAnnotationMetadataParitySpec`; Java annotation default member visibility to Scala mappers remains a comparison candidate
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformNotInheritedAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformToInheritedAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformsToRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformsToRepeatableAnnotationSpec.groovy` - candidate: partially covered by `ScalaAnnotationMappingParitySpec` for transformer removal; repeatable transformed outputs remain a comparison candidate
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaVisitorContextSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaVisitorSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant

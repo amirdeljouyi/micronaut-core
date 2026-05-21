@@ -117,9 +117,12 @@ Priority 0 also includes Element API and annotation parity tests:
   arguments; repeatables; empty arrays; and stereotypes.
 - Maintain `ScalaAnnotationMetadataParitySpec` for annotation defaults, nested
   annotations, class literals, enum constants, arrays, retention/target
-  filtering, source-defined stereotypes, aliasing,
-  mapper/transformer/remapper behavior, removal behavior, and
+  filtering, source-defined stereotypes, aliasing, and
   `ProcessingException` messages with originating elements.
+- Maintain `ScalaAnnotationMappingParitySpec` for typed annotation mapper,
+  transformer, and package remapper behavior on Scala class annotations,
+  including mapper retention and transformer/remapper removal. Repeatable
+  outputs from mapping remain a comparison candidate.
 - Visitor-added annotations on Scala return/parameter type `ClassElement`
   wrappers and generic type arguments remain tracked as pending feature tests
   because mutation metadata is not preserved when those wrapper copies are
