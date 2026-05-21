@@ -176,6 +176,11 @@ Priority 3 covers visitor-generated beans and build-time behavior:
 - Add `ScalaBeanElementBuilderParitySpec` for visitor-created beans, associated
   factory beans, multiple generated factories, generated methods, and AOP on
   generated beans.
+- Pending `ScalaBeanElementBuilderParitySpec` coverage now documents that
+  associated factory beans, multiple generated factories, generated executable
+  methods, and generated-bean AOP currently stop at
+  `ScalaClassElement.addAssociatedBean(...)`, which reports that Scala elements
+  do not support adding associated beans at compilation time.
 - Add visitor-order and postponed-visitor coverage only where Scala's
   compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
 - Add evaluated-expression parity for `@Requires` expressions,
