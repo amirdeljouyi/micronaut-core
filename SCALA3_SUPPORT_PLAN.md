@@ -1,6 +1,6 @@
 # Scala 3 Support for Micronaut Core
 
-Last updated: 2026-05-20
+Last updated: 2026-05-21
 
 ## Summary
 
@@ -87,6 +87,92 @@ Reference:
 - Port portable tests first.
 - Skip language-specific Java, Groovy, and Kotlin syntax tests.
 
+Current grounding pass: Java `194` specs / `1065` features, Groovy `86`
+specs / `473` features, Kotlin `19` specs / `194` features, and Scala `11`
+specs / `168` features. Scala already covers the proof of concept, many
+Element API cases, Scala collections, explicit nulls, core DI, configuration
+properties, basic AOP, introspections, and annotation stereotypes. Refresh the
+Scala disabled-test catalog before porting more tests so it reflects the
+current checkout rather than the original proof-of-concept gap list.
+
+#### Scala Test Parity Gap Catalog
+
+Priority 0 is the catalog refresh. Update
+`inject-scala-test/DISABLED_TESTS.md` from the current checkout and reclassify
+each entry as `covered`, `candidate`, `scala-specific`, or `unsupported`. Keep
+`BeanImportSpec` as `unsupported`. Skip Kotlin suspend/coroutine cases, Java
+record-only cases, Groovy dynamic/singleton-only cases, and exact Java
+package-private behavior unless there is a Scala-native equivalent.
+
+Priority 0 also includes Element API and annotation parity tests:
+
+- Add `ScalaReconstructionSpec` for field, method, parameter, and return
+  reconstruction; arrays; wildcards; type variables on classes and methods;
+  inherited type arguments; traits/interfaces; enums; and inner/nested classes.
+- Add `ScalaVisitorContextSpec` for `getClassElement`, `getClassElements`, enum
+  lookup, nested-class lookup, missing-class behavior, and no classloading
+  assumptions.
+- Add `ScalaElementMutationParitySpec` for visitor-added annotations on class,
+  method, field, property, parameter, return type, field type, and type
+  arguments; repeatables; empty arrays; and stereotypes.
+- Add `ScalaAnnotationMetadataParitySpec` for annotation defaults, nested
+  annotations, class literals, enum constants, arrays, retention/target
+  filtering, source-defined stereotypes, aliasing,
+  mapper/transformer/remapper behavior, removal behavior, and
+  `ProcessingException` messages with originating elements.
+
+Priority 1 extends introspection, bean definition, and configuration parity:
+
+- Extend `ScalaBeanIntrospectionSpec` for property include/exclude/access-kind
+  rules, covariant properties, numbered property names, creator selection,
+  executable methods, validation metadata, generic placeholders, enum creator
+  behavior, interface/trait inheritance, and external-class introspection where
+  Scala can model it.
+- Extend `ScalaBeanDefinitionSpec` for unresolved-type diagnostics, provider
+  and `BeanProvider` injection, optional property injection,
+  repeatable/non-binding qualifiers, `@Replaces`, inherited qualifier negative
+  cases, abstract parent injection, factory field/val/method beans, generic
+  factories, enum-returning factories, null-return factories, and factory
+  method name collisions.
+- Extend configuration coverage for interface/trait config props, nested config
+  props, validation cascades, inherited prefixes/aliases, raw maps, primitives,
+  `@EachProperty` nesting/replacement, and factory-backed config props.
+
+Priority 2 adds AOP, lifecycle, and executable parity:
+
+- Add `ScalaAopParitySpec` for around construct, around advice on inherited
+  trait/default methods, introduction with around, mapped introduction,
+  additional interfaces, abstract class/trait introduction, final-method
+  errors, named AOP target lookup, adapter methods, and factory-level advice.
+- Extend lifecycle coverage for inherited `@PostConstruct`/`@PreDestroy`,
+  hooks on `@Bean` factory members, hooks with AOP/proxy-target, and
+  private/protected hook behavior where Scala can express it.
+- Extend executable coverage for inherited executable trait methods,
+  overloaded methods, generics, annotation metadata inheritance, and executable
+  factory methods.
+
+Priority 3 covers visitor-generated beans and build-time behavior:
+
+- Add `ScalaBeanElementBuilderParitySpec` for visitor-created beans, associated
+  factory beans, multiple generated factories, generated methods, and AOP on
+  generated beans.
+- Add visitor-order and postponed-visitor coverage only where Scala's
+  compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
+- Add evaluated-expression parity for `@Requires` expressions,
+  context/property/environment expressions, expression injection, and
+  annotation-level expressions.
+
+Iteration rules:
+
+- Add tests in focused commits by priority group; commit after each completed
+  group.
+- Prefer real passing tests. Use `@PendingFeature` only for an understood Scala
+  gap and record the same item in `inject-scala-test/DISABLED_TESTS.md`.
+- Keep Scala snippets idiomatic: case classes, traits, constructor params,
+  `val`/`var`, `Option`, explicit nulls, and Scala collections.
+- Do not add production-code changes while refreshing the catalog; production
+  fixes should follow failed or pending tests.
+
 ### Wave 3: Element and Annotation Completeness
 
 - Implement annotation values, defaults, nested annotations, repeatables, stereotypes, aliases, retention and targets, nullability, class literals, enum constants, arrays, and constants.
@@ -157,6 +243,22 @@ Reference:
 ```
 
 ### Per-Feature Validation
+
+- After refreshing the Scala parity catalog, run:
+
+```bash
+./gradlew :micronaut-inject-scala-test:test --tests '*Scala*'
+```
+
+- For each new parity spec group, run the focused Scala spec first.
+- When porting behavior from another language, run the source comparison spec
+  if practical, for example the focused Java, Groovy, or Kotlin `--tests`
+  selector plus the matching Scala spec.
+- Before finishing a parity wave, run:
+
+```bash
+./gradlew :micronaut-inject-scala-test:test :test-suite-scala:test
+```
 
 - For Scala docs changes, first run the focused `micronaut-build` `LanguageSnippetMacroSpec` after adding Scala snippet support.
 - Publish or include the updated `micronaut-build` snapshot before running Micronaut Core docs validation; when using the sibling checkout, prefer `./gradlew --include-build ../build publishGuide` or `./gradlew --include-build ../build docs` for local proof.

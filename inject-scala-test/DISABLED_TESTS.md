@@ -1,7 +1,16 @@
 # Disabled Scala Tests
 
-This file tracks parity tests that are not yet ported to the Scala 3 adapter.
+This file tracks parity source tests and Scala 3 adapter coverage status.
 It was generated from the current checkout by scanning direct subclasses of Java `AbstractTypeElementSpec`, Groovy `AbstractBeanDefinitionSpec`, and Kotlin `AbstractKotlinCompilerSpec`.
+
+Last refreshed: 2026-05-21.
+
+The current grounding pass counted Java `194` specs / `1065` features,
+Groovy `86` specs / `473` features, Kotlin `19` specs / `194` features, and
+Scala `11` specs / `168` features. The detailed source inventory below keeps
+the abstract/helper evaluated-expression base specs visible as candidate
+comparison sources, so its raw source-spec count is one higher for Java and
+Groovy than the executable corpus count.
 
 ## Current Scope
 
@@ -130,24 +139,84 @@ Bean import is documented as unsupported for Scala.
 
 ## Classification Rules
 
-- `already covered`: a narrow Scala PoC assertion already exercises the core scenario, although broader parity can still be added later.
-- `portable`: suitable for an early Scala port once the test harness grows beyond the Wave 1 smoke tests.
-- `blocked`: useful parity coverage, but blocked on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support.
+- `covered`: current Scala coverage already exercises the core scenario, although broader parity can still be added later.
+- `candidate`: useful parity coverage that should be ported or split into a focused Scala parity spec.
 - `unsupported`: useful to document as unsupported for Scala rather than silently dropping from the backlog.
 - `scala-specific`: Java, Groovy, or Kotlin syntax/compiler behavior that should be skipped or replaced with Scala-native coverage.
 
 ## Inventory Summary
 
-| Source | already covered | portable | blocked | unsupported | scala-specific | total |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 17 | 2 | 164 | 1 | 11 | 195 |
-| Groovy AbstractBeanDefinitionSpec | 5 | 5 | 66 | 0 | 11 | 87 |
-| Kotlin AbstractKotlinCompilerSpec | 2 | 2 | 12 | 0 | 3 | 19 |
-| Total | 24 | 9 | 242 | 1 | 25 | 301 |
+| Source | covered | candidate | unsupported | scala-specific | detailed total |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Java AbstractTypeElementSpec | 17 | 166 | 1 | 11 | 195 |
+| Groovy AbstractBeanDefinitionSpec | 5 | 71 | 0 | 11 | 87 |
+| Kotlin AbstractKotlinCompilerSpec | 2 | 14 | 0 | 3 | 19 |
+| Total | 24 | 251 | 1 | 25 | 301 |
 
-## First Portable Ports
+## Priority Buckets
 
-Start with small tests that exercise already-supported Scala forms before enabling blocked feature groups. Suggested first ports:
+### P0: Catalog, Element API, and Annotation Parity
+
+- Keep this file current as Scala parity coverage changes.
+- Add `ScalaReconstructionSpec`: field/method/parameter/return reconstruction,
+  arrays, wildcards, type variables on classes and methods, inherited type
+  arguments, traits/interfaces, enums, and inner/nested classes.
+- Add `ScalaVisitorContextSpec`: `getClassElement`, `getClassElements`, enum
+  lookup, nested-class lookup, missing-class behavior, and no classloading
+  assumptions.
+- Add `ScalaElementMutationParitySpec`: visitor-added annotations on class,
+  method, field, property, parameter, return type, field type, and type
+  arguments; repeatables; empty arrays; and stereotypes.
+- Add `ScalaAnnotationMetadataParitySpec`: annotation defaults, nested
+  annotations, class literals, enum constants, arrays, retention/target
+  filtering, source-defined stereotypes, aliasing, mapper/transformer/remapper
+  behavior, removal behavior, and `ProcessingException` messages with
+  originating elements.
+
+### P1: Introspection, Bean Definition, and Configuration Parity
+
+- Extend `ScalaBeanIntrospectionSpec`: property include/exclude/access-kind
+  rules, covariant properties, numbered property names, creator selection,
+  executable methods, validation metadata, generic placeholders, enum creator
+  behavior, interface/trait inheritance, and external-class introspection where
+  Scala can model it.
+- Extend `ScalaBeanDefinitionSpec`: unresolved-type diagnostics, provider and
+  `BeanProvider` injection, optional property injection,
+  repeatable/non-binding qualifiers, `@Replaces`, inherited qualifier negative
+  cases, abstract parent injection, factory field/val/method beans, generic
+  factories, enum-returning factories, null-return factories, and factory
+  method name collisions.
+- Extend configuration coverage: interface/trait config props, nested config
+  props, validation cascades, inherited prefixes/aliases, raw maps, primitives,
+  `@EachProperty` nesting/replacement, and factory-backed config props.
+
+### P2: AOP, Lifecycle, and Executable Parity
+
+- Add `ScalaAopParitySpec`: around construct, around advice on inherited
+  trait/default methods, introduction with around, mapped introduction,
+  additional interfaces, abstract class/trait introduction, final-method
+  errors, named AOP target lookup, adapter methods, and factory-level advice.
+- Extend lifecycle coverage: inherited `@PostConstruct`/`@PreDestroy`, hooks on
+  `@Bean` factory members, hooks with AOP/proxy-target, and private/protected
+  hook behavior where Scala can express it.
+- Extend executable coverage: inherited executable trait methods, overloaded
+  methods, generics, annotation metadata inheritance, and executable factory
+  methods.
+
+### P3: Visitor-Generated Beans and Build-Time Behavior
+
+- Add `ScalaBeanElementBuilderParitySpec`: visitor-created beans, associated
+  factory beans, multiple generated factories, generated methods, and AOP on
+  generated beans.
+- Add visitor-order and postponed-visitor coverage only where Scala's
+  compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
+- Add evaluated-expression parity for `@Requires` expressions,
+  context/property/environment expressions, expression injection, and
+  annotation-level expressions.
+
+## First Candidate Ports
+
+Start with small tests that exercise already-supported Scala forms before the broader priority buckets. Suggested source comparison specs:
 
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy`
@@ -160,310 +229,310 @@ Start with small tests that exercise already-supported Scala forms before enabli
 
 ### Java AbstractTypeElementSpec
 
-- `inject-java-test/src/main/groovy/io/micronaut/annotation/processing/test/AbstractEvaluatedExpressionsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationTransformerSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/InheritedNullableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java-test/src/main/groovy/io/micronaut/annotation/processing/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/AnnotationTransformerSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/test/groovy/io/micronaut/inject/annotation/InheritedNullableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java-test/src/test/groovy/io/micronaut/inject/beanimport/BeanImportSpec.groovy` - unsupported: bean import is not implemented for Scala and should be documented as unsupported in a future docs pass
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - already covered: Scala `TypeElementVisitor` annotation mutations are covered for classes, methods, parameters, introspection properties, source-defined stereotypes, and introduction proxy methods
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/InheritanceVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/AnnotatedIntrospectedSpec.groovy` - already covered: basic @Introspected class metadata is covered by ScalaPoCSpec
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionGenericsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - portable: partially covered for constructor argument generics, generic array property/method types, multi-dimensional array properties, deep property type-use annotation metadata, superclass constructor forwarding, companion-object nested class introspection, subtype generic placeholders with upper bounds, protobuf-style generic superclass shapes, field-access introspection for emitted Scala fields, and custom introspection target packages; remaining introspection, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BuildClassElementSpec.groovy` - already covered: basic buildClassElement coverage is present in ScalaPoCSpec
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateMethodParameterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateMethodReturnSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotatePropertySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateTypeArgSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - covered: Scala `TypeElementVisitor` annotation mutations are covered for classes, methods, parameters, introspection properties, source-defined stereotypes, and introduction proxy methods
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/InheritanceVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/AnnotatedIntrospectedSpec.groovy` - covered: basic @Introspected class metadata is covered by ScalaPoCSpec
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionGenericsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - candidate: partially covered for constructor argument generics, generic array property/method types, multi-dimensional array properties, deep property type-use annotation metadata, superclass constructor forwarding, companion-object nested class introspection, subtype generic placeholders with upper bounds, protobuf-style generic superclass shapes, field-access introspection for emitted Scala fields, and custom introspection target packages; remaining introspection, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BuildClassElementSpec.groovy` - covered: basic buildClassElement coverage is present in ScalaPoCSpec
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldTypeSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateMethodParameterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateMethodReturnSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotatePropertySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateTypeArgSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/annotation/JavaEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/annotation/NonNullabilityAnnotationsSpec.groovy` - already covered: Scala non-null annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
-- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityAnnotationsSpec.groovy` - already covered: Scala nullable annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
-- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityFutureAnnotationsSpec.groovy` - already covered: Scala generic type argument nullability is covered for JSpecify type-use annotations
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AnnotationMappingSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MapToRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MappedValueHasDefaultSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/RemapToRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/ReplacesRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/SourceAnnotationHasDefaultsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformNotInheritedAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformToInheritedAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformsToRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/annotation/NonNullabilityAnnotationsSpec.groovy` - covered: Scala non-null annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
+- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityAnnotationsSpec.groovy` - covered: Scala nullable annotations on methods and parameters are covered through `ClassElement` and bean introspection metadata
+- `inject-java/src/test/groovy/io/micronaut/annotation/NullabilityFutureAnnotationsSpec.groovy` - covered: Scala generic type argument nullability is covered for JSpecify type-use annotations
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AddsUnseenRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/AnnotationMappingSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MapToRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/MappedValueHasDefaultSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/RemapToRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/ReplacesRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/SourceAnnotationHasDefaultsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformNotInheritedAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformToInheritedAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/annotation/mapping/TransformsToRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaVisitorContextSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaVisitorSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/adapter/intercepted/InterceptedAdapterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/AnnotatedConstructorArgumentSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundConstructCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/ExecutableFactoryMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/FinalModifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/GeneratedAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/InheritedAnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/InjectFieldAbstractIntroductionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - already covered: Scala introduction proxy method metadata resolves inherited generic return types through source-defined trait type arguments, including nested generics, method type variables, and arrays
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxyTargetSpec.groovy` - already covered: Scala source-defined `@Around(proxyTarget = true)` advice is covered for generated proxy-target beans, interceptor invocation, and target lifecycle
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/OriginatingElementsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/PostConstructInterceptorCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/ValidatedNonBeanSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/factory/AdviceDefinedOnFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/factory/SessionProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/factory/mapped/FactoryMappedAdviceReflectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/factory/mapped/FactoryMappedAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/InterfaceIntroductionAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/IntroductionAdviceWithNewInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/MappedIntroductionOnConcreteClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/MyAbstractRepoSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/beans/IntroducedBeanVisitorSpec.groovy` - already covered: Scala inherited introduction methods with generic return types, generic publisher parameters, resolved generic parameters, and `@InterceptorBean` bindings are covered by `ScalaIntroducedBeanVisitorSpec`
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/repeatable/IntroducedWithRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/aop/named2/NamedAopAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy` - already covered: Scala evaluated expressions on bean definitions and executable methods are registered for Graal build-time initialization
-- `inject-java/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AddStereotypesFromVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotatedFieldWithSetterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationDefaultValuesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationInheritanceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationMapperSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataHierarchySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataWriterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationRemapperSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationsOnGenericTypesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/ArgumentAnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/BeanDefinitionAnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/adapter/intercepted/InterceptedAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/AnnotatedConstructorArgumentSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundConstructCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/ExecutableFactoryMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/FinalModifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/GeneratedAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/InheritedAnnotationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/InjectFieldAbstractIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - covered: Scala introduction proxy method metadata resolves inherited generic return types through source-defined trait type arguments, including nested generics, method type variables, and arrays
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionInnerInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxyTargetSpec.groovy` - covered: Scala source-defined `@Around(proxyTarget = true)` advice is covered for generated proxy-target beans, interceptor invocation, and target lifecycle
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/OriginatingElementsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/PostConstructInterceptorCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/ValidatedNonBeanSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/factory/AdviceDefinedOnFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/factory/SessionProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/factory/mapped/FactoryMappedAdviceReflectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/factory/mapped/FactoryMappedAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/InterfaceIntroductionAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/IntroductionAdviceWithNewInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/MappedIntroductionOnConcreteClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/MyAbstractRepoSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/beans/IntroducedBeanVisitorSpec.groovy` - covered: Scala inherited introduction methods with generic return types, generic publisher parameters, resolved generic parameters, and `@InterceptorBean` bindings are covered by `ScalaIntroducedBeanVisitorSpec`
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/repeatable/IntroducedWithRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/named2/NamedAopAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy` - covered: Scala evaluated expressions on bean definitions and executable methods are registered for Graal build-time initialization
+- `inject-java/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AddStereotypesFromVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotatedFieldWithSetterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationDefaultValuesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationInheritanceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationMapperSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataHierarchySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataWriterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationRemapperSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/AnnotationsOnGenericTypesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/ArgumentAnnotationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/BeanDefinitionAnnotationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/JavaAnnotationMetadataBuilderSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/JavaxMapperSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/PriorityAnnotationMapperSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/RemoveAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/RetentionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/MapToRepeatableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/RepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/TransformToRepeatableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/ast/beans/BeanElementVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy` - already covered: Scala field and method `@Autowired` injection is covered for required and optional dependencies, including optional value injection and multi-argument method skipping
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - already covered: Scala source-level abstract bean scenarios are covered for collection filtering, abstract definitions with injection points, qualifier-only beans, and AOP-only beans
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, uppercase package names, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups including inherited array type arguments, unbounded and upper-bounded wildcard generic bounds, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy` - already covered: Scala constructor, field, method, collection, array, and named `BeanRegistration` injection are covered
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy` - already covered: Scala source-level dynamic bean definition registration is covered; the remaining runtime builder assertions are not language-adapter-specific
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy` - already covered: Scala introspection handles constructor forwarding through an abstract superclass
-- `inject-java/src/test/groovy/io/micronaut/inject/beans/visitor/MapperVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ConfigPropertiesParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesInjectSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ImmutableConfigurationPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/InheritedConfigurationReaderPrefixSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/InterfaceConfigurationPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ValidatedConfigurationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/VisibilityIssuesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/eachbeaninterceptor/EachBeanInterceptorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/eachbeanparameter/EachBeanParameterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/eachbeanreplaces/EachBeanReplacesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/itfce/InterfaceNestingSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/nesting/EachPropertyNestingSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/PriorityAnnotationMapperSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/RemoveAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/RetentionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/MapToRepeatableSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/RepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/TransformToRepeatableSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/ast/beans/BeanElementVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy` - covered: Scala field and method `@Autowired` injection is covered for required and optional dependencies, including optional value injection and multi-argument method skipping
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - covered: Scala source-level abstract bean scenarios are covered for collection filtering, abstract definitions with injection points, qualifier-only beans, and AOP-only beans
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - candidate: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, uppercase package names, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups including inherited array type arguments, unbounded and upper-bounded wildcard generic bounds, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy` - covered: Scala constructor, field, method, collection, array, and named `BeanRegistration` injection are covered
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/RuntimeBeanDefinitionSpec.groovy` - covered: Scala source-level dynamic bean definition registration is covered; the remaining runtime builder assertions are not language-adapter-specific
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/concopy/ConstructorCopySpec.groovy` - covered: Scala introspection handles constructor forwarding through an abstract superclass
+- `inject-java/src/test/groovy/io/micronaut/inject/beans/visitor/MapperVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ConfigPropertiesParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesInjectSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ImmutableConfigurationPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/InheritedConfigurationReaderPrefixSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/InterfaceConfigurationPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/ValidatedConfigurationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/VisibilityIssuesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/eachbeaninterceptor/EachBeanInterceptorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/eachbeanparameter/EachBeanParameterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/eachbeanreplaces/EachBeanReplacesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/itfce/InterfaceNestingSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configproperties/nesting/EachPropertyNestingSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/configproperties/records/RecordNestingSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationBuilderSpec2.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationJsonSchemaDefaultsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationJsonSchemaSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationJsonSchemaValidationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ExternalConfigurationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/configurations/RequiresBeanCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/constructor/arrayinjection/ConstructorArrayInjectionSpec.groovy` - already covered: Scala array constructor injection is covered for bean definition parsing and runtime injection
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationBuilderSpec2.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationJsonSchemaDefaultsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationJsonSchemaSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationJsonSchemaValidationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ConfigurationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configuration/ExternalConfigurationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/configurations/RequiresBeanCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/constructor/arrayinjection/ConstructorArrayInjectionSpec.groovy` - covered: Scala array constructor injection is covered for bean definition parsing and runtime injection
 - `inject-java/src/test/groovy/io/micronaut/inject/context/NoPackageSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/inject/defaultimpl/DefaultImplementationSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/inject/errors/SingletonOnEnumSpec.groovy` - already covered: singleton Scala enum beans are rejected with the core bean-definition error
-- `inject-java/src/test/groovy/io/micronaut/inject/executable/ExecutableBeanSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/executable/ExecutableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/executable/inheritance/InheritedExecutableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/ExecutableAnnotationOnFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/FactoryBeanDefinitionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/FactoryOfBeanWithUnresolvedClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/beanfield/FactoryBeanFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/beanfield/FactoryFieldArraySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/beanmethod/FactoryBeanMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryArraySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryCollectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/enummethod/FactoryEnumSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/generics/GenericFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/inheritance/FactoryAbstractInheritanceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/lifecycle/PreDestroyOnBeanAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/multiple/MethodSameNameSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/named/ImplicitNamedSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/nullreturn/NullReturnFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/proxytarget/FactoryWithScopedProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/field/inheritance/FieldInheritanceInjectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/field/simpleinjection/FieldInjectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/foreach/EachPropertyParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/generics/GenericTypeArgumentsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/generics/TypeArgumentsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/inheritance/AbstractInheritanceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/injectscope/InjectScopeSpec.groovy` - already covered: Scala constructor and method parameters support `@InjectScope` scoped dependency cleanup
-- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/PostConstructCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/PreDestroyCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/beanwithpostconstruct/BeanWithPostConstructSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/beanwithprivatepostconstruct/BeanWithPostConstructSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/method/arrayinjection/SetterArrayInjectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/method/builderinjection/BuilderStyleInjectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/method/qualifierinjection/SetterWithQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/optional/OptionalPropertySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/property/PropertyAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/provider/BeanProviderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/provider/DisableErrorOnMissingBeanProviderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotation/AnnotationQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotationmember/NonBindingQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/named/NamedQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/replaces/AnnotateReplacesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/replaces/ReplacesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-java/src/test/groovy/io/micronaut/inject/errors/SingletonOnEnumSpec.groovy` - covered: singleton Scala enum beans are rejected with the core bean-definition error
+- `inject-java/src/test/groovy/io/micronaut/inject/executable/ExecutableBeanSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/executable/ExecutableSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/executable/inheritance/InheritedExecutableSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/ExecutableAnnotationOnFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/FactoryBeanDefinitionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/FactoryOfBeanWithUnresolvedClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/beanfield/FactoryBeanFieldSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/beanfield/FactoryFieldArraySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/beanmethod/FactoryBeanMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryArraySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryCollectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/enummethod/FactoryEnumSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/generics/GenericFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/inheritance/FactoryAbstractInheritanceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/lifecycle/PreDestroyOnBeanAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/multiple/MethodSameNameSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/named/ImplicitNamedSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/nullreturn/NullReturnFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/proxytarget/FactoryWithScopedProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/field/inheritance/FieldInheritanceInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/field/simpleinjection/FieldInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/foreach/EachPropertyParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/generics/GenericTypeArgumentsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/generics/TypeArgumentsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/inheritance/AbstractInheritanceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/injectscope/InjectScopeSpec.groovy` - covered: Scala constructor and method parameters support `@InjectScope` scoped dependency cleanup
+- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/PostConstructCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/PreDestroyCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/beanwithpostconstruct/BeanWithPostConstructSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/lifecycle/beanwithprivatepostconstruct/BeanWithPostConstructSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/method/arrayinjection/SetterArrayInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/method/builderinjection/BuilderStyleInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/method/qualifierinjection/SetterWithQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/optional/OptionalPropertySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/property/PropertyAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/provider/BeanProviderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/provider/DisableErrorOnMissingBeanProviderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotation/AnnotationQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotationmember/NonBindingQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/named/NamedQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/replaces/AnnotateReplacesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/replaces/ReplacesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/records/RecordBeansSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` - already covered: source-defined default scope, explicit scope override, factory method override, and unscoped `@Bean` factory method variants are covered
-- `inject-java/src/test/groovy/io/micronaut/inject/value/factorywithvalue/FactoryWithValueSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementAnnotationsRetaining.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/CustomVisitorSpec.groovy` - already covered: basic TypeElementVisitor class/method/property observation is covered by ScalaPoCSpec
+- `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/requires/RequiresSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/scope/DefaultScopeSpec.groovy` - covered: source-defined default scope, explicit scope override, factory method override, and unscoped `@Bean` factory method variants are covered
+- `inject-java/src/test/groovy/io/micronaut/inject/value/factorywithvalue/FactoryWithValueSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementAnnotationsRetaining.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/ClassElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/CustomVisitorSpec.groovy` - covered: basic TypeElementVisitor class/method/property observation is covered by ScalaPoCSpec
 - `inject-java/src/test/groovy/io/micronaut/visitors/DocumentationSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/visitors/ImportTypeElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/InternalVisitor1Spec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/InternalVisitor2Spec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/InternalVisitor3Spec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/IntroductionVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/MixinSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/NullableElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/PostponedVisitorsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/PropertyElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-java/src/test/groovy/io/micronaut/visitors/query/TypeElementQuerySpec.groovy` - already covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
+- `inject-java/src/test/groovy/io/micronaut/visitors/ImportTypeElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/InternalVisitor1Spec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/InternalVisitor2Spec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/InternalVisitor3Spec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/IntroductionVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/MixinSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/NullableElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/PostponedVisitorsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/PropertyElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/visitors/query/TypeElementQuerySpec.groovy` - covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
 
 ### Groovy AbstractBeanDefinitionSpec
 
-- `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
-- `inject-groovy/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ExecutableDefaultMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ExecutableSuperclassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/FinalModifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/InheritedAnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - already covered: Scala introduction proxy method metadata resolves inherited generic return types through source-defined trait type arguments, including nested generics, method type variables, and arrays
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/PropertyAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ValidatedNonBeanSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/factory/SessionProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/InterfaceIntroductionAdviceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/IntroductionAdviceWithNewInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: source comparison for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ExecutableDefaultMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ExecutableSuperclassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/FinalModifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/InheritedAnnotationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionGenericTypesSpec.groovy` - covered: Scala introduction proxy method metadata resolves inherited generic return types through source-defined trait type arguments, including nested generics, method type variables, and arrays
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/IntroductionWithAroundSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/LifeCycleWithProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/PropertyAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ValidatedNonBeanSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/factory/SessionProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/InterfaceIntroductionAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/IntroductionAdviceWithNewInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/annotation/GroovyAnnotationMetadataBuilderSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyBeanPropertiesSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyDocumentationSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyEnclosedElementsSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsInjectionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsUsageSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataWriterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsUsageSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataWriterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/GroovyAnnotationInheritanceSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/GroovyMappedStereotypesSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/RemoveAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/RetentionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateFieldTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateMethodParameterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateMethodReturnSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotatePropertySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/AddsRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/RepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/ReplacesRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - already covered: Scala abstract bean definitions with injection points are covered
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - portable: partially covered for exposed type validation, factory exposed types, top-level and nested bean definition order metadata, uppercase package names, declared bean generics, factory bean generics, resolved type-variable lookups including inherited array type arguments, wildcard generic bounds, and qualifier metadata; remaining bean definition cases should be ported incrementally
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigPropertiesParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesBuilderSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ImmutableConfigurationPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/InheritedConfigurationReaderPrefixSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/InterfaceConfigurationPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ValidatedConfigurationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/VisibilityIssuesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/RemoveAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/RetentionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateFieldSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateFieldTypeSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateMethodParameterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateMethodReturnSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotateMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/modify/AnnotatePropertySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/AddsRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/RepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/ReplacesRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - covered: Scala abstract bean definitions with injection points are covered
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - candidate: partially covered for exposed type validation, factory exposed types, top-level and nested bean definition order metadata, uppercase package names, declared bean generics, factory bean generics, resolved type-variable lookups including inherited array type arguments, wildcard generic bounds, and qualifier metadata; remaining bean definition cases should be ported incrementally
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigPropertiesParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigurationPropertiesBuilderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ImmutableConfigurationPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/InheritedConfigurationReaderPrefixSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/InterfaceConfigurationPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ValidatedConfigurationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/VisibilityIssuesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/configuration/GroovyConfigBuilderSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/inject/context/NoPackageSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/inject/errors/GroovySingletonSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-groovy/src/test/groovy/io/micronaut/inject/errors/RouteTraitSpec.groovy` - already covered: Scala route methods inherited from source-defined traits are exposed as executable methods
-- `inject-groovy/src/test/groovy/io/micronaut/inject/executable/ExecutableBeanSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/executable/inheritance/InheritedExecutableSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryBeanDefinitionSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryBeanFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryEnumSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/generics/GenericFactorySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/inheritance/FactoryAbstractInheritanceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/named/ImplicitNamedSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/proxytarget/FactoryWithScopedProxySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/generics/GenericTypeArgumentsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/generics/TypeArgumentsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/inheritance/AbstractInheritanceSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/lifecyle/BeanWithPreDestroySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/lifecyle/PostConstructCompileSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/lifecyle/PreDestroyOnBeanAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/property/PropertyWithQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/MultipleQualifiersSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/NamedSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/value/ValueParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/AnnotationMetadataSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/BeanIntrospectionSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ClassElementSpec.groovy` - portable: partially covered for package element metadata, primitive equality, thrown types, generic type arguments, recursive generic type parameter bounds, wildcard and placeholder metadata, inherited Scala interface type-argument annotations, type visitor queries, inherited method `ElementQuery` filtering, Scala emitted field `ElementQuery` filtering, enum elements, nested classes, and element equality; remaining inherited metadata and broader annotation propagation cases should be ported incrementally
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/CustomVisitorSpec.groovy` - already covered: basic TypeElementVisitor class/method/property observation is covered by ScalaPoCSpec
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/IntroductionVisitorSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/PropertyElementSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/TypeElementQuerySpec.groovy` - already covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
-- `inject-groovy/src/test/groovy/io/micronaut/validation/ValidatedParseSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-groovy/src/test/groovy/io/micronaut/inject/errors/RouteTraitSpec.groovy` - covered: Scala route methods inherited from source-defined traits are exposed as executable methods
+- `inject-groovy/src/test/groovy/io/micronaut/inject/executable/ExecutableBeanSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/executable/inheritance/InheritedExecutableSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryBeanDefinitionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryBeanFieldSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/FactoryEnumSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/generics/GenericFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/inheritance/FactoryAbstractInheritanceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/named/ImplicitNamedSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/factory/proxytarget/FactoryWithScopedProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/generics/GenericTypeArgumentsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/generics/TypeArgumentsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/inheritance/AbstractInheritanceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/lifecyle/BeanWithPreDestroySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/lifecyle/PostConstructCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/lifecyle/PreDestroyOnBeanAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/property/PropertyWithQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/MultipleQualifiersSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/NamedSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/value/ValueParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/AnnotationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/BeanIntrospectionSpec.groovy` - candidate: source comparison for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ClassElementSpec.groovy` - candidate: partially covered for package element metadata, primitive equality, thrown types, generic type arguments, recursive generic type parameter bounds, wildcard and placeholder metadata, inherited Scala interface type-argument annotations, type visitor queries, inherited method `ElementQuery` filtering, Scala emitted field `ElementQuery` filtering, enum elements, nested classes, and element equality; remaining inherited metadata and broader annotation propagation cases should be ported incrementally
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/CustomVisitorSpec.groovy` - covered: basic TypeElementVisitor class/method/property observation is covered by ScalaPoCSpec
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/ElementAnnotateSpec.groovy` - candidate: source comparison for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/IntroductionVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/PropertyElementSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/TypeElementQuerySpec.groovy` - covered: Scala type visitors cover `TypeElementQuery` field, method, and constructor inclusion
+- `inject-groovy/src/test/groovy/io/micronaut/validation/ValidatedParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 
 ### Kotlin AbstractKotlinCompilerSpec
 
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsUnseenRepeatableAnnotationSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateArraySpec.groovy` - already covered: empty array annotation members are covered on Scala executable methods
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateFieldSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateFieldTypeSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodParameterSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodReturnSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotatePropertySpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/aop/introduction/MyIsEnumInTypeArgumentSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/aop/introduction/MyRepo3Spec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsUnseenInnerRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AddsUnseenRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateArraySpec.groovy` - covered: empty array annotation members are covered on Scala executable methods
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateFieldSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateFieldTypeSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodParameterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodReturnSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotateMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/annotations/AnnotatePropertySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/aop/introduction/MyIsEnumInTypeArgumentSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/aop/introduction/MyRepo3Spec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/ast/visitor/KotlinEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/beans/SingletonSpec.groovy` - already covered: basic singleton constructor injection is covered by ScalaPoCSpec
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/inject/ast/ClassElementSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/inject/generics/GenericTypeArgumentsSpec.groovy` - blocked: depends on Wave 3 Element/annotation completeness or Wave 4 Micronaut feature support
-- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/visitor/BeanIntrospectionSpec.groovy` - portable: candidate for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/beans/SingletonSpec.groovy` - covered: basic singleton constructor injection is covered by ScalaPoCSpec
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/inject/ast/ClassElementSpec.groovy` - candidate: source comparison for early Scala port after the harness grows beyond the Wave 1 smoke coverage
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/inject/generics/GenericTypeArgumentsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/visitor/BeanIntrospectionSpec.groovy` - candidate: source comparison for early Scala port after the harness grows beyond the Wave 1 smoke coverage
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/visitor/KotlinReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-kotlin/src/test/groovy/io/micronaut/kotlin/processing/visitor/order/VisitorOrderSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
