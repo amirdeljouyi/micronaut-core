@@ -48,26 +48,17 @@ Micronaut supports idiomatic Scala collection injection for common collection ab
 
 Micronaut also supports `Option[T]` for optional bean injection.
 
-[source,scala]
-----
-include::{testsuitescala}/language/scalasupport/ScalaFeatures.scala[tag=injection,indent=0]
-----
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="injection",language="scala",indent=0]
 
 Configuration binding also supports common Scala collection targets:
 
-[source,scala]
-----
-include::{testsuitescala}/language/scalasupport/ScalaFeatures.scala[tag=configuration,indent=0]
-----
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="configuration",language="scala",indent=0]
 
 == Explicit Nulls and Union Types
 
 When Scala 3 explicit nulls are enabled, Micronaut maps `T | Null` to nullable Element API metadata. This works for method return types, parameters, constructor properties, bean properties, and nested generic type arguments where the compiler exposes the union type.
 
-[source,scala]
-----
-include::{testsuitescala}/language/scalasupport/ScalaFeatures.scala[tag=dto,indent=0]
-----
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="dto",language="scala",indent=0]
 
 Use `T | Null` when `null` is a real Java interop boundary. Prefer `Option[T]` for ordinary optional values inside Scala APIs.
 
@@ -75,22 +66,13 @@ Use `T | Null` when `null` is a real Java interop boundary. Prefer `Option[T]` f
 
 Case classes are the preferred shape for immutable DTOs, request and response bodies, and immutable configuration properties. Use `@Introspected` for DTOs that need Micronaut Bean Introspection, and use constructor-bound `@ConfigurationProperties` case classes for immutable configuration.
 
-[source,scala]
-----
-include::{testsuitescala}/language/scalasupport/ScalaFeatures.scala[tag=dto,indent=0]
-----
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="dto",language="scala",indent=0]
 
-[source,scala]
-----
-include::{testsuitescala}/language/scalasupport/ScalaFeatures.scala[tag=configuration,indent=0]
-----
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="configuration",language="scala",indent=0]
 
 Use a mutable class only when the feature requires mutable JavaBean-style properties. When a Java annotation must be placed on the emitted field rather than only on the Scala accessor, use Scala annotation target syntax:
 
-[source,scala]
-----
-include::{testsuitescala}/language/scalasupport/ScalaFeatures.scala[tag=mutableConfiguration,indent=0]
-----
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="mutableConfiguration",language="scala",indent=0]
 
 == Additional Scala Notes
 

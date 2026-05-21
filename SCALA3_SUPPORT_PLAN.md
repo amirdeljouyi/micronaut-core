@@ -50,6 +50,9 @@ Add Scala support to the docs snippet tooling in the sibling `micronaut-build` r
 - Keep existing Java, Groovy, Kotlin, and Python snippet behavior unchanged.
 - Add focused `LanguageSnippetMacroSpec` coverage that proves Scala snippets resolve from `test-suite-scala` and from explicit `project` / `project-base` attributes.
 - Add a Scala-only snippet selection mechanism, such as a `language="scala"` or `languages="scala"` attribute, so Scala-only guide pages do not emit missing-snippet warnings while the macro checks Java, Python, Kotlin, and Groovy fallbacks.
+- The companion `micronaut-build` macro now supports `language`/`languages`
+  filtering, and the Scala language-support page uses `language="scala"` for
+  Scala-only feature snippets.
 - Validate Micronaut Core docs against the updated build plugin with `--include-build ../build` when working from the standard sibling checkout, then publish or otherwise consume the updated `micronaut-build` snapshot before validating without the included build.
 - Do not hard-code Scala feature examples in `.adoc` files as a fallback. If a Scala feature is documented with code, it must be backed by a real snippet source.
 - Treat build-tool setup examples the same way: Maven, Gradle, sbt, and Mill examples should come from maintained fixture files or docs example sources. If the current snippet macro cannot address those files, add the minimal docs-tooling support instead of inlining stale configuration blocks.
@@ -260,8 +263,9 @@ Iteration rules:
   lifecycle, retry, proxy-target, and reactive around advice.
 - The language-support guide now includes a dedicated Scala 3 page, wired into
   the main language-support TOC, with source-backed build-tool setup snippets
-  and tagged Scala examples for collection/`Option` injection, configuration
-  binding, explicit-null DTOs, and field-targeted validation annotations.
+  and Scala-only `snippet::` examples for collection/`Option` injection,
+  configuration binding, explicit-null DTOs, and field-targeted validation
+  annotations.
 - Scala retry docs examples now use idiomatic Scala `List` return types for
   ordinary application methods instead of Java collection types.
 - Scala introduction docs examples now use idiomatic Scala `List` return types
