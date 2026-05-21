@@ -152,6 +152,12 @@ covered for generated hot-swappable proxy-target beans and target swapping.
 Scala introduction proxy method metadata resolves inherited generic return
 types through source-defined trait type arguments, including nested generics,
 method type variables, and arrays.
+Focused P2 parity now covers final-method AOP diagnostics, inherited
+`@PostConstruct`/`@PreDestroy` lifecycle hooks, `@Bean(preDestroy = ...)`
+factory method hooks, and inherited overloaded `@Executable` trait methods.
+Around advice on inherited Scala trait default methods, introduction combined
+with around advice and additional interfaces, and Scala `@Adapter` methods
+remain pending feature tests.
 Bean import is documented as unsupported for Scala.
 
 ## Classification Rules

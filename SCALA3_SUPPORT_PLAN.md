@@ -164,6 +164,12 @@ Priority 2 adds AOP, lifecycle, and executable parity:
 - Extend executable coverage for inherited executable trait methods,
   overloaded methods, generics, annotation metadata inheritance, and executable
   factory methods.
+- Focused P2 parity now covers final-method AOP diagnostics, inherited
+  `@PostConstruct`/`@PreDestroy` lifecycle hooks, `@Bean(preDestroy = ...)`
+  factory method hooks, and inherited overloaded `@Executable` trait methods.
+- Around advice on inherited Scala trait default methods, introduction
+  combined with around advice and additional interfaces, and Scala `@Adapter`
+  methods remain tracked as pending feature tests.
 
 Priority 3 covers visitor-generated beans and build-time behavior:
 
