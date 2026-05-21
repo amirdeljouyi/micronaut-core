@@ -22,6 +22,7 @@ import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.core.type.TypeInformation
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
+import spock.lang.PendingFeature
 
 class ScalaBeanDefinitionSpec extends AbstractScalaTypeElementSpec {
 
@@ -313,6 +314,137 @@ class Y extends X[Y]
 
         then:
         definition.getGenericBeanType().getTypeString(true) == 'X<Y>'
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala BeanProvider constructor injection"() {
+        when:
+        def context = buildContext('''
+package providerinject
+
+import io.micronaut.context.BeanProvider
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val beanProvider: BeanProvider[Engine])
+''')
+        def vehicle = getBean(context, 'providerinject.Vehicle')
+
+        then:
+        vehicle.beanProvider().get().name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
+    @PendingFeature
+    void "supports Scala Provider constructor injection"() {
+        when:
+        def context = buildContext('''
+package providerinject
+
+import jakarta.inject.Provider
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class V8Engine extends Engine:
+  override def name(): String = "v8"
+
+@Singleton
+class Vehicle(val provider: Provider[Engine])
+''')
+        def vehicle = getBean(context, 'providerinject.Vehicle')
+
+        then:
+        vehicle.provider().get().name() == 'v8'
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala Replaces and abstract parent constructor injection"() {
+        when:
+        def context = buildContext('''
+package replacement
+
+import io.micronaut.context.annotation.Replaces
+import jakarta.inject.Singleton
+
+trait Engine:
+  def name(): String
+
+@Singleton
+class DefaultEngine extends Engine:
+  override def name(): String = "default"
+
+@Singleton
+@Replaces(classOf[DefaultEngine])
+class ReplacementEngine extends Engine:
+  override def name(): String = "replacement"
+
+abstract class AbstractVehicle(val engine: Engine)
+
+@Singleton
+class Vehicle(engine: Engine) extends AbstractVehicle(engine)
+''')
+        def engineType = context.classLoader.loadClass('replacement.Engine')
+        def engines = context.getBeansOfType(engineType)
+        def vehicle = getBean(context, 'replacement.Vehicle')
+
+        then:
+        engines.size() == 1
+        engines.first().name() == 'replacement'
+        vehicle.engine().name() == 'replacement'
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala factory val method and enum-returning beans"() {
+        when:
+        def context = buildContext('''
+package factoryparity
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Singleton
+
+case class Engine(name: String)
+
+enum Status:
+  case Active, Disabled
+
+@Factory
+class EngineFactory:
+  @Bean
+  @Singleton
+  val fieldEngine: Engine = Engine("field")
+
+  @Singleton
+  def methodEngine(): Engine = Engine("method")
+
+  @Singleton
+  def status(): Status = Status.Active
+''')
+        def engineType = context.classLoader.loadClass('factoryparity.Engine')
+        def statusType = context.classLoader.loadClass('factoryparity.Status')
+        def engines = context.getBeansOfType(engineType)
+
+        then:
+        engines*.name() as Set == ['field', 'method'] as Set
+        context.getBean(statusType).toString() == 'Active'
 
         cleanup:
         context?.close()

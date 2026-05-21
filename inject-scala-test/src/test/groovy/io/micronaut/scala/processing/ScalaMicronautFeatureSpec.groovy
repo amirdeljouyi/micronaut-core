@@ -30,6 +30,7 @@ import io.micronaut.inject.writer.BeanDefinitionVisitor
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
 import jakarta.inject.Singleton
+import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
@@ -1787,6 +1788,36 @@ case class AppConfig(
         context?.close()
     }
 
+    void "supports primitive and raw map Scala configuration properties"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.ConfigurationProperties
+
+@ConfigurationProperties("app")
+class AppConfig:
+  var enabled: Boolean = false
+  var port: Int = 0
+  var labels: java.util.Map[String, Object] = new java.util.LinkedHashMap[String, Object]()
+''', [
+                'app.enabled': true,
+                'app.port': 8080,
+                'app.labels.primary': 'yes',
+                'app.labels.limit': 10
+        ], true)
+        def config = getBean(context, 'example.AppConfig')
+
+        then:
+        config.enabled()
+        config.port() == 8080
+        config.labels().get('primary') == 'yes'
+        config.labels().get('limit') == 10
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports configuration inject constructors with bean dependencies"() {
         when:
         def source = '''
@@ -1852,6 +1883,41 @@ class AppConfig:
         context?.close()
     }
 
+    void "supports cascaded validation on nested Scala configuration properties"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.ConfigurationProperties
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Min
+import scala.annotation.meta.field
+
+@ConfigurationProperties("app")
+class AppConfig:
+  @(Valid @field)
+  var engine: EngineConfig = EngineConfig()
+
+class EngineConfig:
+  @(Min @field)(1L)
+  var cylinders: Int = 0
+''', ['app.engine.cylinders': 0], true)
+        def configType = context.classLoader.loadClass('example.AppConfig')
+        def definition = context.getBeanDefinition(configType)
+
+        then:
+        definition instanceof ValidatedBeanDefinition
+
+        when:
+        context.getBean(configType)
+
+        then:
+        thrown(BeanInstantiationException)
+
+        cleanup:
+        context?.close()
+    }
+
     void "supports nested configuration properties"() {
         when:
         def context = buildContext('''
@@ -1874,6 +1940,36 @@ object AppConfig:
         then:
         config.name() == 'demo'
         config.engine().cylinders() == 6
+
+        cleanup:
+        context?.close()
+    }
+
+    @PendingFeature
+    void "supports factory-backed Scala configuration properties"() {
+        when:
+        def context = buildContext('''
+package example
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.ConfigurationProperties
+import io.micronaut.context.annotation.Factory
+
+@Factory
+class AppConfigFactory:
+  @Bean
+  @ConfigurationProperties("factory.app")
+  def appConfig(): AppConfig = AppConfig()
+
+class AppConfig:
+  var name: String = _
+  var port: Int = 0
+''', ['factory.app.name': 'demo', 'factory.app.port': 8080], true)
+        def config = getBean(context, 'example.AppConfig')
+
+        then:
+        config.name() == 'demo'
+        config.port() == 8080
 
         cleanup:
         context?.close()

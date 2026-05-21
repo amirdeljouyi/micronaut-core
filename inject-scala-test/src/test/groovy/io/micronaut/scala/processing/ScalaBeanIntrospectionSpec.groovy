@@ -194,6 +194,100 @@ class Test:
         properties.visible.get(bean) == 'shown'
     }
 
+    @PendingFeature
+    void "honors Scala introspection include and exclude rules"() {
+        when:
+        def classLoader = buildClassLoader('test.IncludedUser', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected(includes = Array("name", "rating"))
+class IncludedUser(var name: String, var rating: Int, var secret: String)
+
+@Introspected(excludes = Array("secret"))
+class ExcludedUser(var name: String, var rating: Int, var secret: String)
+''')
+        BeanIntrospection included = classLoader.loadClass('test.$IncludedUser$Introspection').getDeclaredConstructor().newInstance()
+        BeanIntrospection excluded = classLoader.loadClass('test.$ExcludedUser$Introspection').getDeclaredConstructor().newInstance()
+
+        then:
+        included.propertyNames as Set == ['name', 'rating'] as Set
+        included.getRequiredProperty("name", String)
+        included.getRequiredProperty("rating", Integer.TYPE)
+        included.getProperty("secret").isEmpty()
+        excluded.propertyNames as Set == ['name', 'rating'] as Set
+        excluded.getRequiredProperty("name", String)
+        excluded.getRequiredProperty("rating", Integer.TYPE)
+        excluded.getProperty("secret").isEmpty()
+    }
+
+    void "exposes Scala numbered introspection properties"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Document', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Document(var line1: String, var value2: Int)
+''')
+        def properties = introspection.beanProperties.collectEntries { [(it.name): it] }
+
+        then:
+        properties.line1.type == String
+        properties.value2.type == Integer.TYPE
+    }
+
+    @PendingFeature
+    void "exposes Scala covariant JavaBean-style introspection properties"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Document', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+trait Readable:
+  def getContent(): CharSequence
+
+@Introspected
+class Document(var line1: String, var value2: Int) extends Readable:
+  private var contentValue: String = _
+  override def getContent(): String = contentValue
+  def setContent(content: String): Unit =
+    contentValue = content
+''')
+        def properties = introspection.beanProperties.collectEntries { [(it.name): it] }
+
+        then:
+        properties.content.type == String
+        properties.content.isReadWrite()
+    }
+
+    void "exposes overloaded Scala executable introspection methods"() {
+        when:
+        def introspection = buildBeanIntrospection('test.Calculator', '''
+package test
+
+import io.micronaut.context.annotation.Executable
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+class Calculator:
+  @Executable
+  def convert(value: String): String = value
+
+  @Executable
+  def convert(value: Int): Int = value
+''')
+        def methods = introspection.beanMethods.findAll { it.name == 'convert' }
+
+        then:
+        methods.size() == 2
+        methods.collect { it.arguments*.type } as Set == [[String], [Integer.TYPE]] as Set
+        methods*.returnType*.type as Set == [String, Integer.TYPE] as Set
+    }
+
     void "builds Scala introspection for companion nested class"() {
         when:
         def introspection = buildBeanIntrospection('test.Test$Foo', '''
@@ -230,6 +324,29 @@ class Test(val name: String)
         introspection.beanType.name == 'test.Test'
         introspectionRef.beanType.name == 'test.Test'
         introspection.getRequiredProperty("name", String).get(introspection.instantiate("Fred")) == "Fred"
+    }
+
+    @PendingFeature
+    void "writes Scala external class introspection from an introspection target"() {
+        when:
+        def classLoader = buildClassLoader('test.IntrospectionConfig', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected(classes = Array(classOf[ExternalBook]))
+class IntrospectionConfig
+
+class ExternalBook(var title: String, var pages: Int)
+''')
+        BeanIntrospection introspection = classLoader.loadClass('test.$ExternalBook$Introspection').getDeclaredConstructor().newInstance()
+        def book = introspection.instantiate("Micronaut", 42)
+
+        then:
+        introspection.beanType.name == 'test.ExternalBook'
+        introspection.propertyNames as Set == ['title', 'pages'] as Set
+        introspection.getRequiredProperty("title", String).get(book) == "Micronaut"
+        introspection.getRequiredProperty("pages", Integer.TYPE).get(book) == 42
     }
 
     void "instantiates Scala enum bean introspection by value name"() {

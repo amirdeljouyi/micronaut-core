@@ -141,6 +141,16 @@ Priority 1 extends introspection, bean definition, and configuration parity:
 - Extend configuration coverage for interface/trait config props, nested config
   props, validation cascades, inherited prefixes/aliases, raw maps, primitives,
   `@EachProperty` nesting/replacement, and factory-backed config props.
+- Focused P1 parity now covers Scala numbered property names, overloaded
+  `@Executable` introspection methods, `BeanProvider` injection, `@Replaces`,
+  abstract parent constructor injection, factory `val`/method beans,
+  enum-returning factories, primitive and raw-map configuration binding, and
+  cascaded validation on nested configuration properties.
+- Scala introspection include/exclude rules, covariant JavaBean-style
+  properties, external-class introspection from Scala
+  `@Introspected(classes = ...)`, `jakarta.inject.Provider[T]` constructor
+  injection, and factory-backed configuration property binding remain tracked
+  as pending feature tests.
 
 Priority 2 adds AOP, lifecycle, and executable parity:
 
