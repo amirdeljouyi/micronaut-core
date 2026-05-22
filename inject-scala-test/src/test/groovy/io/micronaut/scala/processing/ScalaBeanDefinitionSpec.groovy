@@ -840,6 +840,70 @@ class Test
         definition.getDeclaredQualifier() == Qualifiers.byName("foo")
     }
 
+    void "supports Scala implicit named qualifiers"() {
+        given:
+        def definition = buildBeanDefinition('implicitnamed.FooBar', '''
+package implicitnamed
+
+import jakarta.inject.Named
+
+@Named
+class FooBar
+''')
+
+        when:
+        def context = buildContext('''
+package implicitnamed
+
+import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Primary
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+
+trait Foo:
+  def name(): String
+
+class NamedFoo(value: String) extends Foo:
+  override def name(): String = value
+
+@Factory
+class TestFactory:
+  @Singleton
+  @Named
+  def foo1(): Foo = NamedFoo("one")
+
+  @Singleton
+  @Primary
+  @Named
+  def fooPrimary(): Foo = NamedFoo("primary")
+
+  @Singleton
+  @Named
+  def getFooGetter(): Foo = NamedFoo("getter")
+
+@Singleton
+class Test(
+  @Named val foo1: Foo,
+  @Named("foo1") val anotherFoo1: Foo,
+  val fooDefault: Foo,
+  @Named val fooPrimary: Foo,
+  @Named("fooGetter") val getter: Foo
+)
+''')
+        def bean = getBean(context, 'implicitnamed.Test')
+
+        then:
+        definition.stringValue(AnnotationUtil.NAMED).get() == 'fooBar'
+        bean.foo1().name() == 'one'
+        bean.anotherFoo1().name() == 'one'
+        bean.fooDefault().name() == 'primary'
+        bean.fooPrimary().name() == 'primary'
+        bean.getter().name() == 'getter'
+
+        cleanup:
+        context?.close()
+    }
+
     void "does not expose a qualifier for Scala scope-only beans"() {
         given:
         def definition = buildBeanDefinition('test.Test', '''
