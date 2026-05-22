@@ -153,7 +153,9 @@ Priority 1 extends introspection, bean definition, and configuration parity:
   constructor injection, factory `val`/method beans, enum-returning factories,
   primitive and raw-map configuration binding, and cascaded validation on
   nested configuration properties, plus factory-backed configuration property
-  binding. Scala introspection include/exclude rules are covered for
+  binding, repeatable Java qualifier annotations on Scala injection points and
+  factory methods, and source-defined Scala qualifier members marked
+  `@NonBinding`. Scala introspection include/exclude rules are covered for
   constructor properties, and covariant JavaBean-style properties are covered
   through shared bean-property resolution. External-class introspection from
   Scala `@Introspected(classes = ...)` is covered using Micronaut's long
@@ -267,7 +269,12 @@ Work the backlog in this order:
      Scala-only object-valued enum constant references from direct generated
      calls to Scala's emitted `valueOf(String)` method; `getValue()` returns
      the stored value instead of doing runtime reflection or Java
-     `Enum.valueOf(...)`.
+     `Enum.valueOf(...)`. Repeatable qualifier parity is covered for classpath
+     Java repeatable annotations used on Scala constructor injection points and
+     factory methods; Scala-defined `StaticAnnotation` types cannot be used as
+     Java `@Repeatable` container types. Non-binding qualifier member parity is
+     covered by source-defined Scala qualifiers using getter-targeted
+     `@NonBinding`.
    - Done when:
      `ScalaBeanIntrospectionSpec` passes without `@PendingFeature`, the
      disabled catalog records Scala enum constants as covered, and no broader

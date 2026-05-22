@@ -146,7 +146,9 @@ Focused P1 parity now covers Scala numbered property names, overloaded
 `jakarta.inject.Provider` injection, `@Replaces`, abstract parent constructor
 injection, factory `val`/method beans, enum-returning factories, primitive and
 raw-map configuration binding, and cascaded validation on nested configuration
-properties, plus factory-backed configuration property binding. Scala
+properties, plus factory-backed configuration property binding, repeatable
+Java qualifier annotations on Scala injection points and factory methods, and
+source-defined Scala qualifier members marked `@NonBinding`. Scala
 introspection include/exclude rules are covered for constructor properties.
 Scala covariant JavaBean-style properties are covered through shared
 bean-property resolution. External-class introspection from Scala
@@ -187,10 +189,10 @@ Bean import is documented as unsupported for Scala.
 
 | Source | covered | candidate | unsupported | scala-specific | detailed total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 17 | 166 | 1 | 11 | 195 |
-| Groovy AbstractBeanDefinitionSpec | 5 | 71 | 0 | 11 | 87 |
+| Java AbstractTypeElementSpec | 19 | 164 | 1 | 11 | 195 |
+| Groovy AbstractBeanDefinitionSpec | 6 | 70 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 2 | 14 | 0 | 3 | 19 |
-| Total | 24 | 251 | 1 | 25 | 301 |
+| Total | 27 | 248 | 1 | 25 | 301 |
 
 ## Priority Buckets
 
@@ -449,9 +451,9 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/inject/provider/BeanProviderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/provider/DisableErrorOnMissingBeanProviderSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotation/AnnotationQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotationmember/NonBindingQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/annotationmember/NonBindingQualifierSpec.groovy` - covered: Scala source-defined qualifier annotations support getter-targeted `@NonBinding` members for bean resolution and qualifier metadata
 - `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/named/NamedQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - covered: classpath Java repeatable qualifiers are resolved on Scala constructor injection points, factory methods, and `BeanRegistration` injection
 - `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/replaces/AnnotateReplacesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/qualifiers/replaces/ReplacesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/records/RecordBeansSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
@@ -551,7 +553,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-groovy/src/test/groovy/io/micronaut/inject/property/PropertyWithQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/MultipleQualifiersSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/NamedSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/inject/qualifiers/repeatable/RepeatableQualifierSpec.groovy` - covered: classpath Java repeatable qualifiers are resolved on Scala constructor injection points, factory methods, and ambiguous dependency lookups
 - `inject-groovy/src/test/groovy/io/micronaut/inject/requires/RequiresBeanPropertiesSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/value/ValueParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/visitor/AnnotationMetadataSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above

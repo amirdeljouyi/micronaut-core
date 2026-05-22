@@ -20,6 +20,8 @@ import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.type.Argument
 import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.core.type.TypeInformation
+import io.micronaut.context.exceptions.DependencyInjectionException
+import io.micronaut.context.exceptions.NonUniqueBeanException
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 class ScalaBeanDefinitionSpec extends AbstractScalaTypeElementSpec {
@@ -707,5 +709,152 @@ class Test
         expect:
         definition.getDeclaredQualifier() == Qualifiers.byAnnotation(definition.getAnnotationMetadata(), "test.MyQualifier")
         definition.getAnnotationNameByStereotype(AnnotationUtil.QUALIFIER).get() == "test.MyQualifier"
+    }
+
+    void "supports Scala repeatable qualifier resolution"() {
+        when:
+        def context = buildContext('''
+package repeatablequalifiers
+
+import io.micronaut.context.BeanRegistration
+import io.micronaut.context.annotation.Factory
+import io.micronaut.scala.processing.fixtures.Location
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+
+@Singleton
+class TestBean(
+  @Location("north") @Location("south") val northSouth: Coordinate,
+  @Location("north") val north: Coordinate,
+  @Location("east") @Location("west") val eastWest: Coordinate
+)
+
+@Singleton
+class TestBeanDef(
+  @Location("north") @Location("south") val northSouth: BeanRegistration[Coordinate],
+  @Named("south") @Location("south") val south: BeanRegistration[Coordinate],
+  @Location("east") @Location("west") val eastWest: BeanRegistration[Coordinate]
+)
+
+@Singleton
+class OtherBean(@Location("south") val south: Coordinate)
+
+@Factory
+class CoordinateFactory:
+  @Singleton
+  @Named("northSouth")
+  @Location("north")
+  @Location("south")
+  def northSouth(): Coordinate = new Coordinate:
+    override def name(): String = "North/South"
+
+  @Singleton
+  @Named("south")
+  @Location("south")
+  def south(): Coordinate = new Coordinate:
+    override def name(): String = "South"
+
+  @Singleton
+  @Named("eastWest")
+  @Location("east")
+  @Location("west")
+  def eastWest(): Coordinate = new Coordinate:
+    override def name(): String = "East/West"
+
+trait Coordinate:
+  def name(): String
+''')
+        def bean = getBean(context, 'repeatablequalifiers.TestBean')
+
+        then:
+        bean.northSouth.name() == 'North/South'
+        bean.north.name() == 'North/South'
+        bean.eastWest.name() == 'East/West'
+
+        when:
+        getBean(context, 'repeatablequalifiers.OtherBean')
+
+        then:
+        def e = thrown(DependencyInjectionException)
+        e.cause instanceof NonUniqueBeanException
+
+        when:
+        def beanDef = getBean(context, 'repeatablequalifiers.TestBeanDef')
+        def eastWest = beanDef.eastWest.beanDefinition
+        def northSouth = beanDef.northSouth.beanDefinition
+        def south = beanDef.south.beanDefinition
+        def eastWestQualifier = eastWest.declaredQualifier.toString()
+        def northSouthQualifier = northSouth.declaredQualifier.toString()
+        def southQualifier = south.declaredQualifier.toString()
+
+        then:
+        eastWestQualifier.contains("@Named('eastWest')")
+        eastWestQualifier.contains("@Location(value=east)")
+        eastWestQualifier.contains("@Location(value=west)")
+        northSouthQualifier.contains("@Named('northSouth')")
+        northSouthQualifier.contains("@Location(value=north)")
+        northSouthQualifier.contains("@Location(value=south)")
+        southQualifier.contains("@Named('south')")
+        southQualifier.contains("@Location(value=south)")
+        context.findBean(eastWest.asArgument(), eastWest.declaredQualifier).isPresent()
+        context.findBean(northSouth.asArgument(), northSouth.declaredQualifier).isPresent()
+        context.findBean(south.asArgument(), south.declaredQualifier).isPresent()
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala non-binding qualifier members"() {
+        when:
+        def context = buildContext('''
+package nonbindingqualifiers
+
+import io.micronaut.context.annotation.NonBinding
+import jakarta.inject.Qualifier
+import jakarta.inject.Singleton
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import scala.annotation.StaticAnnotation
+import scala.annotation.meta.getter
+
+@Singleton
+class Test(
+  @Cylinders(6) val v6: Engine,
+  @Cylinders(8) val v8: Engine
+)
+
+@Singleton
+@Cylinders(value = 6, description = "6-cylinder V6 engine")
+class V6Engine extends Engine:
+  override def cylinders(): Int = 6
+
+@Singleton
+@Cylinders(value = 8, description = "8-cylinder V8 engine")
+class V8Engine extends Engine:
+  override def cylinders(): Int = 8
+
+trait Engine:
+  def cylinders(): Int
+
+@Qualifier
+@Retention(RetentionPolicy.RUNTIME)
+class Cylinders(
+  val value: Int,
+  @(NonBinding @getter) val description: String = ""
+) extends StaticAnnotation
+''')
+        def bean = getBean(context, 'nonbindingqualifiers.Test')
+        def v8Definition = getBeanDefinition(context, 'nonbindingqualifiers.V8Engine')
+
+        then:
+        bean.v8.cylinders() == 8
+        bean.v6.cylinders() == 6
+        v8Definition.declaredQualifier.qualifierAnn.memberNames == ['value'] as Set
+        v8Definition.annotationMetadata
+            .getAnnotation(AnnotationUtil.QUALIFIER)
+            .stringValues(AnnotationUtil.NON_BINDING_ATTRIBUTE) as Set == ['description', AnnotationUtil.NON_BINDING_ATTRIBUTE] as Set
+
+        cleanup:
+        context?.close()
     }
 }
