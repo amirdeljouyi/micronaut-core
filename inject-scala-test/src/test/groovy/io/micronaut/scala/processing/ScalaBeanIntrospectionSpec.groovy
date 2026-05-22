@@ -383,6 +383,35 @@ enum Status:
         introspection.constants*.value*.toString() == ['Active', 'Disabled']
     }
 
+    void "generates reflection-free Scala enum value access"() {
+        when:
+        def classLoader = buildClassLoader('test.Status', '''
+package test
+
+import io.micronaut.core.annotation.Introspected
+
+@Introspected
+enum Status:
+  case Active, Disabled
+''')
+        def introspectionClass = classLoader.loadClass('test.$Status$Introspection')
+        def introspection = introspectionClass.getDeclaredConstructor().newInstance()
+        def introspectionBytes = classLoader.getResourceAsStream('test/$Status$Introspection.class').withCloseable {
+            it.bytes
+        }
+        def constantPoolText = new String(introspectionBytes, 'ISO-8859-1')
+
+        then:
+        introspection instanceof EnumBeanIntrospection
+        introspection.constants*.value*.toString() == ['Active', 'Disabled']
+        introspection.constants*.class*.name as Set == [
+                'io.micronaut.inject.beans.AbstractEnumBeanIntrospectionAndReference$EnumConstantObjectRef'
+        ] as Set
+        constantPoolText.contains('valueOf')
+        !constantPoolText.contains('java/lang/reflect/Method')
+        !constantPoolText.contains('getMethod')
+    }
+
     void "instantiates Scala introspection with byte array constructor forwarding"() {
         when:
         def introspection = buildBeanIntrospection('test.FormulaDto', '''
