@@ -144,14 +144,14 @@ Empty array annotation members are covered on generated executable methods.
 Focused P1 parity now covers Scala numbered property names, overloaded
 `@Executable` introspection methods, `BeanProvider` and
 `jakarta.inject.Provider` injection, `@Replaces`, abstract parent constructor
-injection, factory `val`/method beans, enum-returning factories, primitive and
-raw-map configuration binding, and cascaded validation on nested configuration
-properties, plus factory-backed configuration property binding, repeatable
-Java qualifier annotations on Scala injection points and factory methods, and
-source-defined Scala qualifier members marked `@NonBinding`, plus overloaded
-factory methods that would otherwise collide on generated bean-definition
-names. Scala introspection include/exclude rules are covered for constructor
-properties.
+injection, factory `val`/method beans, enum-returning factories, null-return
+and disabled each-bean factory methods, primitive and raw-map configuration
+binding, and cascaded validation on nested configuration properties, plus
+factory-backed configuration property binding, repeatable Java qualifier
+annotations on Scala injection points and factory methods, and source-defined
+Scala qualifier members marked `@NonBinding`, plus overloaded factory methods
+that would otherwise collide on generated bean-definition names. Scala
+introspection include/exclude rules are covered for constructor properties.
 Scala covariant JavaBean-style properties are covered through shared
 bean-property resolution. External-class introspection from Scala
 `@Introspected(classes = ...)` is covered using Micronaut's long external
@@ -191,10 +191,10 @@ Bean import is documented as unsupported for Scala.
 
 | Source | covered | candidate | unsupported | scala-specific | detailed total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 20 | 163 | 1 | 11 | 195 |
+| Java AbstractTypeElementSpec | 21 | 162 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 6 | 70 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 2 | 14 | 0 | 3 | 19 |
-| Total | 28 | 247 | 1 | 25 | 301 |
+| Total | 29 | 246 | 1 | 25 | 301 |
 
 ## Priority Buckets
 
@@ -432,7 +432,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/lifecycle/PreDestroyOnBeanAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/multiple/MethodSameNameSpec.groovy` - covered: overloaded Scala factory methods generate distinct bean-definition references
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/named/ImplicitNamedSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/nullreturn/NullReturnFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/nullreturn/NullReturnFactorySpec.groovy` - covered: Scala factories cover non-null factory methods that return `null`, disabled `@EachBean` products, nullable and `@Parameter` each-bean arguments, and missing dependencies from disabled factory beans
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/proxytarget/FactoryWithScopedProxySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/field/inheritance/FieldInheritanceInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/field/simpleinjection/FieldInjectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above

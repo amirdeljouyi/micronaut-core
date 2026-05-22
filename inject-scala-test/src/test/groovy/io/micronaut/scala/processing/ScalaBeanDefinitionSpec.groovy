@@ -20,8 +20,10 @@ import io.micronaut.core.annotation.AnnotationUtil
 import io.micronaut.core.type.Argument
 import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.core.type.TypeInformation
+import io.micronaut.context.exceptions.BeanContextException
 import io.micronaut.context.exceptions.DependencyInjectionException
 import io.micronaut.context.exceptions.NonUniqueBeanException
+import io.micronaut.context.exceptions.NoSuchBeanException
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 class ScalaBeanDefinitionSpec extends AbstractScalaTypeElementSpec {
@@ -486,6 +488,154 @@ class CollisionFactory:
             'factoryparity.$CollisionFactory$Collision0$Definition',
             'factoryparity.$CollisionFactory$Collision1$Definition'
         ] as Set
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala factories that return null or disable each bean outputs"() {
+        when:
+        def context = buildContext('''
+package factoryparity
+
+import io.micronaut.context.annotation.EachBean
+import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Parameter
+import io.micronaut.context.annotation.Prototype
+import io.micronaut.context.exceptions.DisabledBeanException
+import io.micronaut.core.annotation.Nullable
+import jakarta.inject.Named
+import jakarta.inject.Singleton
+
+@Factory
+class NullableFactory:
+  var bCalls: Int = 0
+  var cCalls: Int = 0
+  var dCalls: Int = 0
+  var d2Calls: Int = 0
+  var d3Calls: Int = 0
+  var d4Calls: Int = 0
+
+  @Prototype
+  def getA(@Parameter name: String): A = null
+
+  @Singleton
+  @Named("one")
+  def getBOne(): B =
+    bCalls += 1
+    B("one")
+
+  @Singleton
+  @Named("two")
+  def getBTwo(): B =
+    bCalls += 1
+    B("two")
+
+  @Singleton
+  @Named("three")
+  def getBThree(): B =
+    bCalls += 1
+    B("three")
+
+  @Singleton
+  @Named("four")
+  def getBFour(): B =
+    bCalls += 1
+    throw DisabledBeanException("Named four")
+
+  @EachBean(classOf[B])
+  def getC(b: B): C =
+    cCalls += 1
+    if b == null || b.name == "three" then
+      throw DisabledBeanException("Named three")
+    C(b.name)
+
+  @EachBean(classOf[C])
+  def getD(c: C): D =
+    dCalls += 1
+    if c == null || c.name == "two" then
+      throw DisabledBeanException("Named two")
+    D()
+
+  @EachBean(classOf[C])
+  def getD2(@Nullable c: C): D2 =
+    d2Calls += 1
+    if c == null then
+      throw DisabledBeanException("Null C")
+    if c.name == "two" then
+      throw DisabledBeanException("Named two")
+    D2()
+
+  @EachBean(classOf[C])
+  def getD3(@Parameter c: C): D3 =
+    d3Calls += 1
+    if c.name == "two" then
+      throw DisabledBeanException("Named two")
+    D3()
+
+  @EachBean(classOf[C])
+  def getD4(@Nullable c: C, @Nullable @Parameter b: B): D4 =
+    d4Calls += 1
+    D4()
+
+  @EachBean(classOf[D])
+  def getE(d: D, f: F): E = E()
+
+  @Singleton
+  def getF(): F = throw DisabledBeanException("Not active")
+
+class A
+case class B(name: String)
+case class C(name: String)
+case class D()
+case class D2()
+case class D3()
+case class D4()
+case class E()
+case class F()
+''')
+        def factory = getBean(context, 'factoryparity.NullableFactory')
+        def aType = context.classLoader.loadClass('factoryparity.A')
+        def bType = context.classLoader.loadClass('factoryparity.B')
+        def cType = context.classLoader.loadClass('factoryparity.C')
+        def dType = context.classLoader.loadClass('factoryparity.D')
+        def d2Type = context.classLoader.loadClass('factoryparity.D2')
+        def d3Type = context.classLoader.loadClass('factoryparity.D3')
+        def d4Type = context.classLoader.loadClass('factoryparity.D4')
+        def eType = context.classLoader.loadClass('factoryparity.E')
+        def fType = context.classLoader.loadClass('factoryparity.F')
+
+        then:
+        context.getBeansOfType(bType)*.name() as Set == ['one', 'two', 'three'] as Set
+        context.getBeansOfType(cType)*.name() as Set == ['one', 'two'] as Set
+        context.getBeansOfType(dType).size() == 1
+        context.getBeansOfType(d2Type).size() == 1
+        context.getBeansOfType(d3Type).size() == 1
+        context.getBeansOfType(d4Type).size() == 4
+        context.getBean(dType, Qualifiers.byName("one")) != null
+        context.getBean(d2Type, Qualifiers.byName("one")) != null
+        factory.dCalls() == 2
+        factory.d2Calls() == 4
+        factory.d3Calls() == 2
+        factory.d4Calls() == 4
+
+        when:
+        context.createBean(aType, "hello")
+
+        then:
+        thrown(BeanContextException)
+
+        when:
+        context.getBean(eType, Qualifiers.byName("one"))
+
+        then:
+        thrown(NoSuchBeanException)
+
+        when:
+        context.getBean(fType)
+
+        then:
+        thrown(NoSuchBeanException)
 
         cleanup:
         context?.close()

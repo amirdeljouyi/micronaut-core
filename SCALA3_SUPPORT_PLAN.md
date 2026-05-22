@@ -151,16 +151,17 @@ Priority 1 extends introspection, bean definition, and configuration parity:
   `@Executable` introspection methods, `BeanProvider` and
   `jakarta.inject.Provider` injection, `@Replaces`, abstract parent
   constructor injection, factory `val`/method beans, enum-returning factories,
-  primitive and raw-map configuration binding, and cascaded validation on
-  nested configuration properties, plus factory-backed configuration property
-  binding, repeatable Java qualifier annotations on Scala injection points and
-  factory methods, and source-defined Scala qualifier members marked
-  `@NonBinding`, plus overloaded factory methods that would otherwise collide
-  on generated bean-definition names. Scala introspection include/exclude rules
-  are covered for constructor properties, and covariant JavaBean-style
-  properties are covered through shared bean-property resolution. External-class
-  introspection from Scala `@Introspected(classes = ...)` is covered using
-  Micronaut's long external introspection name.
+  null-return and disabled each-bean factory methods, primitive and raw-map
+  configuration binding, and cascaded validation on nested configuration
+  properties, plus factory-backed configuration property binding, repeatable
+  Java qualifier annotations on Scala injection points and factory methods,
+  and source-defined Scala qualifier members marked `@NonBinding`, plus
+  overloaded factory methods that would otherwise collide on generated
+  bean-definition names. Scala introspection include/exclude rules are covered
+  for constructor properties, and covariant JavaBean-style properties are
+  covered through shared bean-property resolution. External-class introspection
+  from Scala `@Introspected(classes = ...)` is covered using Micronaut's long
+  external introspection name.
 
 Priority 2 adds AOP, lifecycle, and executable parity:
 
