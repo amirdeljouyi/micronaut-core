@@ -152,11 +152,12 @@ Priority 1 extends introspection, bean definition, and configuration parity:
   `jakarta.inject.Provider` injection, `@Replaces`, abstract parent
   constructor injection, factory `val`/method beans, enum-returning factories,
   primitive and raw-map configuration binding, and cascaded validation on
-  nested configuration properties. Scala introspection include/exclude rules
-  are covered for constructor properties.
+  nested configuration properties, plus factory-backed configuration property
+  binding. Scala introspection include/exclude rules are covered for
+  constructor properties.
 - Scala covariant JavaBean-style properties, external-class introspection from
-  Scala `@Introspected(classes = ...)`, and factory-backed configuration
-  property binding remain tracked as pending feature tests.
+  Scala `@Introspected(classes = ...)` remain tracked as pending feature
+  tests.
 
 Priority 2 adds AOP, lifecycle, and executable parity:
 
@@ -248,12 +249,14 @@ Work the backlog in this order:
    - Pending failures:
      covariant JavaBean-style properties, external-class introspection from
      `@Introspected(classes = ...)`, Scala enum constants through
-     `EnumBeanIntrospection`, and factory-backed Scala
-     `@ConfigurationProperties`.
+     `EnumBeanIntrospection`.
    - Implementation direction:
      `Provider[T]` was resolved by adding the missing
      `JakartaProviderBeanDefinition` infrastructure bean to the lightweight
-     Scala test context; continue with the remaining production-facing gaps.
+     Scala test context. Factory-backed Scala `@ConfigurationProperties` was
+     resolved by applying the shared `ConfigurationReader` property-value
+     binding path to factory-produced beans; continue with the remaining
+     production-facing gaps.
      Defer enum constants until it is clear whether the public
      `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
      values without Java `Enum` instances.

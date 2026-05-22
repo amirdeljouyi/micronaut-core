@@ -100,35 +100,7 @@ final class ConfigurationReaderBeanElementCreator extends DeclaredBeanElementCre
                 throw new ProcessingException(fieldElement, "ConfigurationBuilder applied to a non accessible (private or package-private/protected in a different package) field must have a corresponding non-private getter method.");
             }
         } else if (!propertyElement.isExcluded()) {
-            boolean claimed = false;
-            Optional<MethodElement> writeMethod = propertyElement.getWriteMethod();
-            if (propertyElement.getWriteAccessKind() == PropertyElement.AccessKind.METHOD && writeMethod.isPresent()) {
-                visitor.setValidated(visitor.isValidated() || propertyElement.hasAnnotation(ANN_REQUIRES_VALIDATION));
-                MethodElement methodElement = writeMethod.get();
-                ParameterElement parameter = methodElement.getParameters()[0];
-                AnnotationMetadata annotationMetadata = new AnnotationMetadataHierarchy(
-                    propertyElement,
-                    parameter
-                ).merge();
-                annotationMetadata = calculatePath(propertyElement, methodElement, annotationMetadata);
-                AnnotationMetadata finalAnnotationMetadata = annotationMetadata;
-                methodElement = methodElement
-                    .withAnnotationMetadata(annotationMetadata)
-                    .withParameters(
-                        Arrays.stream(methodElement.getParameters())
-                            .map(p -> p == parameter ? parameter.withAnnotationMetadata(finalAnnotationMetadata) : p)
-                            .toArray(ParameterElement[]::new)
-                    );
-                visitor.visitSetterValue(methodElement.getDeclaringType(), methodElement, annotationMetadata, methodElement.isReflectionRequired(classElement), true);
-                claimed = true;
-            } else if (propertyElement.getWriteAccessKind() == PropertyElement.AccessKind.FIELD && field.isPresent()) {
-                visitor.setValidated(visitor.isValidated() || propertyElement.hasAnnotation(ANN_REQUIRES_VALIDATION));
-                FieldElement fieldElement = field.get();
-                AnnotationMetadata annotationMetadata = MutableAnnotationMetadata.of(propertyElement.getAnnotationMetadata());
-                annotationMetadata = calculatePath(propertyElement, fieldElement, annotationMetadata);
-                visitor.visitFieldValue(fieldElement.getDeclaringType(), fieldElement.withAnnotationMetadata(annotationMetadata), fieldElement.isReflectionRequired(classElement), true);
-                claimed = true;
-            }
+            boolean claimed = visitPropertyValue(visitor, classElement, visitorContext, propertyElement);
             if (readMethod.isPresent()) {
                 MethodElement methodElement = readMethod.get();
                 if (methodElement.hasStereotype(Executable.class)) {
@@ -154,7 +126,47 @@ final class ConfigurationReaderBeanElementCreator extends DeclaredBeanElementCre
         return super.visitField(visitor, fieldElement);
     }
 
-    private AnnotationMetadata calculatePath(PropertyElement propertyElement, MemberElement writeMember, AnnotationMetadata annotationMetadata) {
+    static boolean visitPropertyValue(BeanDefinitionVisitor visitor,
+                                      ClassElement classElement,
+                                      VisitorContext visitorContext,
+                                      PropertyElement propertyElement) {
+        Optional<MethodElement> writeMethod = propertyElement.getWriteMethod();
+        if (propertyElement.getWriteAccessKind() == PropertyElement.AccessKind.METHOD && writeMethod.isPresent()) {
+            visitor.setValidated(visitor.isValidated() || propertyElement.hasAnnotation(ANN_REQUIRES_VALIDATION));
+            MethodElement methodElement = writeMethod.get();
+            ParameterElement parameter = methodElement.getParameters()[0];
+            AnnotationMetadata annotationMetadata = new AnnotationMetadataHierarchy(
+                propertyElement,
+                parameter
+            ).merge();
+            annotationMetadata = calculatePath(propertyElement, methodElement, annotationMetadata, visitorContext);
+            AnnotationMetadata finalAnnotationMetadata = annotationMetadata;
+            methodElement = methodElement
+                .withAnnotationMetadata(annotationMetadata)
+                .withParameters(
+                    Arrays.stream(methodElement.getParameters())
+                        .map(p -> p == parameter ? parameter.withAnnotationMetadata(finalAnnotationMetadata) : p)
+                        .toArray(ParameterElement[]::new)
+                );
+            visitor.visitSetterValue(methodElement.getDeclaringType(), methodElement, annotationMetadata, methodElement.isReflectionRequired(classElement), true);
+            return true;
+        }
+        Optional<FieldElement> field = propertyElement.getField();
+        if (propertyElement.getWriteAccessKind() == PropertyElement.AccessKind.FIELD && field.isPresent()) {
+            visitor.setValidated(visitor.isValidated() || propertyElement.hasAnnotation(ANN_REQUIRES_VALIDATION));
+            FieldElement fieldElement = field.get();
+            AnnotationMetadata annotationMetadata = MutableAnnotationMetadata.of(propertyElement.getAnnotationMetadata());
+            annotationMetadata = calculatePath(propertyElement, fieldElement, annotationMetadata, visitorContext);
+            visitor.visitFieldValue(fieldElement.getDeclaringType(), fieldElement.withAnnotationMetadata(annotationMetadata), fieldElement.isReflectionRequired(classElement), true);
+            return true;
+        }
+        return false;
+    }
+
+    private static AnnotationMetadata calculatePath(PropertyElement propertyElement,
+                                                    MemberElement writeMember,
+                                                    AnnotationMetadata annotationMetadata,
+                                                    VisitorContext visitorContext) {
         String path = ConfigurationMetadataBuilder.calculatePath(
             writeMember.getOwningType(),
             writeMember.getDeclaringType(),

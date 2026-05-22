@@ -30,7 +30,6 @@ import io.micronaut.inject.writer.BeanDefinitionVisitor
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
 import jakarta.inject.Singleton
-import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
@@ -1945,7 +1944,6 @@ object AppConfig:
         context?.close()
     }
 
-    @PendingFeature
     void "supports factory-backed Scala configuration properties"() {
         when:
         def context = buildContext('''
