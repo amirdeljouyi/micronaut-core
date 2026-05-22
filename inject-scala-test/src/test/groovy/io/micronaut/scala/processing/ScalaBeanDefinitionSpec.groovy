@@ -22,8 +22,6 @@ import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.core.type.TypeInformation
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
-import spock.lang.PendingFeature
-
 class ScalaBeanDefinitionSpec extends AbstractScalaTypeElementSpec {
 
     void "formats Scala bean definition type strings"() {
@@ -346,7 +344,6 @@ class Vehicle(val beanProvider: BeanProvider[Engine])
         context?.close()
     }
 
-    @PendingFeature
     void "supports Scala Provider constructor injection"() {
         when:
         def context = buildContext('''

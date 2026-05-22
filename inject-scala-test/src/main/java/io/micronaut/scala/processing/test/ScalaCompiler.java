@@ -29,6 +29,7 @@ import io.micronaut.inject.BeanDefinition;
 import io.micronaut.inject.BeanDefinitionReference;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.provider.BeanProviderDefinition;
+import io.micronaut.inject.provider.JakartaProviderBeanDefinition;
 import io.micronaut.inject.writer.BeanDefinitionWriter;
 import org.jspecify.annotations.Nullable;
 
@@ -211,6 +212,7 @@ public final class ScalaCompiler {
                     } else {
                         references.add(new InterceptorRegistryBean());
                         references.add(new BeanProviderDefinition());
+                        references.add(new JakartaProviderBeanDefinition());
                         references.add(new ApplicationEventPublisherFactory<>());
                     }
                     return references;
