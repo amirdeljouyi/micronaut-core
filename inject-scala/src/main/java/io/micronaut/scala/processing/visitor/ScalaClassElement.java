@@ -259,14 +259,33 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
                 Collections.emptySet(),
                 methodElement -> Optional.empty(),
                 methodElement -> Optional.empty(),
-                this::mapFieldAccessPropertyElement
+                this::mapBeanPropertyElement
             );
         }
-        return classData.properties().stream()
+        Map<String, PropertyElement> properties = new LinkedHashMap<>();
+        classData.properties().stream()
             .map(this::propertyElement)
             .filter(propertyElement -> matches(propertyElementQuery, propertyElement))
-            .map(PropertyElement.class::cast)
-            .toList();
+            .forEach(propertyElement -> properties.put(propertyElement.getName(), propertyElement));
+        AstBeanPropertiesUtils.resolveBeanProperties(
+            propertyElementQuery,
+            this,
+            () -> getEnclosedElements(ElementQuery.ALL_METHODS),
+            () -> beanPropertyFields(accessKinds),
+            false,
+            Collections.emptySet(),
+            methodElement -> Optional.empty(),
+            methodElement -> Optional.empty(),
+            this::mapBeanPropertyElement
+        ).forEach(propertyElement -> properties.putIfAbsent(propertyElement.getName(), propertyElement));
+        return List.copyOf(properties.values());
+    }
+
+    private List<FieldElement> beanPropertyFields(Set<BeanProperties.AccessKind> accessKinds) {
+        if (accessKinds.contains(BeanProperties.AccessKind.FIELD)) {
+            return getEnclosedElements(ElementQuery.ALL_FIELDS);
+        }
+        return List.of();
     }
 
     private static boolean matches(PropertyElementQuery propertyElementQuery, PropertyElement propertyElement) {
@@ -286,7 +305,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         return propertyElementQuery.getExcludedAnnotations().stream().noneMatch(propertyElement::hasAnnotation);
     }
 
-    private @Nullable PropertyElement mapFieldAccessPropertyElement(AstBeanPropertiesUtils.BeanPropertyData value) {
+    private @Nullable PropertyElement mapBeanPropertyElement(AstBeanPropertiesUtils.BeanPropertyData value) {
         if (value.isExcluded) {
             return null;
         }

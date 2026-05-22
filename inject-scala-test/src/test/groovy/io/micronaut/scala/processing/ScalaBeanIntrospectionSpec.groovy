@@ -238,7 +238,6 @@ class Document(var line1: String, var value2: Int)
         properties.value2.type == Integer.TYPE
     }
 
-    @PendingFeature
     void "exposes Scala covariant JavaBean-style introspection properties"() {
         when:
         def introspection = buildBeanIntrospection('test.Document', '''

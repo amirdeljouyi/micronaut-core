@@ -154,10 +154,10 @@ Priority 1 extends introspection, bean definition, and configuration parity:
   primitive and raw-map configuration binding, and cascaded validation on
   nested configuration properties, plus factory-backed configuration property
   binding. Scala introspection include/exclude rules are covered for
-  constructor properties.
-- Scala covariant JavaBean-style properties, external-class introspection from
-  Scala `@Introspected(classes = ...)` remain tracked as pending feature
-  tests.
+  constructor properties, and covariant JavaBean-style properties are covered
+  through shared bean-property resolution.
+- External-class introspection from Scala `@Introspected(classes = ...)`
+  remains tracked as a pending feature test.
 
 Priority 2 adds AOP, lifecycle, and executable parity:
 
@@ -247,16 +247,18 @@ Work the backlog in this order:
      `ScalaBeanIntrospectionSpec`, `ScalaBeanDefinitionSpec`, and
      `ScalaMicronautFeatureSpec`.
    - Pending failures:
-     covariant JavaBean-style properties, external-class introspection from
-     `@Introspected(classes = ...)`, Scala enum constants through
-     `EnumBeanIntrospection`.
+     external-class introspection from `@Introspected(classes = ...)`, Scala
+     enum constants through `EnumBeanIntrospection`.
    - Implementation direction:
      `Provider[T]` was resolved by adding the missing
      `JakartaProviderBeanDefinition` infrastructure bean to the lightweight
      Scala test context. Factory-backed Scala `@ConfigurationProperties` was
      resolved by applying the shared `ConfigurationReader` property-value
-     binding path to factory-produced beans; continue with the remaining
-     production-facing gaps.
+     binding path to factory-produced beans. Covariant JavaBean-style
+     properties were resolved by merging Scala-native properties with
+     additional JavaBean accessor properties discovered through
+     `AstBeanPropertiesUtils`; continue with the remaining production-facing
+     gaps.
      Defer enum constants until it is clear whether the public
      `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
      values without Java `Enum` instances.

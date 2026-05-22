@@ -147,8 +147,9 @@ injection, factory `val`/method beans, enum-returning factories, primitive and
 raw-map configuration binding, and cascaded validation on nested configuration
 properties, plus factory-backed configuration property binding. Scala
 introspection include/exclude rules are covered for constructor properties.
-Scala covariant JavaBean-style properties, external-class introspection from
-Scala `@Introspected(classes = ...)` remain pending feature tests.
+Scala covariant JavaBean-style properties are covered through shared
+bean-property resolution. External-class introspection from Scala
+`@Introspected(classes = ...)` remains a pending feature test.
 Source-defined Scala `@Around(proxyTarget = true)` advice is covered for
 generated proxy-target beans, interceptor invocation, and target lifecycle.
 Source-defined Scala `@Around(proxyTarget = true, hotswap = true)` advice is
@@ -282,7 +283,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/InheritanceVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/AnnotatedIntrospectedSpec.groovy` - covered: basic @Introspected class metadata is covered by ScalaPoCSpec
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionGenericsSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - candidate: partially covered for constructor argument generics, generic array property/method types, multi-dimensional array properties, deep property type-use annotation metadata, superclass constructor forwarding, companion-object nested class introspection, subtype generic placeholders with upper bounds, protobuf-style generic superclass shapes, field-access introspection for emitted Scala fields, and custom introspection target packages; remaining introspection, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
+- `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BeanIntrospectionSpec.groovy` - candidate: partially covered for constructor argument generics, generic array property/method types, multi-dimensional array properties, deep property type-use annotation metadata, superclass constructor forwarding, companion-object nested class introspection, subtype generic placeholders with upper bounds, protobuf-style generic superclass shapes, field-access introspection for emitted Scala fields, covariant JavaBean-style properties, and custom introspection target packages; remaining introspection, creator, generics, metadata, enum, interface, and external-class cases should be ported incrementally
 - `inject-java-test/src/test/groovy/io/micronaut/inject/visitor/beans/BuildClassElementSpec.groovy` - covered: basic buildClassElement coverage is present in ScalaPoCSpec
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/annotation/AnnotateFieldSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
