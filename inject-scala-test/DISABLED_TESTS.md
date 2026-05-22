@@ -62,11 +62,10 @@ for emitted Scala fields, and custom introspection target packages are covered.
 Protobuf-style generic superclass shapes are covered for bean introspection.
 Executable route methods inherited from source-defined Scala traits are covered.
 Scala enum bean introspection can instantiate enum values through Scala's
-emitted `valueOf(String)` method and expose enum constructor properties. Scala
-enum constants remain tracked as a pending parity test because
-`EnumBeanIntrospection.EnumConstant#getValue()` is currently Java-enum-bound:
-the generated `EnumConstantDynamicRef` entries call `Enum.valueOf(...)`, which
-fails because Scala enum classes are not Java enum classes.
+emitted `valueOf(String)` method, expose enum constructor properties, and
+expose enum constants through `EnumBeanIntrospection` by generating direct
+Scala `valueOf(String)` calls into a Scala-only object-valued enum constant
+reference instead of using runtime reflection or Java `Enum.valueOf(...)`.
 Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
 idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable.Set`,

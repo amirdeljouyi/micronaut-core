@@ -251,7 +251,7 @@ Work the backlog in this order:
      `ScalaBeanIntrospectionSpec`, `ScalaBeanDefinitionSpec`, and
      `ScalaMicronautFeatureSpec`.
    - Pending failures:
-     Scala enum constants through `EnumBeanIntrospection`.
+     covered for the current focused parity surface.
    - Implementation direction:
      `Provider[T]` was resolved by adding the missing
      `JakartaProviderBeanDefinition` infrastructure bean to the lightweight
@@ -262,18 +262,17 @@ Work the backlog in this order:
      additional JavaBean accessor properties discovered through
      `AstBeanPropertiesUtils`. External-class introspection from
      `@Introspected(classes = ...)` is covered once the test uses the same
-     long external introspection class name as the Java writer; continue with
-     the remaining production-facing gaps.
-     Keep enum constants pending until the public
-     `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
-     values without Java `Enum` instances. Reproducing the pending test shows
-     that Scala already generates `EnumConstantDynamicRef` entries, but
-     `getValue()` delegates to `Enum.valueOf(...)` and fails because Scala enum
-     classes are not Java enum classes.
+     long external introspection class name as the Java writer. Scala enum
+     constants through `EnumBeanIntrospection` are covered by generating
+     Scala-only object-valued enum constant references from direct generated
+     calls to Scala's emitted `valueOf(String)` method; `getValue()` returns
+     the stored value instead of doing runtime reflection or Java
+     `Enum.valueOf(...)`.
    - Done when:
-     at least one pending test is removed per commit, the disabled catalog is
-     reclassified, and no broader bean-definition or introspection regression
-     appears in `:micronaut-inject-scala-test:test --tests '*ScalaBean*'`.
+     `ScalaBeanIntrospectionSpec` passes without `@PendingFeature`, the
+     disabled catalog records Scala enum constants as covered, and no broader
+     bean-definition or introspection regression appears in
+     `:micronaut-inject-scala-test:test --tests '*ScalaBean*'`.
 
 3. **P2 AOP, adapter, and expression gaps**
    - Targets:
@@ -358,7 +357,7 @@ For each packet:
 - Scala bean-definition `@Order` metadata is covered for top-level beans and companion-object nested beans.
 - Scala bean definitions are covered for packages with uppercase path segments.
 - Scala bean-definition type-variable resolution is covered for concrete array type arguments inherited through parent generic interfaces.
-- Scala enum introspection currently supports instantiation through Scala's emitted `valueOf(String)` method and enum constructor properties. Enum constant values remain a known gap because the public `EnumBeanIntrospection.EnumConstant` contract is bound to Java `Enum` values.
+- Scala enum introspection currently supports instantiation through Scala's emitted `valueOf(String)` method, enum constructor properties, and enum constants through `EnumBeanIntrospection`.
 - Scala introduction proxies resolve inherited generic method metadata through source-defined trait type arguments, including nested generics, method type variables, and arrays. Visitor-added metadata is covered on inherited generated introduction methods for generic return types, generic publisher parameters, resolved generic parameters, and `@InterceptorBean` bindings.
 - Add focused Scala regressions before each implementation fix.
 - Re-enable parity tests as support lands.

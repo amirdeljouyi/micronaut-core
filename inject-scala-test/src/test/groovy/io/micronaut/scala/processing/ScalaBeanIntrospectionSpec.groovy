@@ -22,7 +22,6 @@ import io.micronaut.core.type.GenericPlaceholder
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
-import spock.lang.PendingFeature
 
 class ScalaBeanIntrospectionSpec extends AbstractScalaTypeElementSpec {
 
@@ -367,7 +366,6 @@ enum Status(val code: String):
         introspection.getRequiredProperty("code", String).get(active) == "A"
     }
 
-    @PendingFeature
     void "exposes Scala enum constants through bean introspection"() {
         when:
         def introspection = buildBeanIntrospection('test.Status', '''
