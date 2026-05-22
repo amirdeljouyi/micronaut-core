@@ -151,12 +151,12 @@ Priority 1 extends introspection, bean definition, and configuration parity:
   `@Executable` introspection methods, `BeanProvider` injection, `@Replaces`,
   abstract parent constructor injection, factory `val`/method beans,
   enum-returning factories, primitive and raw-map configuration binding, and
-  cascaded validation on nested configuration properties.
-- Scala introspection include/exclude rules, covariant JavaBean-style
-  properties, external-class introspection from Scala
-  `@Introspected(classes = ...)`, `jakarta.inject.Provider[T]` constructor
-  injection, and factory-backed configuration property binding remain tracked
-  as pending feature tests.
+  cascaded validation on nested configuration properties. Scala introspection
+  include/exclude rules are covered for constructor properties.
+- Scala covariant JavaBean-style properties, external-class introspection from
+  Scala `@Introspected(classes = ...)`, `jakarta.inject.Provider[T]`
+  constructor injection, and factory-backed configuration property binding
+  remain tracked as pending feature tests.
 
 Priority 2 adds AOP, lifecycle, and executable parity:
 
@@ -246,16 +246,13 @@ Work the backlog in this order:
      `ScalaBeanIntrospectionSpec`, `ScalaBeanDefinitionSpec`, and
      `ScalaMicronautFeatureSpec`.
    - Pending failures:
-     introspection include/exclude filtering, covariant JavaBean-style
-     properties, external-class introspection from
+     covariant JavaBean-style properties, external-class introspection from
      `@Introspected(classes = ...)`, Scala enum constants through
      `EnumBeanIntrospection`, `jakarta.inject.Provider[T]` constructor
      injection, and factory-backed Scala `@ConfigurationProperties`.
    - Implementation direction:
-     start with introspection include/exclude filtering because it should be
-     local to Scala property modelling and shared introspection configuration.
-     Then handle `Provider[T]` by extending the same generated-injection
-     adaptation path already used for `BeanProvider[T]` and `Option[T]`.
+     handle `Provider[T]` by extending the same generated-injection adaptation
+     path already used for `BeanProvider[T]` and `Option[T]`.
      Defer enum constants until it is clear whether the public
      `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
      values without Java `Enum` instances.

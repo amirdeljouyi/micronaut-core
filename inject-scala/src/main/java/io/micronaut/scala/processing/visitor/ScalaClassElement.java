@@ -264,8 +264,26 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         }
         return classData.properties().stream()
             .map(this::propertyElement)
+            .filter(propertyElement -> matches(propertyElementQuery, propertyElement))
             .map(PropertyElement.class::cast)
             .toList();
+    }
+
+    private static boolean matches(PropertyElementQuery propertyElementQuery, PropertyElement propertyElement) {
+        Set<String> includes = propertyElementQuery.getIncludes();
+        if (!includes.isEmpty() && !includes.contains(propertyElement.getName())) {
+            return false;
+        }
+        if (propertyElementQuery.getExcludes().contains(propertyElement.getName())) {
+            return false;
+        }
+        if (!propertyElementQuery.isAllowStaticProperties() && propertyElement.isStatic()) {
+            return false;
+        }
+        if (propertyElementQuery.getVisibility() == BeanProperties.Visibility.PUBLIC && !propertyElement.isPublic()) {
+            return false;
+        }
+        return propertyElementQuery.getExcludedAnnotations().stream().noneMatch(propertyElement::hasAnnotation);
     }
 
     private @Nullable PropertyElement mapFieldAccessPropertyElement(AstBeanPropertiesUtils.BeanPropertyData value) {

@@ -194,7 +194,6 @@ class Test:
         properties.visible.get(bean) == 'shown'
     }
 
-    @PendingFeature
     void "honors Scala introspection include and exclude rules"() {
         when:
         def classLoader = buildClassLoader('test.IncludedUser', '''
