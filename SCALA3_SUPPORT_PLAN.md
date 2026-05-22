@@ -1,6 +1,6 @@
 # Scala 3 Support for Micronaut Core
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Summary
 
@@ -212,6 +212,103 @@ Iteration rules:
 - Do not add production-code changes while refreshing the catalog; production
   fixes should follow failed or pending tests.
 
+#### Next Step: Pending Failure Burn-Down
+
+The next implementation wave is to remove the remaining `@PendingFeature`
+markers by fixing the Scala adapter gaps they document. Treat each bullet below
+as a separate focused branch/commit packet: first reproduce the pending test by
+temporarily removing `@PendingFeature`, then make the smallest production fix,
+update `inject-scala-test/DISABLED_TESTS.md`, and keep or remove plan text based
+on the outcome.
+
+Work the backlog in this order:
+
+1. **P0 mutation metadata preservation**
+   - Target:
+     `ScalaElementMutationParitySpec`.
+   - Pending failures:
+     visitor-added metadata on method return types, parameter type wrappers, and
+     generic type arguments is lost when the wrapper `ClassElement` copies are
+     re-read from the captured Scala element.
+   - Implementation direction:
+     preserve mutable annotation metadata across Scala `ClassElement` copy /
+     reconstruction paths for return types, parameter types, field types, and
+     type arguments. Prefer fixing wrapper metadata propagation over special
+     casing the visitor tests.
+   - Done when:
+     both pending mutation tests pass without `@PendingFeature`, and the broader
+     `ScalaElementMutationParitySpec` still proves class, method, field,
+     property, parameter, repeatable, empty-array, and stereotype mutations.
+
+2. **P1 bean/introspection/configuration gaps**
+   - Targets:
+     `ScalaBeanIntrospectionSpec`, `ScalaBeanDefinitionSpec`, and
+     `ScalaMicronautFeatureSpec`.
+   - Pending failures:
+     introspection include/exclude filtering, covariant JavaBean-style
+     properties, external-class introspection from
+     `@Introspected(classes = ...)`, Scala enum constants through
+     `EnumBeanIntrospection`, `jakarta.inject.Provider[T]` constructor
+     injection, and factory-backed Scala `@ConfigurationProperties`.
+   - Implementation direction:
+     start with introspection include/exclude filtering because it should be
+     local to Scala property modelling and shared introspection configuration.
+     Then handle `Provider[T]` by extending the same generated-injection
+     adaptation path already used for `BeanProvider[T]` and `Option[T]`.
+     Defer enum constants until it is clear whether the public
+     `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
+     values without Java `Enum` instances.
+   - Done when:
+     at least one pending test is removed per commit, the disabled catalog is
+     reclassified, and no broader bean-definition or introspection regression
+     appears in `:micronaut-inject-scala-test:test --tests '*ScalaBean*'`.
+
+3. **P2 AOP, adapter, and expression gaps**
+   - Targets:
+     `ScalaAopParitySpec` and `ScalaEvaluatedExpressionParitySpec`.
+   - Pending failures:
+     around advice on inherited Scala trait default methods, introduction
+     combined with around advice and additional interfaces, Scala `@Adapter`
+     methods, and field-level evaluated `@Value` expression injection.
+   - Implementation direction:
+     investigate inherited trait method metadata and generated proxy method
+     binding before changing interceptor writers. For field-level expression
+     injection, preserve field-targeted `@Value` metadata through the generated
+     setter injection point so Scala `var` injection matches the existing field
+     injection behavior.
+   - Done when:
+     each removed pending test has a focused passing run for its spec and the
+     existing `ScalaAopParitySpec`, `ScalaEvaluatedExpressionParitySpec`, and
+     `ScalaMicronautFeatureSpec` coverage remains green.
+
+4. **P3 visitor-generated bean support**
+   - Target:
+     `ScalaBeanElementBuilderParitySpec`.
+   - Pending failures:
+     visitor-created associated beans, associated factory beans, multiple
+     generated factories, generated executable methods, and generated-bean AOP
+     currently stop at `ScalaClassElement.addAssociatedBean(...)`.
+   - Implementation direction:
+     add real Scala originating-element support for associated beans rather than
+     bypassing the error in the test. Reuse the shared bean-element-builder
+     contracts so generated factory methods, executable metadata, qualifiers,
+     and AOP binding are produced through the same path as Java/Groovy/Kotlin.
+   - Done when:
+     all pending `ScalaBeanElementBuilderParitySpec` cases pass or any remaining
+     unsupported cases are documented with a narrower, source-backed reason.
+
+For each packet:
+
+- Keep the first edit test-first: remove `@PendingFeature` from only the test
+  being fixed, run it, and record the current failure mode in the commit or PR
+  notes.
+- If a pending test starts passing before a production edit, remove
+  `@PendingFeature`, update the disabled catalog, and commit that as a test
+  cleanup.
+- If the fix exposes a broader language limitation, keep the pending test,
+  tighten the assertion/message if needed, and update both this plan and
+  `inject-scala-test/DISABLED_TESTS.md`.
+
 ### Wave 3: Element and Annotation Completeness
 
 - Implement annotation values, defaults, nested annotations, repeatables, stereotypes, aliases, retention and targets, nullability, class literals, enum constants, arrays, and constants.
@@ -310,6 +407,35 @@ Iteration rules:
 - Run the equivalent Java, Groovy, or Kotlin source spec when useful for behavioral comparison.
 - Run `:micronaut-inject-scala-test:test` after each feature group.
 - Run `:test-suite-scala:test` after each docs batch.
+
+### Pending-Failure Iteration Validation
+
+For each pending-failure packet, start with the single affected spec:
+
+```bash
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaElementMutationParitySpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaBeanIntrospectionSpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaBeanDefinitionSpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaMicronautFeatureSpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaAopParitySpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaEvaluatedExpressionParitySpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaBeanElementBuilderParitySpec*'
+```
+
+Before committing a packet that removes pending tests, run the impacted cluster:
+
+```bash
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaElementMutationParitySpec*' --tests '*ScalaAnnotationMetadataParitySpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaBean*' --tests '*ScalaMicronautFeatureSpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaAopParitySpec*' --tests '*ScalaEvaluatedExpressionParitySpec*'
+./gradlew :micronaut-inject-scala-test:test --tests '*ScalaBeanElementBuilderParitySpec*'
+```
+
+Before finishing the pending-failure wave, run:
+
+```bash
+./gradlew :micronaut-inject-scala:test :micronaut-inject-scala-test:test :test-suite-scala:test
+```
 
 ### Final Validation
 
