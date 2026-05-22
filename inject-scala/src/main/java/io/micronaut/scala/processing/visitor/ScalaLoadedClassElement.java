@@ -19,21 +19,31 @@ import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ArrayableClassElement;
 import io.micronaut.inject.ast.ClassElement;
+import io.micronaut.inject.ast.ConstructorElement;
 import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.ElementModifier;
 import io.micronaut.inject.ast.ElementQuery;
+import io.micronaut.inject.ast.FieldElement;
 import io.micronaut.inject.ast.GenericPlaceholderElement;
+import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
 import io.micronaut.inject.ast.PrimitiveElement;
+import io.micronaut.inject.ast.TypedElement;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -156,16 +166,47 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
     }
 
     @Override
+    public Optional<MethodElement> getPrimaryConstructor() {
+        return Arrays.stream(componentType.getDeclaredConstructors())
+            .filter(constructor -> !constructor.isSynthetic())
+            .min(Comparator
+                .comparing((Constructor<?> constructor) -> !Modifier.isPublic(constructor.getModifiers()))
+                .thenComparingInt(Constructor::getParameterCount))
+            .map(this::constructorElement)
+            .map(MethodElement.class::cast);
+    }
+
+    @Override
+    public Optional<MethodElement> getDefaultConstructor() {
+        try {
+            return Optional.of(constructorElement(componentType.getDeclaredConstructor()));
+        } catch (NoSuchMethodException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public <T extends Element> List<T> getEnclosedElements(ElementQuery<T> query) {
         ElementQuery.Result<T> result = query.result();
         Class<T> elementType = result.getElementType();
-        if (!elementType.isAssignableFrom(MethodElement.class)) {
-            return List.of();
+        List<Element> elements = new ArrayList<>();
+        if (elementType == ConstructorElement.class) {
+            Constructor<?>[] constructors = result.isOnlyDeclared() ? componentType.getDeclaredConstructors() : componentType.getConstructors();
+            Arrays.stream(constructors).map(this::constructorElement).forEach(elements::add);
+        } else if (elementType == MethodElement.class) {
+            Method[] methods = result.isOnlyDeclared() ? componentType.getDeclaredMethods() : componentType.getMethods();
+            Arrays.stream(methods).map(this::methodElement).forEach(elements::add);
+        } else if (elementType == FieldElement.class) {
+            Field[] fields = result.isOnlyDeclared() ? componentType.getDeclaredFields() : componentType.getFields();
+            Arrays.stream(fields).map(this::fieldElement).forEach(elements::add);
+        } else if (elementType == MemberElement.class) {
+            Field[] fields = result.isOnlyDeclared() ? componentType.getDeclaredFields() : componentType.getFields();
+            Method[] methods = result.isOnlyDeclared() ? componentType.getDeclaredMethods() : componentType.getMethods();
+            Arrays.stream(fields).map(this::fieldElement).forEach(elements::add);
+            Arrays.stream(methods).map(this::methodElement).forEach(elements::add);
         }
-        Method[] methods = result.isOnlyDeclared() ? componentType.getDeclaredMethods() : componentType.getMethods();
-        return Arrays.stream(methods)
-            .map(this::methodElement)
-            .filter(methodElement -> matches(result, methodElement))
+        return elements.stream()
+            .filter(element -> matches(result, element))
             .map(elementType::cast)
             .toList();
     }
@@ -194,17 +235,33 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
     }
 
     private LoadedMethodElement methodElement(Method method) {
-        return new LoadedMethodElement(this, this, method, methodParameters(method), visitorContext, AnnotationMetadata.EMPTY_METADATA);
+        return new LoadedMethodElement(this, this, method, parameters(method), visitorContext, AnnotationMetadata.EMPTY_METADATA);
     }
 
-    private ParameterElement[] methodParameters(Method method) {
-        Parameter[] parameters = method.getParameters();
-        Type[] genericParameterTypes = method.getGenericParameterTypes();
-        Class<?>[] parameterTypes = method.getParameterTypes();
+    private LoadedConstructorElement constructorElement(Constructor<?> constructor) {
+        return new LoadedConstructorElement(this, this, constructor, parameters(constructor), visitorContext, AnnotationMetadata.EMPTY_METADATA);
+    }
+
+    private LoadedFieldElement fieldElement(Field field) {
+        return new LoadedFieldElement(
+            this,
+            this,
+            field,
+            classElement(field.getType(), visitorContext),
+            classElement(field.getGenericType(), field.getType(), visitorContext),
+            visitorContext,
+            AnnotationMetadata.EMPTY_METADATA
+        );
+    }
+
+    private ParameterElement[] parameters(Executable executable) {
+        Parameter[] parameters = executable.getParameters();
+        Type[] genericParameterTypes = executable.getGenericParameterTypes();
+        Class<?>[] parameterTypes = executable.getParameterTypes();
         ParameterElement[] parameterElements = new ParameterElement[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
-            ClassElement type = classElement(parameterTypes[i]);
-            ClassElement genericType = classElement(genericParameterTypes[i], parameterTypes[i]);
+            ClassElement type = classElement(parameterTypes[i], visitorContext);
+            ClassElement genericType = classElement(genericParameterTypes[i], parameterTypes[i], visitorContext);
             parameterElements[i] = new LoadedParameterElement(
                 type,
                 genericType,
@@ -217,50 +274,52 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
         return parameterElements;
     }
 
-    private <T extends Element> boolean matches(ElementQuery.Result<T> result, MethodElement methodElement) {
-        if (result.isOnlyAbstract() && !methodElement.isAbstract()) {
+    private <T extends Element> boolean matches(ElementQuery.Result<T> result, Element element) {
+        if (result.isOnlyAbstract() && !element.isAbstract()) {
             return false;
         }
-        if (result.isOnlyConcrete() && methodElement.isAbstract()) {
+        if (result.isOnlyConcrete() && element.isAbstract()) {
             return false;
         }
-        if (result.isOnlyStatic() && !methodElement.isStatic()) {
+        if (result.isOnlyStatic() && !element.isStatic()) {
             return false;
         }
-        if (result.isOnlyInstance() && methodElement.isStatic()) {
+        if (result.isOnlyInstance() && element.isStatic()) {
             return false;
         }
-        if (!result.isIncludeHiddenElements() && methodElement.isSynthetic()) {
+        if (!result.isIncludeHiddenElements() && element.isSynthetic()) {
             return false;
         }
-        if (result.isOnlyAccessible()) {
+        if (result.isOnlyAccessible() && element instanceof MemberElement memberElement) {
             ClassElement fromType = result.getOnlyAccessibleFromType().orElse(this);
-            if (!methodElement.isAccessible(fromType)) {
+            if (!memberElement.isAccessible(fromType)) {
                 return false;
             }
         }
         for (Predicate<String> predicate : result.getNamePredicates()) {
-            if (!predicate.test(methodElement.getName())) {
+            if (!predicate.test(element.getName())) {
                 return false;
             }
         }
-        for (Predicate<ClassElement> predicate : result.getTypePredicates()) {
-            if (!predicate.test(methodElement.getReturnType())) {
-                return false;
+        if (element instanceof TypedElement typedElement) {
+            for (Predicate<ClassElement> predicate : result.getTypePredicates()) {
+                if (!predicate.test(typedElement.getType())) {
+                    return false;
+                }
             }
         }
         for (Predicate<AnnotationMetadata> predicate : result.getAnnotationPredicates()) {
-            if (!predicate.test(methodElement.getAnnotationMetadata())) {
+            if (!predicate.test(element.getAnnotationMetadata())) {
                 return false;
             }
         }
         for (Predicate<Set<ElementModifier>> predicate : result.getModifierPredicates()) {
-            if (!predicate.test(methodElement.getModifiers())) {
+            if (!predicate.test(element.getModifiers())) {
                 return false;
             }
         }
         for (Predicate<T> predicate : result.getElementPredicates()) {
-            if (!predicate.test(result.getElementType().cast(methodElement))) {
+            if (!predicate.test(result.getElementType().cast(element))) {
                 return false;
             }
         }
@@ -268,19 +327,23 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
     }
 
     private static ClassElement classElement(Type genericType, Class<?> erasedType) {
+        return classElement(genericType, erasedType, null);
+    }
+
+    private static ClassElement classElement(Type genericType, Class<?> erasedType, @Nullable ScalaVisitorContext visitorContext) {
         try {
             if (genericType instanceof Class<?> genericClass) {
-                return classElement(genericClass);
+                return classElement(genericClass, visitorContext);
             }
             return ClassElement.of(genericType);
         } catch (RuntimeException ignored) {
-            return classElement(erasedType);
+            return classElement(erasedType, visitorContext);
         }
     }
 
-    private static ClassElement classElement(Class<?> type) {
+    private static ClassElement classElement(Class<?> type, @Nullable ScalaVisitorContext visitorContext) {
         if (!type.isPrimitive()) {
-            return ClassElement.of(type);
+            return visitorContext == null ? ClassElement.of(type) : new ScalaLoadedClassElement(type, visitorContext);
         }
         return switch (type.getName()) {
             case "boolean" -> PrimitiveElement.BOOLEAN;
@@ -352,6 +415,80 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
         return Set.copyOf(elementModifiers);
     }
 
+    private static boolean isPackagePrivate(int modifiers) {
+        return !Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers) && !Modifier.isPrivate(modifiers);
+    }
+
+    private static final class LoadedConstructorElement extends AbstractScalaElement implements ConstructorElement {
+
+        private final ClassElement owningType;
+        private final ClassElement declaringType;
+        private final Constructor<?> constructor;
+        private final ParameterElement[] parameters;
+        private final ScalaVisitorContext visitorContext;
+
+        private LoadedConstructorElement(
+            ClassElement owningType,
+            ClassElement declaringType,
+            Constructor<?> constructor,
+            ParameterElement[] parameters,
+            ScalaVisitorContext visitorContext,
+            AnnotationMetadata annotationMetadata) {
+            super(
+                "<init>",
+                constructor,
+                javaModifiers(constructor.getModifiers()),
+                MutableAnnotationMetadata.of(annotationMetadata),
+                visitorContext.getScalaAnnotationMetadataBuilder()
+            );
+            this.owningType = owningType;
+            this.declaringType = declaringType;
+            this.constructor = constructor;
+            this.parameters = parameters;
+            this.visitorContext = visitorContext;
+        }
+
+        @Override
+        public ParameterElement[] getParameters() {
+            return parameters;
+        }
+
+        @Override
+        public MethodElement withParameters(ParameterElement... newParameters) {
+            return new LoadedConstructorElement(owningType, declaringType, constructor, newParameters, visitorContext, getAnnotationMetadata());
+        }
+
+        @Override
+        public ClassElement getDeclaringType() {
+            return declaringType;
+        }
+
+        @Override
+        public ClassElement getOwningType() {
+            return owningType;
+        }
+
+        @Override
+        public boolean isSynthetic() {
+            return constructor.isSynthetic();
+        }
+
+        @Override
+        public boolean isVarArgs() {
+            return constructor.isVarArgs();
+        }
+
+        @Override
+        public boolean isPackagePrivate() {
+            return ScalaLoadedClassElement.isPackagePrivate(constructor.getModifiers());
+        }
+
+        @Override
+        public MethodElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
+            return new LoadedConstructorElement(owningType, declaringType, constructor, parameters, visitorContext, annotationMetadata);
+        }
+    }
+
     private static final class LoadedMethodElement extends AbstractScalaElement implements MethodElement {
 
         private final ClassElement owningType;
@@ -383,12 +520,12 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
 
         @Override
         public ClassElement getReturnType() {
-            return classElement(method.getReturnType());
+            return classElement(method.getReturnType(), visitorContext);
         }
 
         @Override
         public ClassElement getGenericReturnType() {
-            return classElement(method.getGenericReturnType(), method.getReturnType());
+            return classElement(method.getGenericReturnType(), method.getReturnType(), visitorContext);
         }
 
         @Override
@@ -440,6 +577,74 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
         @Override
         public MethodElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
             return new LoadedMethodElement(owningType, declaringType, method, parameters, visitorContext, annotationMetadata);
+        }
+    }
+
+    private static final class LoadedFieldElement extends AbstractScalaElement implements FieldElement {
+
+        private final ClassElement owningType;
+        private final ClassElement declaringType;
+        private final Field field;
+        private final ClassElement type;
+        private final ClassElement genericType;
+        private final ScalaVisitorContext visitorContext;
+
+        private LoadedFieldElement(
+            ClassElement owningType,
+            ClassElement declaringType,
+            Field field,
+            ClassElement type,
+            ClassElement genericType,
+            ScalaVisitorContext visitorContext,
+            AnnotationMetadata annotationMetadata) {
+            super(
+                field.getName(),
+                field,
+                javaModifiers(field.getModifiers()),
+                MutableAnnotationMetadata.of(annotationMetadata),
+                visitorContext.getScalaAnnotationMetadataBuilder()
+            );
+            this.owningType = owningType;
+            this.declaringType = declaringType;
+            this.field = field;
+            this.type = type;
+            this.genericType = genericType;
+            this.visitorContext = visitorContext;
+        }
+
+        @Override
+        public ClassElement getType() {
+            return type;
+        }
+
+        @Override
+        public ClassElement getGenericType() {
+            return genericType;
+        }
+
+        @Override
+        public ClassElement getDeclaringType() {
+            return declaringType;
+        }
+
+        @Override
+        public ClassElement getOwningType() {
+            return owningType;
+        }
+
+        @Override
+        public boolean isSynthetic() {
+            return field.isSynthetic();
+        }
+
+        @Override
+        public boolean isPackagePrivate() {
+            return ScalaLoadedClassElement.isPackagePrivate(field.getModifiers());
+        }
+
+        @Override
+        public FieldElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
+            return new LoadedFieldElement(owningType, declaringType, field, type, genericType, visitorContext, annotationMetadata);
         }
     }
 

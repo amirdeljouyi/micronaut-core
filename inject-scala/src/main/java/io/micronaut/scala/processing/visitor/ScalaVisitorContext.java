@@ -25,8 +25,12 @@ import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.Element;
 import io.micronaut.inject.ast.annotation.ElementAnnotationMetadataFactory;
+import io.micronaut.inject.ast.beans.BeanElementBuilder;
 import io.micronaut.inject.processing.ProcessingException;
+import io.micronaut.inject.visitor.BeanElementVisitorContext;
+import io.micronaut.inject.visitor.TypeElementVisitor;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.inject.writer.AbstractBeanDefinitionBuilder;
 import io.micronaut.inject.writer.DirectoryClassWriterOutputVisitor;
 import io.micronaut.inject.writer.GeneratedFile;
 import org.jspecify.annotations.Nullable;
@@ -37,11 +41,11 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +55,7 @@ import java.util.function.Consumer;
 /**
  * Visitor context for Scala compiler plugin processing.
  */
-public final class ScalaVisitorContext implements VisitorContext {
+public final class ScalaVisitorContext implements VisitorContext, BeanElementVisitorContext {
 
     private final MutableConvertibleValues<Object> attributes = new MutableConvertibleValuesMap<>();
     private final File outputDirectory;
@@ -63,11 +67,13 @@ public final class ScalaVisitorContext implements VisitorContext {
     private final Map<String, ScalaClassData> sourceClasses = new LinkedHashMap<>();
     private final Map<String, ScalaClassElement> sourceElements = new LinkedHashMap<>();
     private final IdentityHashMap<Object, MutableAnnotationMetadata> elementAnnotationMetadata = new IdentityHashMap<>();
+    private final List<AbstractBeanDefinitionBuilder> beanDefinitionBuilders = new ArrayList<>();
     private final Map<String, String> options;
     private final Consumer<String> infoReporter;
     private final Consumer<String> warningReporter;
     private final Consumer<String> errorReporter;
     private final ClassLoader classLoader;
+    private TypeElementVisitor.VisitorKind visitorKind = TypeElementVisitor.VisitorKind.ISOLATING;
 
     public ScalaVisitorContext(
         File outputDirectory,
@@ -236,6 +242,34 @@ public final class ScalaVisitorContext implements VisitorContext {
 
     ClassLoader getProcessingClassLoader() {
         return classLoader;
+    }
+
+    TypeElementVisitor.VisitorKind getVisitorKind() {
+        return visitorKind;
+    }
+
+    void setVisitorKind(TypeElementVisitor.VisitorKind visitorKind) {
+        this.visitorKind = visitorKind;
+    }
+
+    List<AbstractBeanDefinitionBuilder> getBeanElementBuilders() {
+        List<AbstractBeanDefinitionBuilder> current = new ArrayList<>(beanDefinitionBuilders);
+        beanDefinitionBuilders.clear();
+        return current;
+    }
+
+    void addBeanDefinitionBuilder(ScalaBeanDefinitionBuilder beanDefinitionBuilder) {
+        beanDefinitionBuilders.add(beanDefinitionBuilder);
+    }
+
+    @Override
+    public BeanElementBuilder addAssociatedBean(Element originatingElement, ClassElement type) {
+        return new ScalaBeanDefinitionBuilder(
+            originatingElement,
+            type,
+            annotationMetadataFactory,
+            this
+        );
     }
 
     @Override

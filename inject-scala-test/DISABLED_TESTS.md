@@ -171,12 +171,10 @@ invoke with `invokespecial`. Introduction combined with around advice and
 additional interfaces is covered by rebinding source Scala method owning types
 while preserving their original declaring traits, matching the Java, Groovy,
 Kotlin, and loaded-Scala method element contract.
-`ScalaBeanElementBuilderParitySpec` now records pending feature tests for
-visitor-created associated beans, associated factory beans, multiple generated
-factories, generated executable methods, and AOP on generated beans. These
-remain pending because `ScalaClassElement.addAssociatedBean(...)` currently
-reports that Scala elements do not support adding associated beans at
-compilation time.
+`ScalaBeanElementBuilderParitySpec` covers visitor-created associated beans,
+associated factory beans, multiple generated factories with qualifiers and
+injected parameters, generated executable method metadata, and AOP on generated
+beans.
 Bean import is documented as unsupported for Scala.
 
 ## Classification Rules
@@ -252,9 +250,8 @@ Bean import is documented as unsupported for Scala.
 
 - Add `ScalaBeanElementBuilderParitySpec`: visitor-created beans, associated
   factory beans, multiple generated factories, generated methods, and AOP on
-  generated beans. Pending tests now document the desired parity surface; they
-  require `ScalaClassElement.addAssociatedBean(...)` support before they can
-  pass.
+  generated beans. These cases are covered through Scala originating-element
+  associated bean support and the shared bean element builder writer path.
 - Add visitor-order and postponed-visitor coverage only where Scala's
   compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
   Scala visitor ordering is covered by `ScalaVisitorOrderingSpec`; Java
@@ -377,12 +374,12 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/inject/annotation/repeatable/TransformToRepeatableSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/ast/beans/BeanElementVisitorSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/autowired/AutowiredSpec.groovy` - covered: Scala field and method `@Autowired` injection is covered for required and optional dependencies, including optional value injection and multi-argument method skipping
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - candidate: broader visitor-created bean, static creator, interceptor adapter, and type-argument coverage remains after `ScalaClassElement.addAssociatedBean(...)` support lands
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnMethodSpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
-- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - covered: Scala associated factory beans are covered by `ScalaBeanElementBuilderParitySpec`
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - covered: Scala multiple generated factories with qualifiers and injected factory parameters are covered by `ScalaBeanElementBuilderParitySpec`
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - candidate: broader visitor-created bean, static creator, interceptor adapter, and type-argument coverage remains beyond the associated bean, generated factory, executable method, and generated AOP cases now covered
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnMethodSpec.groovy` - covered: Scala method-level AOP on visitor-generated beans is covered by `ScalaBeanElementBuilderParitySpec`
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderAopOnTypeSpec.groovy` - covered: Scala type-level AOP on visitor-generated beans is covered by `ScalaBeanElementBuilderParitySpec`
+- `inject-java/src/test/groovy/io/micronaut/inject/beanbuilder/BuildElementBuilderProcessedMethodsSpec.groovy` - covered: Scala executable method metadata on visitor-generated beans is covered by `ScalaBeanElementBuilderParitySpec`
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - covered: Scala source-level abstract bean scenarios are covered for collection filtering, abstract definitions with injection points, qualifier-only beans, and AOP-only beans
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - candidate: partially covered for type-string formatting, class/factory-level `@Bean(typed=...)` exposed type validation including subclass rejection, `@Order` metadata, uppercase package names, declared generic bean type metadata on definitions and references, factory generic bean type metadata, deep constructor generic argument and annotation metadata, resolved type-variable generic lookups including inherited array type arguments, unbounded and upper-bounded wildcard generic bounds, and qualifier metadata; remaining additional type-variable cases should be ported incrementally
 - `inject-java/src/test/groovy/io/micronaut/inject/beans/BeanRegistrationSpec.groovy` - covered: Scala constructor, field, method, collection, array, and named `BeanRegistration` injection are covered
@@ -521,9 +518,9 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/AddsRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/RepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/repeatable/ReplacesRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - candidate: pending in `ScalaBeanElementBuilderParitySpec`; blocked by missing `ScalaClassElement.addAssociatedBean(...)` support
-- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - candidate: broader visitor-created bean, static creator, interceptor adapter, and type-argument coverage remains after `ScalaClassElement.addAssociatedBean(...)` support lands
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderFactorySpec.groovy` - covered: Scala associated factory beans are covered by `ScalaBeanElementBuilderParitySpec`
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderMultipleFactorySpec.groovy` - covered: Scala multiple generated factories with qualifiers and injected factory parameters are covered by `ScalaBeanElementBuilderParitySpec`
+- `inject-groovy/src/test/groovy/io/micronaut/inject/beanbuilder/BeanElementBuilderSpec.groovy` - candidate: broader visitor-created bean, static creator, interceptor adapter, and type-argument coverage remains beyond the associated bean, generated factory, executable method, and generated AOP cases now covered
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/AbstractBeanSpec.groovy` - covered: Scala abstract bean definitions with injection points are covered
 - `inject-groovy/src/test/groovy/io/micronaut/inject/beans/BeanDefinitionSpec.groovy` - candidate: partially covered for exposed type validation, factory exposed types, top-level and nested bean definition order metadata, uppercase package names, declared bean generics, factory bean generics, resolved type-variable lookups including inherited array type arguments, wildcard generic bounds, and qualifier metadata; remaining bean definition cases should be ported incrementally
 - `inject-groovy/src/test/groovy/io/micronaut/inject/configproperties/ConfigPropertiesParseSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above

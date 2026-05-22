@@ -39,6 +39,7 @@ import io.micronaut.inject.visitor.BeanElementVisitor;
 import io.micronaut.inject.visitor.TypeElementQuery;
 import io.micronaut.inject.visitor.TypeElementVisitor;
 import io.micronaut.inject.visitor.VisitorContext;
+import io.micronaut.inject.writer.AbstractBeanDefinitionBuilder;
 import io.micronaut.inject.writer.BeanDefinitionVisitor;
 import io.micronaut.inject.writer.BeanDefinitionWriter;
 import org.jspecify.annotations.Nullable;
@@ -119,6 +120,7 @@ public final class ScalaProcessingEngine {
         setMicronautOptionsAsSystemProperties();
         List<LoadedScalaVisitor> loadedVisitors = loadTypeElementVisitors(context);
         for (LoadedScalaVisitor loadedVisitor : loadedVisitors) {
+            context.setVisitorKind(loadedVisitor.getVisitor().getVisitorKind());
             try {
                 loadedVisitor.getVisitor().start(context);
             } catch (ProcessingException e) {
@@ -138,6 +140,7 @@ public final class ScalaProcessingEngine {
                 if (!loadedVisitor.matchesClass(classElement.getAnnotationMetadata())) {
                     continue;
                 }
+                context.setVisitorKind(loadedVisitor.getVisitor().getVisitorKind());
                 try {
                     visitClass(loadedVisitor, classElement, query, context);
                 } catch (ProcessingException e) {
@@ -146,6 +149,7 @@ public final class ScalaProcessingEngine {
             }
         }
         for (LoadedScalaVisitor loadedVisitor : loadedVisitors) {
+            context.setVisitorKind(loadedVisitor.getVisitor().getVisitorKind());
             try {
                 loadedVisitor.getVisitor().finish(context);
             } catch (ProcessingException e) {
@@ -154,6 +158,7 @@ public final class ScalaProcessingEngine {
                 context.fail("Error finalizing type visitor [" + loadedVisitor.getVisitor() + "]: " + exceptionMessage(e), null);
             }
         }
+        context.setVisitorKind(TypeElementVisitor.VisitorKind.ISOLATING);
     }
 
     /**
@@ -189,8 +194,21 @@ public final class ScalaProcessingEngine {
             }
         }
         finishBeanElementVisitors(context);
+        writeBeanDefinitionBuilders(context);
         context.finish();
         BeanDefinitionWriter.finish();
+    }
+
+    private void writeBeanDefinitionBuilders(ScalaVisitorContext context) {
+        List<AbstractBeanDefinitionBuilder> builders = context.getBeanElementBuilders();
+        if (builders.isEmpty()) {
+            return;
+        }
+        try {
+            AbstractBeanDefinitionBuilder.writeBeanDefinitionBuilders(context, builders);
+        } catch (IOException e) {
+            context.fail("Unexpected error writing bean definition: " + exceptionMessage(e), null);
+        }
     }
 
     private ScalaVisitorContext visitorContext() {

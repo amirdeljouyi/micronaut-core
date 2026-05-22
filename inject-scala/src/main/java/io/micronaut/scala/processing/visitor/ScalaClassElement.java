@@ -33,6 +33,7 @@ import io.micronaut.inject.ast.PackageElement;
 import io.micronaut.inject.ast.PropertyElement;
 import io.micronaut.inject.ast.PropertyElementQuery;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
+import io.micronaut.inject.ast.beans.BeanElementBuilder;
 import io.micronaut.inject.ast.utils.AstBeanPropertiesUtils;
 import org.jspecify.annotations.Nullable;
 
@@ -194,6 +195,19 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
         }
         return visitorContext.sourceClassElement(classData.enclosingTypeName())
             .map(ClassElement.class::cast);
+    }
+
+    @Override
+    public BeanElementBuilder addAssociatedBean(ClassElement type) {
+        if (classData == null) {
+            throw new UnsupportedOperationException("Element of type [" + getClass() + "] does not support adding associated beans at compilation time");
+        }
+        return new ScalaBeanDefinitionBuilder(
+            this,
+            type,
+            visitorContext.getElementAnnotationMetadataFactory(),
+            visitorContext
+        );
     }
 
     @Override

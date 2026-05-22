@@ -188,11 +188,10 @@ Priority 3 covers visitor-generated beans and build-time behavior:
 - Add `ScalaBeanElementBuilderParitySpec` for visitor-created beans, associated
   factory beans, multiple generated factories, generated methods, and AOP on
   generated beans.
-- Pending `ScalaBeanElementBuilderParitySpec` coverage now documents that
-  associated factory beans, multiple generated factories, generated executable
-  methods, and generated-bean AOP currently stop at
-  `ScalaClassElement.addAssociatedBean(...)`, which reports that Scala elements
-  do not support adding associated beans at compilation time.
+- `ScalaBeanElementBuilderParitySpec` now covers associated factory beans,
+  multiple generated factories with qualifiers and injected parameters,
+  generated executable method metadata, and generated-bean AOP through real
+  Scala originating-element associated bean support.
 - Add visitor-order and postponed-visitor coverage only where Scala's
   compiler-plugin phase model can reproduce the Java/Groovy/Kotlin intent.
 - `ScalaVisitorOrderingSpec` covers Scala `TypeElementVisitor` ordering across
@@ -308,17 +307,19 @@ Work the backlog in this order:
    - Target:
      `ScalaBeanElementBuilderParitySpec`.
    - Pending failures:
-     visitor-created associated beans, associated factory beans, multiple
-     generated factories, generated executable methods, and generated-bean AOP
-     currently stop at `ScalaClassElement.addAssociatedBean(...)`.
+     covered for the current focused parity surface.
    - Implementation direction:
-     add real Scala originating-element support for associated beans rather than
-     bypassing the error in the test. Reuse the shared bean-element-builder
-     contracts so generated factory methods, executable metadata, qualifiers,
-     and AOP binding are produced through the same path as Java/Groovy/Kotlin.
+     Scala source class and method elements now create associated bean builders,
+     the Scala visitor context queues and writes generated builders through
+     `AbstractBeanDefinitionBuilder`, and reflected classpath elements expose
+     constructors, fields, methods, and Scala-loaded return types needed by
+     generated factory methods, executable metadata, qualifiers, and AOP
+     binding.
    - Done when:
-     all pending `ScalaBeanElementBuilderParitySpec` cases pass or any remaining
-     unsupported cases are documented with a narrower, source-backed reason.
+     `ScalaBeanElementBuilderParitySpec` passes without `@PendingFeature`, the
+     disabled catalog marks the covered Java/Groovy bean-builder equivalents as
+     covered, and broader Scala and `test-suite-scala` verification remains
+     green.
 
 For each packet:
 

@@ -20,13 +20,11 @@ import io.micronaut.context.annotation.Primary
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaBeanElementBuilderVisitor
-import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
 class ScalaBeanElementBuilderParitySpec extends AbstractScalaTypeElementSpec {
 
-    @PendingFeature
     void "adds associated factory beans for Scala originating elements"() {
         when:
         def context = ScalaBeanElementBuilderVisitor.withMode(ScalaBeanElementBuilderVisitor.Mode.ASSOCIATED_FACTORY, {
@@ -50,7 +48,6 @@ class FactoryTrigger
         context?.close()
     }
 
-    @PendingFeature
     void "adds multiple generated factory beans with qualifiers"() {
         when:
         def context = ScalaBeanElementBuilderVisitor.withMode(ScalaBeanElementBuilderVisitor.Mode.MULTIPLE_FACTORIES, {
@@ -81,7 +78,6 @@ class MultipleFactoryTrigger
         context?.close()
     }
 
-    @PendingFeature
     void "adds executable method metadata to visitor generated beans"() {
         when:
         def context = ScalaBeanElementBuilderVisitor.withMode(ScalaBeanElementBuilderVisitor.Mode.EXECUTABLE_METHODS, {
@@ -108,7 +104,6 @@ class ScheduledTrigger
         context?.close()
     }
 
-    @PendingFeature
     void "applies #description AOP to visitor generated beans"() {
         when:
         def context = ScalaBeanElementBuilderVisitor.withMode(mode, {
@@ -119,7 +114,7 @@ import io.micronaut.aop.Around
 import io.micronaut.aop.InterceptorBean
 import io.micronaut.aop.MethodInterceptor
 import io.micronaut.aop.MethodInvocationContext
-import io.micronaut.core.type.MutableArgumentValue
+import io.micronaut.core.`type`.MutableArgumentValue
 import io.micronaut.scala.processing.test.ScalaBeanElementBuilderVisitor.AopTarget
 import jakarta.inject.Singleton
 import java.lang.annotation.ElementType

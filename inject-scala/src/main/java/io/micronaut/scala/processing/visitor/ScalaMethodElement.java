@@ -26,6 +26,7 @@ import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MethodElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MutatedMethodElementAnnotationMetadata;
 import io.micronaut.inject.ast.annotation.MutableAnnotationMetadataDelegate;
+import io.micronaut.inject.ast.beans.BeanElementBuilder;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
@@ -192,6 +193,16 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     @Override
     public MethodElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
         return new ScalaMethodElement(declaringType, owningType, methodData, visitorContext, annotationMetadata);
+    }
+
+    @Override
+    public BeanElementBuilder addAssociatedBean(ClassElement type) {
+        return new ScalaBeanDefinitionBuilder(
+            this,
+            type,
+            visitorContext.getElementAnnotationMetadataFactory(),
+            visitorContext
+        );
     }
 
     @Override
