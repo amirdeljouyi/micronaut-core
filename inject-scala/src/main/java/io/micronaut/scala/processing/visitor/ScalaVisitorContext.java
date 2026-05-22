@@ -245,7 +245,7 @@ public final class ScalaVisitorContext implements VisitorContext {
             return Optional.of(sourceElement.get());
         }
         try {
-            return Optional.of(ClassElement.of(Class.forName(name, false, classLoader)));
+            return Optional.of(new ScalaLoadedClassElement(Class.forName(name, false, classLoader), this));
         } catch (ClassNotFoundException e) {
             return Optional.empty();
         }

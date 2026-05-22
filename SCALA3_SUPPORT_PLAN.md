@@ -173,10 +173,11 @@ Priority 2 adds AOP, lifecycle, and executable parity:
   factory methods.
 - Focused P2 parity now covers final-method AOP diagnostics, inherited
   `@PostConstruct`/`@PreDestroy` lifecycle hooks, `@Bean(preDestroy = ...)`
-  factory method hooks, and inherited overloaded `@Executable` trait methods.
-- Around advice on inherited Scala trait default methods, introduction
-  combined with around advice and additional interfaces, and Scala `@Adapter`
-  methods remain tracked as pending feature tests.
+  factory method hooks, inherited overloaded `@Executable` trait methods, and
+  Scala `@Adapter` methods backed by classpath Java SAM interfaces.
+- Around advice on inherited Scala trait default methods and introduction
+  combined with around advice and additional interfaces remain tracked as
+  pending feature tests.
 
 Priority 3 covers visitor-generated beans and build-time behavior:
 
@@ -275,16 +276,19 @@ Work the backlog in this order:
    - Targets:
      `ScalaAopParitySpec` and `ScalaEvaluatedExpressionParitySpec`.
    - Pending failures:
-     around advice on inherited Scala trait default methods, introduction
-     combined with around advice and additional interfaces, and Scala
-     `@Adapter` methods.
+     around advice on inherited Scala trait default methods and introduction
+     combined with around advice and additional interfaces.
    - Implementation direction:
      investigate inherited trait method metadata and generated proxy method
      binding before changing interceptor writers. Field-level expression
      injection is now covered by propagating field-targeted `@Value` metadata
      through the generated setter parameter, with a guard that keeps optional
      value injection optional when the field also carries
-     `@Inject(required = false)`.
+     `@Inject(required = false)`. Scala `@Adapter` methods are covered by
+     erasing Scala class-literal type arguments and exposing reflected
+     classpath Java interface methods through the Scala visitor context, with
+     primitive `void` normalized to `PrimitiveElement.VOID` for generated
+     executable dispatch.
    - Done when:
      each removed pending test has a focused passing run for its spec and the
      existing `ScalaAopParitySpec`, `ScalaEvaluatedExpressionParitySpec`, and

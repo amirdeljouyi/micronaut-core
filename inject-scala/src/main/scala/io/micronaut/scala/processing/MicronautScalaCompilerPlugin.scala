@@ -1521,8 +1521,11 @@ private object ScalaModelExtractor:
     ScalaClassValueData(resolvedName, annotationType)
 
   private def classLiteralTypeName(tpe: Type)(using Context): String =
-    val rawName = typeName(tpe)
-    ScalaPrimitiveNames.getOrElse(rawName, rawName)
+    val rawName = tpe.widenDealias match
+      case applied: AppliedType if typeName(applied.tycon) != "scala.Array" => typeName(applied.tycon)
+      case widened => typeName(widened)
+    val erasedName = renderedClassLiteralValue(rawName).getOrElse(rawName)
+    ScalaPrimitiveNames.getOrElse(erasedName, erasedName)
 
   private def resolveClassLiteralName(name: String, fallback: Symbol)(using Context): String =
     if fallback != Symbols.NoSymbol then
@@ -1558,19 +1561,44 @@ private object ScalaModelExtractor:
         .collectFirst { case Some(resolved) => resolved }
 
   private def renderedClassLiteralValue(rendered: String): Option[String] =
-    val start = rendered.indexOf("classOf")
-    val open = if start > -1 then rendered.indexOf('[', start) else -1
-    val end = if open > -1 then rendered.indexOf(']', open) else -1
+    val sanitized = rendered
+      .replaceAll("\u001B\\[[;\\d]*m", "")
+      .replaceAll("\\[[;\\d]*m", "")
+    val start = sanitized.indexOf("classOf")
+    val open = if start > -1 then sanitized.indexOf('[', start) else -1
+    val end = if open > -1 then matchingBracketIndex(sanitized, open) else -1
     if start > -1 && open > start && end > open then
-      val rawName = rendered.substring(open + 1, end)
+      val rawName = eraseRenderedTypeArguments(sanitized.substring(open + 1, end))
       val name = rawName
-        .replaceAll("\u001B\\[[;\\d]*m", "")
-        .replaceAll("\\[[;\\d]*m", "")
         .replace('/', '.')
         .replaceAll("[^A-Za-z0-9_.$]", "")
       Some(ScalaClassLiteralAliases.getOrElse(name, name))
     else
       None
+
+  private def matchingBracketIndex(value: String, open: Int): Int =
+    var depth = 0
+    var index = open
+    while index < value.length do
+      value.charAt(index) match
+        case '[' => depth += 1
+        case ']' =>
+          depth -= 1
+          if depth == 0 then return index
+        case _ =>
+      index += 1
+    -1
+
+  private def eraseRenderedTypeArguments(value: String): String =
+    val erased = StringBuilder()
+    var depth = 0
+    value.foreach {
+      case '[' => depth += 1
+      case ']' if depth > 0 => depth -= 1
+      case character if depth == 0 => erased.append(character)
+      case _ =>
+    }
+    erased.toString
 
   private def isEnumConstant(symbol: Symbol)(using Context): Boolean =
     symbol != Symbols.NoSymbol &&

@@ -162,10 +162,10 @@ types through source-defined trait type arguments, including nested generics,
 method type variables, and arrays.
 Focused P2 parity now covers final-method AOP diagnostics, inherited
 `@PostConstruct`/`@PreDestroy` lifecycle hooks, `@Bean(preDestroy = ...)`
-factory method hooks, and inherited overloaded `@Executable` trait methods.
-Around advice on inherited Scala trait default methods, introduction combined
-with around advice and additional interfaces, and Scala `@Adapter` methods
-remain pending feature tests.
+factory method hooks, inherited overloaded `@Executable` trait methods, and
+Scala `@Adapter` methods backed by classpath Java SAM interfaces. Around
+advice on inherited Scala trait default methods and introduction combined with
+around advice and additional interfaces remain pending feature tests.
 `ScalaBeanElementBuilderParitySpec` now records pending feature tests for
 visitor-created associated beans, associated factory beans, multiple generated
 factories, generated executable methods, and AOP on generated beans. These
@@ -315,7 +315,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaVisitorContextSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-java/src/test/groovy/io/micronaut/annotation/processing/visitor/JavaVisitorSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-java/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: partially covered by Scala `@Adapter` methods for classpath Java SAM interfaces; broader adapter overload, error, and intercepted-adapter variants remain comparison candidates
 - `inject-java/src/test/groovy/io/micronaut/aop/adapter/intercepted/InterceptedAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/AnnotatedConstructorArgumentSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
@@ -476,7 +476,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 ### Groovy AbstractBeanDefinitionSpec
 
 - `inject-groovy-test/src/main/groovy/io/micronaut/ast/transform/test/AbstractEvaluatedExpressionsSpec.groovy` - candidate: partially covered by focused Scala expression injection and `@Requires` expression parity; direct generated-expression class evaluation and expression type collection remain comparison candidates
-- `inject-groovy/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/adapter/MethodAdapterSpec.groovy` - candidate: partially covered by Scala `@Adapter` methods for classpath Java SAM interfaces; broader adapter overload, error, and intercepted-adapter variants remain comparison candidates
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/aop/compile/ExecutableDefaultMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above

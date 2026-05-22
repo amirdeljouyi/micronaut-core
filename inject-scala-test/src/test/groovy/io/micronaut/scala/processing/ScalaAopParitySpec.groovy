@@ -168,7 +168,6 @@ class FinalService:
         e.message.contains('Method defines AOP advice but is declared final')
     }
 
-    @PendingFeature
     void "supports Scala adapter methods"() {
         when:
         def context = buildContext('''
