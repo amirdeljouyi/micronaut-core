@@ -449,6 +449,48 @@ class EngineFactory:
         context?.close()
     }
 
+    void "creates distinct Scala factory bean definitions for overloaded methods"() {
+        given:
+        def context = buildContext('''
+package factoryparity
+
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import io.micronaut.context.annotation.Requires
+import jakarta.inject.Singleton
+
+class CollisionBean
+
+@Singleton
+class DependencyOne
+
+class DependencyTwo
+
+@Factory
+class CollisionFactory:
+  @Singleton
+  @Requires(beans = Array(classOf[DependencyOne]), missingBeans = Array(classOf[DependencyTwo]))
+  def collision(dependency: DependencyOne): CollisionBean = CollisionBean()
+
+  @Bean
+  @Requires(beans = Array(classOf[DependencyOne], classOf[DependencyTwo]))
+  def collision(dependency: DependencyOne, other: DependencyTwo): CollisionBean = CollisionBean()
+''')
+        def beanType = context.classLoader.loadClass('factoryparity.CollisionBean')
+
+        when:
+        def references = context.beanDefinitionReferences.findAll { it.beanType == beanType }
+
+        then:
+        references*.beanDefinitionName as Set == [
+            'factoryparity.$CollisionFactory$Collision0$Definition',
+            'factoryparity.$CollisionFactory$Collision1$Definition'
+        ] as Set
+
+        cleanup:
+        context?.close()
+    }
+
     void "exposes deep Scala constructor type parameters in bean definitions"() {
         given:
         def definition = buildBeanDefinition('test.Test', '''
