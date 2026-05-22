@@ -128,10 +128,9 @@ source-defined annotation metadata. Focused P0 mutation parity now also covers
 visitor-added annotations on Scala classes, methods, fields, field types,
 properties, and parameters, plus visitor-added repeatables, empty arrays, and
 source-defined stereotypes.
-Visitor-added annotations on Scala return/parameter type `ClassElement`
-wrappers and generic type arguments remain pending because mutation metadata is
-not preserved when those wrapper copies are re-read from the captured Scala
-element.
+Visitor-added annotations on Scala return and parameter type `ClassElement`
+wrappers and generic type arguments are covered by preserving Scala wrapper
+`ClassElement` instances across repeated type and type-argument access.
 `TypeElementQuery` field, method, and constructor inclusion is covered for
 Scala type visitors. Scala `ElementQuery` filtering is covered for inherited
 methods, including abstract/concrete and accessible method selection across

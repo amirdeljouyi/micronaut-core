@@ -21,7 +21,6 @@ import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaAnnotatingVisitor
 import io.micronaut.scala.processing.test.ScalaElementMutationVisitor
 import jakarta.inject.Singleton
-import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
@@ -56,7 +55,6 @@ case class Identifier(value: String)
         input.stringValue(ScalaElementMutationVisitor.ANN, 'target').get() == 'parameter'
     }
 
-    @PendingFeature
     void "visitor mutations preserve Scala return and parameter type annotations"() {
         when:
         def element = ScalaElementMutationVisitor.withMutations({
@@ -76,7 +74,6 @@ class TypeBean:
         input.type.stringValue(ScalaElementMutationVisitor.ANN, 'target').get() == 'parameter-type'
     }
 
-    @PendingFeature
     void "visitor mutations preserve Scala type argument annotations"() {
         when:
         def element = ScalaElementMutationVisitor.withMutations({

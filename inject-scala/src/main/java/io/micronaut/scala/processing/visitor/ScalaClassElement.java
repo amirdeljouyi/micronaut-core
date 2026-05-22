@@ -63,6 +63,7 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
     private final IdentityHashMap<ScalaFieldData, ScalaFieldElement> fieldElements = new IdentityHashMap<>();
     private final IdentityHashMap<ScalaFieldData, ScalaEnumConstantElement> enumConstantElements = new IdentityHashMap<>();
     private final IdentityHashMap<ScalaPropertyData, ScalaPropertyElement> propertyElements = new IdentityHashMap<>();
+    private @Nullable Map<String, ClassElement> typeArgumentElements;
 
     ScalaClassElement(ScalaClassData classData, ScalaVisitorContext visitorContext) {
         this(classData, visitorContext, visitorContext.annotationMetadata(classData));
@@ -197,6 +198,9 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
 
     @Override
     public Map<String, ClassElement> getTypeArguments() {
+        if (typeArgumentElements != null) {
+            return typeArgumentElements;
+        }
         if (classData != null && typeData.typeArguments().isEmpty() && !classData.typeParameters().isEmpty()) {
             Map<String, ClassElement> declaredTypeArguments = new LinkedHashMap<>();
             for (ScalaTypeData typeParameter : classData.typeParameters()) {
@@ -205,9 +209,11 @@ public class ScalaClassElement extends AbstractScalaElement implements Arrayable
                     declaredTypeArguments.put(placeholderElement.getVariableName(), typeParameterElement);
                 }
             }
-            return declaredTypeArguments;
+            typeArgumentElements = declaredTypeArguments;
+        } else {
+            typeArgumentElements = elementFactory.typeArguments(typeData);
         }
-        return elementFactory.typeArguments(typeData);
+        return typeArgumentElements;
     }
 
     @Override

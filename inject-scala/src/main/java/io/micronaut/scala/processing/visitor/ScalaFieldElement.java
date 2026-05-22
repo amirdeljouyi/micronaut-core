@@ -33,6 +33,7 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
     private final ScalaClassElement declaringType;
     private final ScalaVisitorContext visitorContext;
     private final ScalaFieldData fieldData;
+    private @Nullable ClassElement type;
 
     ScalaFieldElement(ScalaClassElement declaringType, ScalaFieldData fieldData, ScalaVisitorContext visitorContext) {
         this(declaringType, fieldData, visitorContext, visitorContext.annotationMetadata(fieldData));
@@ -58,7 +59,10 @@ public final class ScalaFieldElement extends AbstractScalaMemberElement implemen
 
     @Override
     public ClassElement getType() {
-        return visitorContext.getElementFactory().newClassElement(fieldData.type());
+        if (type == null) {
+            type = visitorContext.getElementFactory().newClassElement(fieldData.type());
+        }
+        return type;
     }
 
     @Override

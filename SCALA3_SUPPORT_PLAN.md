@@ -127,9 +127,9 @@ Priority 0 also includes Element API and annotation parity tests:
   including mapper retention and transformer/remapper removal. Repeatable
   outputs from mapping remain a comparison candidate.
 - Visitor-added annotations on Scala return/parameter type `ClassElement`
-  wrappers and generic type arguments remain tracked as pending feature tests
-  because mutation metadata is not preserved when those wrapper copies are
-  re-read from the captured Scala element.
+  wrappers and generic type arguments are covered by preserving Scala wrapper
+  `ClassElement` instances across return-type, parameter-type, field-type, and
+  nested type-argument access.
 
 Priority 1 extends introspection, bean definition, and configuration parity:
 
@@ -224,18 +224,19 @@ on the outcome.
 Work the backlog in this order:
 
 1. **P0 mutation metadata preservation**
+   - Status:
+     covered.
    - Target:
      `ScalaElementMutationParitySpec`.
-   - Pending failures:
+   - Covered cases:
      visitor-added metadata on method return types, parameter type wrappers, and
-     generic type arguments is lost when the wrapper `ClassElement` copies are
-     re-read from the captured Scala element.
-   - Implementation direction:
+     generic type arguments now survives repeated wrapper access.
+   - Implementation note:
      preserve mutable annotation metadata across Scala `ClassElement` copy /
      reconstruction paths for return types, parameter types, field types, and
      type arguments. Prefer fixing wrapper metadata propagation over special
      casing the visitor tests.
-   - Done when:
+   - Done:
      both pending mutation tests pass without `@PendingFeature`, and the broader
      `ScalaElementMutationParitySpec` still proves class, method, field,
      property, parameter, repeatable, empty-array, and stereotype mutations.

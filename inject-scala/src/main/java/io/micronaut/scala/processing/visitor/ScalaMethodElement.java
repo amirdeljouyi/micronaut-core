@@ -47,6 +47,8 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     private ElementAnnotationMetadata methodAnnotationMetadata;
     @Nullable
     private AnnotationMetadata annotationMetadata;
+    @Nullable
+    private ClassElement returnType;
     private ParameterElement[] parameters;
 
     ScalaMethodElement(ScalaClassElement declaringType, ScalaMethodData methodData, ScalaVisitorContext visitorContext) {
@@ -120,7 +122,10 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
 
     @Override
     public ClassElement getReturnType() {
-        return visitorContext.getElementFactory().newClassElement(methodData.returnType());
+        if (returnType == null) {
+            returnType = visitorContext.getElementFactory().newClassElement(methodData.returnType());
+        }
+        return returnType;
     }
 
     @Override

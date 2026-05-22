@@ -21,6 +21,7 @@ import io.micronaut.inject.ast.ClassElement;
 import io.micronaut.inject.ast.ElementModifier;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
 
@@ -32,6 +33,8 @@ public final class ScalaParameterElement extends AbstractScalaElement implements
     private final MethodElement methodElement;
     private final ScalaParameterData parameterData;
     private final ScalaVisitorContext visitorContext;
+    @Nullable
+    private ClassElement type;
 
     ScalaParameterElement(MethodElement methodElement, ScalaParameterData parameterData, ScalaVisitorContext visitorContext) {
         this(methodElement, parameterData, visitorContext, visitorContext.annotationMetadata(parameterData));
@@ -56,7 +59,10 @@ public final class ScalaParameterElement extends AbstractScalaElement implements
 
     @Override
     public ClassElement getType() {
-        return visitorContext.getElementFactory().newClassElement(parameterData.type());
+        if (type == null) {
+            type = visitorContext.getElementFactory().newClassElement(parameterData.type());
+        }
+        return type;
     }
 
     @Override
