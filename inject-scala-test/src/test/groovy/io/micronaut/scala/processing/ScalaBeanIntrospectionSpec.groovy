@@ -324,7 +324,6 @@ class Test(val name: String)
         introspection.getRequiredProperty("name", String).get(introspection.instantiate("Fred")) == "Fred"
     }
 
-    @PendingFeature
     void "writes Scala external class introspection from an introspection target"() {
         when:
         def classLoader = buildClassLoader('test.IntrospectionConfig', '''
@@ -337,7 +336,7 @@ class IntrospectionConfig
 
 class ExternalBook(var title: String, var pages: Int)
 ''')
-        BeanIntrospection introspection = classLoader.loadClass('test.$ExternalBook$Introspection').getDeclaredConstructor().newInstance()
+        BeanIntrospection introspection = classLoader.loadClass('test.$test_ExternalBook$Introspection').getDeclaredConstructor().newInstance()
         def book = introspection.instantiate("Micronaut", 42)
 
         then:

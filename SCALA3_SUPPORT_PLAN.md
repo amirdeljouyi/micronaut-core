@@ -155,9 +155,9 @@ Priority 1 extends introspection, bean definition, and configuration parity:
   nested configuration properties, plus factory-backed configuration property
   binding. Scala introspection include/exclude rules are covered for
   constructor properties, and covariant JavaBean-style properties are covered
-  through shared bean-property resolution.
-- External-class introspection from Scala `@Introspected(classes = ...)`
-  remains tracked as a pending feature test.
+  through shared bean-property resolution. External-class introspection from
+  Scala `@Introspected(classes = ...)` is covered using Micronaut's long
+  external introspection name.
 
 Priority 2 adds AOP, lifecycle, and executable parity:
 
@@ -247,8 +247,7 @@ Work the backlog in this order:
      `ScalaBeanIntrospectionSpec`, `ScalaBeanDefinitionSpec`, and
      `ScalaMicronautFeatureSpec`.
    - Pending failures:
-     external-class introspection from `@Introspected(classes = ...)`, Scala
-     enum constants through `EnumBeanIntrospection`.
+     Scala enum constants through `EnumBeanIntrospection`.
    - Implementation direction:
      `Provider[T]` was resolved by adding the missing
      `JakartaProviderBeanDefinition` infrastructure bean to the lightweight
@@ -257,8 +256,10 @@ Work the backlog in this order:
      binding path to factory-produced beans. Covariant JavaBean-style
      properties were resolved by merging Scala-native properties with
      additional JavaBean accessor properties discovered through
-     `AstBeanPropertiesUtils`; continue with the remaining production-facing
-     gaps.
+     `AstBeanPropertiesUtils`. External-class introspection from
+     `@Introspected(classes = ...)` is covered once the test uses the same
+     long external introspection class name as the Java writer; continue with
+     the remaining production-facing gaps.
      Defer enum constants until it is clear whether the public
      `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
      values without Java `Enum` instances.
