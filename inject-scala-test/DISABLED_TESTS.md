@@ -66,6 +66,9 @@ emitted `valueOf(String)` method, expose enum constructor properties, and
 expose enum constants through `EnumBeanIntrospection` by generating direct
 Scala `valueOf(String)` calls into a Scala-only object-valued enum constant
 reference instead of using runtime reflection or Java `Enum.valueOf(...)`.
+Factory collection methods are covered for Java collection return types and
+Scala immutable collection return types, including singleton Scala collection
+factories producing element beans.
 Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
 idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable.Set`,
@@ -192,10 +195,10 @@ Bean import is documented as unsupported for Scala.
 
 | Source | covered | candidate | unsupported | scala-specific | detailed total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Java AbstractTypeElementSpec | 23 | 160 | 1 | 11 | 195 |
+| Java AbstractTypeElementSpec | 24 | 159 | 1 | 11 | 195 |
 | Groovy AbstractBeanDefinitionSpec | 6 | 70 | 0 | 11 | 87 |
 | Kotlin AbstractKotlinCompilerSpec | 2 | 14 | 0 | 3 | 19 |
-| Total | 31 | 244 | 1 | 25 | 301 |
+| Total | 32 | 243 | 1 | 25 | 301 |
 
 ## Priority Buckets
 
@@ -426,7 +429,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/beanfield/FactoryFieldArraySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/beanmethod/FactoryBeanMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryArraySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryCollectionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/inject/factory/collection/FactoryCollectionSpec.groovy` - covered: Scala factory methods can produce element beans from Java collection returns and Scala immutable collection returns, including singleton Scala collection factories
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/enummethod/FactoryEnumSpec.groovy` - covered: Scala factory methods can return Scala enum beans
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/generics/GenericFactorySpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/inject/factory/inheritance/FactoryAbstractInheritanceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above

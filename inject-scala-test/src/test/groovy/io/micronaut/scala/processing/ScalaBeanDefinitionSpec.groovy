@@ -641,6 +641,142 @@ case class F()
         context?.close()
     }
 
+    void "supports Scala factory methods producing collection elements"() {
+        when:
+        def context = buildContext('''
+package factoryparity
+
+import io.micronaut.context.BeanProvider
+import io.micronaut.context.annotation.Any
+import io.micronaut.context.annotation.Bean
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Qualifier
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Qualifier
+class All extends StaticAnnotation
+
+@Qualifier
+class WishList extends StaticAnnotation
+
+case class Product(name: String)
+
+@Singleton
+class Catalogue(
+  @All val all: java.util.List[Product],
+  @WishList val wishlist: java.util.Set[Product],
+  @WishList val scalaWishlist: scala.collection.immutable.List[Product],
+  @Any val provider: BeanProvider[Product]
+)
+
+@Factory
+class Shop:
+  @Bean
+  @All
+  def getAllProducts(): java.util.List[Product] =
+    java.util.List.of(Product("one"), Product("two"), Product("three"))
+
+  @Bean
+  @WishList
+  def getWishList(): scala.collection.immutable.List[Product] =
+    scala.collection.immutable.List(Product("four"), Product("five"))
+''')
+        def productClass = context.classLoader.loadClass('factoryparity.Product')
+        def shopClass = context.classLoader.loadClass('factoryparity.Shop')
+        def scalaListClass = context.classLoader.loadClass('scala.collection.immutable.List')
+        def catalogue = getBean(context, 'factoryparity.Catalogue')
+
+        then:
+        context.getBeanDefinitions(shopClass).size() == 1
+        context.getBeanDefinitions(shopClass, Qualifiers.byStereotype("factoryparity.WishList")).isEmpty()
+        context.getBeanDefinitions(productClass).size() == 2
+        catalogue.all()*.name() as Set == ['one', 'two', 'three'] as Set
+        catalogue.wishlist()*.name() as Set == ['four', 'five'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(catalogue.scalaWishlist())*.name() as Set == ['four', 'five'] as Set
+        catalogue.provider().stream().count() == 5
+        context.containsBean(productClass)
+
+        when:
+        context.getBean(productClass)
+
+        then:
+        thrown(NonUniqueBeanException)
+
+        when:
+        context.getBean(productClass, Qualifiers.byStereotype("factoryparity.WishList"))
+
+        then:
+        thrown(NonUniqueBeanException)
+
+        when:
+        def allProducts = context.getBean(Argument.listOf(productClass), Qualifiers.byStereotype("factoryparity.All"))
+
+        then:
+        allProducts*.name() as Set == ['one', 'two', 'three'] as Set
+
+        when:
+        def wishlist = context.getBean(Argument.of(scalaListClass, Argument.of(productClass, "A")), Qualifiers.byStereotype("factoryparity.WishList"))
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(wishlist)*.name() as Set == ['four', 'five'] as Set
+
+        cleanup:
+        context?.close()
+    }
+
+    void "supports Scala singleton factory methods producing collection elements"() {
+        when:
+        def context = buildContext('''
+package factoryparity
+
+import io.micronaut.context.BeanProvider
+import io.micronaut.context.annotation.Any
+import io.micronaut.context.annotation.Factory
+import jakarta.inject.Qualifier
+import jakarta.inject.Singleton
+import scala.annotation.StaticAnnotation
+
+@Qualifier
+class WishList extends StaticAnnotation
+
+case class Product(name: String)
+
+@Singleton
+class Catalogue(
+  @WishList val wishlist: java.util.Set[Product],
+  @WishList val scalaWishlist: scala.collection.immutable.List[Product],
+  @Any val provider: BeanProvider[Product]
+)
+
+@Factory
+class Shop:
+  @Singleton
+  @WishList
+  def getWishList(): scala.collection.immutable.List[Product] =
+    scala.collection.immutable.List(Product("four"), Product("five"))
+''')
+        def productClass = context.classLoader.loadClass('factoryparity.Product')
+        def scalaListClass = context.classLoader.loadClass('scala.collection.immutable.List')
+        def catalogue = getBean(context, 'factoryparity.Catalogue')
+
+        then:
+        context.getBeanDefinitions(productClass).size() == 1
+        catalogue.wishlist()*.name() as Set == ['four', 'five'] as Set
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(catalogue.scalaWishlist())*.name() as Set == ['four', 'five'] as Set
+        catalogue.provider().stream().count() == 2
+
+        when:
+        def wishlist = context.getBean(Argument.of(scalaListClass, Argument.of(productClass, "A")), Qualifiers.byStereotype("factoryparity.WishList"))
+
+        then:
+        scala.jdk.javaapi.CollectionConverters.asJavaCollection(wishlist)*.name() as Set == ['four', 'five'] as Set
+        wishlist.is(context.getBean(Argument.of(scalaListClass, Argument.of(productClass, "A")), Qualifiers.byStereotype("factoryparity.WishList")))
+
+        cleanup:
+        context?.close()
+    }
+
     void "exposes deep Scala constructor type parameters in bean definitions"() {
         given:
         def definition = buildBeanDefinition('test.Test', '''

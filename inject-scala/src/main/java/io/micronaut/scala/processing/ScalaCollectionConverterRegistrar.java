@@ -52,6 +52,9 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
         conversionService.addConverter(Collection.class, scala.collection.immutable.List.class, ScalaCollectionConverterRegistrar::toImmutableList);
         conversionService.addConverter(Collection.class, scala.collection.immutable.Vector.class, ScalaCollectionConverterRegistrar::toImmutableVector);
 
+        conversionService.addConverter(scala.collection.Iterable.class, Iterable.class, ScalaCollectionConverterRegistrar::toJavaIterable);
+        conversionService.addConverter(scala.collection.Iterable.class, Collection.class, ScalaCollectionConverterRegistrar::toJavaCollection);
+
         conversionService.addConverter(Map.class, scala.collection.Map.class, ScalaCollectionConverterRegistrar::toScalaMap);
         conversionService.addConverter(Map.class, scala.collection.mutable.Map.class, ScalaCollectionConverterRegistrar::toMutableMap);
         conversionService.addConverter(Map.class, scala.collection.immutable.Map.class, ScalaCollectionConverterRegistrar::toImmutableMap);
@@ -140,6 +143,18 @@ public final class ScalaCollectionConverterRegistrar implements TypeConverterReg
                                                                                  Class<scala.collection.immutable.Vector> targetType,
                                                                                  ConversionContext context) {
         return Optional.of(scala.collection.immutable.Vector.from(toScalaIterableOnce(collection)));
+    }
+
+    private static Optional<Iterable> toJavaIterable(scala.collection.Iterable<?> collection,
+                                                     Class<Iterable> targetType,
+                                                     ConversionContext context) {
+        return Optional.of(CollectionConverters.asJavaCollection(collection));
+    }
+
+    private static Optional<Collection> toJavaCollection(scala.collection.Iterable<?> collection,
+                                                         Class<Collection> targetType,
+                                                         ConversionContext context) {
+        return Optional.of(CollectionConverters.asJavaCollection(collection));
     }
 
     private static Optional<scala.collection.Map> toScalaMap(Map<?, ?> map,

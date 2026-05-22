@@ -450,6 +450,12 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
         "scala.collection.immutable.List",
         "scala.collection.immutable.Vector"
     );
+    private static final Set<String> SCALA_NON_LOADABLE_EXPOSED_TYPES = Set.of(
+        "scala.Any",
+        "scala.AnyVal",
+        "scala.Nothing",
+        "scala.Null"
+    );
     private static final Set<String> SCALA_INJECTABLE_MAP_TYPES = Set.of(
         "scala.collection.Map",
         "scala.collection.mutable.Map",
@@ -2706,7 +2712,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
     private void collectExposedTypes(Set<String> exposedTypeNames, ClassElement element) {
         String className = getClassName(element);
-        if (!exposedTypeNames.add(className) || IGNORED_EXPOSED_INTERFACES.contains(className)) {
+        if (SCALA_NON_LOADABLE_EXPOSED_TYPES.contains(className)
+            || !exposedTypeNames.add(className)
+            || IGNORED_EXPOSED_INTERFACES.contains(className)) {
             return;
         }
         element.getSuperType().ifPresent(superType -> collectExposedTypes(exposedTypeNames, superType));
@@ -3092,6 +3100,15 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
 
     @Override
     public void visitTypeArguments(Map<String, Map<String, ClassElement>> typeArguments) {
+        if (SCALA_INJECTABLE_COLLECTION_TYPES.contains(beanFullClassName) && !typeArguments.containsKey(Iterable.class.getName())) {
+            Map<String, ClassElement> beanTypeArguments = typeArguments.get(beanFullClassName);
+            if (CollectionUtils.isNotEmpty(beanTypeArguments)) {
+                Map<String, Map<String, ClassElement>> mutableTypeArguments = new LinkedHashMap<>(typeArguments);
+                mutableTypeArguments.put(Iterable.class.getName(), beanTypeArguments);
+                this.typeArguments = mutableTypeArguments;
+                return;
+            }
+        }
         this.typeArguments = typeArguments;
     }
 
@@ -4781,7 +4798,9 @@ public final class BeanDefinitionWriter implements ClassOutputWriter, BeanDefini
     }
 
     private boolean isContainerType() {
-        return beanTypeElement.isArray() || DefaultArgument.CONTAINER_TYPES.stream().anyMatch(c -> c.equals(beanFullClassName));
+        return beanTypeElement.isArray()
+            || DefaultArgument.CONTAINER_TYPES.stream().anyMatch(c -> c.equals(beanFullClassName))
+            || SCALA_INJECTABLE_COLLECTION_TYPES.contains(beanFullClassName);
     }
 
     private boolean isConfigurationProperties(AnnotationMetadata annotationMetadata) {
