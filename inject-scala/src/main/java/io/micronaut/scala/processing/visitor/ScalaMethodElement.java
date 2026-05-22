@@ -176,6 +176,11 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
     }
 
     @Override
+    public boolean isDefault() {
+        return !methodData.constructor() && declaringType.isInterface() && !isAbstract();
+    }
+
+    @Override
     public boolean overrides(MethodElement overridden) {
         return false;
     }

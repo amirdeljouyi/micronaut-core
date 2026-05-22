@@ -23,7 +23,6 @@ import spock.lang.PendingFeature
 
 class ScalaAopParitySpec extends AbstractScalaTypeElementSpec {
 
-    @PendingFeature
     void "applies around advice to inherited Scala trait methods"() {
         when:
         def context = buildContext('''

@@ -253,7 +253,7 @@ public class AopProxyWriter extends ProxyingBeanDefinitionWriter {
         this.hotswap = isProxyTarget && settings.get(Interceptor.HOTSWAP).orElse(false);
         this.lazy = isProxyTarget && settings.get(Interceptor.LAZY).orElse(false);
         this.cacheLazyTarget = lazy && settings.get(Interceptor.CACHEABLE_LAZY_TARGET).orElse(false);
-        this.interfaceTypes = Collections.emptySet();
+        this.interfaceTypes = new LinkedHashSet<>();
 
         proxyBuilder = ClassDef.builder(proxyType.getName()).synthetic();
 
@@ -319,7 +319,7 @@ public class AopProxyWriter extends ProxyingBeanDefinitionWriter {
         this.hotswap = false;
         this.lazy = false;
         this.cacheLazyTarget = false;
-        this.interfaceTypes = interfaceTypes != null ? new LinkedHashSet<>(Arrays.asList(interfaceTypes)) : Collections.emptySet();
+        this.interfaceTypes = interfaceTypes != null ? new LinkedHashSet<>(Arrays.asList(interfaceTypes)) : new LinkedHashSet<>();
 
         proxyBuilder = ClassDef.builder(proxyType.getName()).synthetic();
 
@@ -463,12 +463,16 @@ public class AopProxyWriter extends ProxyingBeanDefinitionWriter {
                 // if the target is not being proxied then we need to generate a bridge method and executable method that knows about it
 
                 if (!methodElement.isAbstract() || methodElement.isDefault()) {
+                    ClassElement owningType = methodElement.getOwningType();
+                    if (owningType.isInterface()) {
+                        interfaceTypes.add(owningType);
+                    }
                     interceptedProxyDef = ClassTypeDef.of(proxyType.getName());
                     interceptedProxyBridgeMethod = MethodDef.builder("$$access$$" + methodName)
                         .addModifiers(Modifier.PUBLIC)
                         .addParameters(argumentTypeList.stream().map(p -> ParameterDef.of(p.getName(), TypeDef.erasure(p.getType()))).toList())
                         .returns(TypeDef.erasure(returnType))
-                        .build((aThis, methodParameters) -> aThis.superRef((ClassTypeDef) TypeDef.erasure(methodElement.getOwningType()))
+                        .build((aThis, methodParameters) -> aThis.superRef((ClassTypeDef) TypeDef.erasure(owningType))
                             .invoke(methodElement, methodParameters)
                             .returning()
                         );
@@ -570,11 +574,12 @@ public class AopProxyWriter extends ProxyingBeanDefinitionWriter {
         if (!targetType.isInterface()) {
             proxyBuilder.superclass(classTargetType);
         }
-        List<ClassTypeDef> interfaces = new ArrayList<>();
-        interfaceTypes.stream().map(typedElement -> (ClassTypeDef) TypeDef.erasure(typedElement)).forEach(interfaces::add);
+        Set<ClassTypeDef> interfaceSet = new LinkedHashSet<>();
+        interfaceTypes.stream().map(typedElement -> (ClassTypeDef) TypeDef.erasure(typedElement)).forEach(interfaceSet::add);
         if (targetType.isInterface() && implementInterface) {
-            interfaces.add(classTargetType);
+            interfaceSet.add(classTargetType);
         }
+        List<ClassTypeDef> interfaces = new ArrayList<>(interfaceSet);
         interfaces.sort(Comparator.comparing(ClassTypeDef::getName));
         interfaces.forEach(proxyBuilder::addSuperinterface);
 

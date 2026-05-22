@@ -164,8 +164,11 @@ Focused P2 parity now covers final-method AOP diagnostics, inherited
 `@PostConstruct`/`@PreDestroy` lifecycle hooks, `@Bean(preDestroy = ...)`
 factory method hooks, inherited overloaded `@Executable` trait methods, and
 Scala `@Adapter` methods backed by classpath Java SAM interfaces. Around
-advice on inherited Scala trait default methods and introduction combined with
-around advice and additional interfaces remain pending feature tests.
+advice on inherited Scala trait default methods is covered by modelling
+concrete Scala trait methods as JVM default interface methods and by making
+generated around-proxy bridge classes directly implement the interface they
+invoke with `invokespecial`. Introduction combined with around advice and
+additional interfaces remains a pending feature test.
 `ScalaBeanElementBuilderParitySpec` now records pending feature tests for
 visitor-created associated beans, associated factory beans, multiple generated
 factories, generated executable methods, and AOP on generated beans. These
@@ -319,7 +322,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/aop/adapter/intercepted/InterceptedAdapterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/AbstractClassIntroductionSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/AnnotatedConstructorArgumentSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundCompileSpec.groovy` - candidate: partially covered for around advice on inherited Scala trait default methods; broader around-advice scenarios remain comparison candidates
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/AroundConstructCompileSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/ExecutableFactoryMethodSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/compile/FinalModifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
