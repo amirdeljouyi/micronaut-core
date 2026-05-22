@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 public class ScalaMethodElement extends AbstractScalaMemberElement implements MethodElement {
 
     protected final ScalaClassElement declaringType;
+    private final ClassElement owningType;
     protected final ScalaVisitorContext visitorContext;
     protected final ScalaMethodData methodData;
     @Nullable
@@ -61,6 +62,16 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
         ScalaVisitorContext visitorContext,
         @Nullable
         AnnotationMetadata presetAnnotationMetadata) {
+        this(declaringType, declaringType, methodData, visitorContext, presetAnnotationMetadata);
+    }
+
+    private ScalaMethodElement(
+        ScalaClassElement declaringType,
+        ClassElement owningType,
+        ScalaMethodData methodData,
+        ScalaVisitorContext visitorContext,
+        @Nullable
+        AnnotationMetadata presetAnnotationMetadata) {
         super(
             declaringType,
             methodData.name(),
@@ -70,6 +81,7 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
             visitorContext.getScalaAnnotationMetadataBuilder()
         );
         this.declaringType = declaringType;
+        this.owningType = owningType;
         this.visitorContext = visitorContext;
         this.methodData = methodData;
         this.presetAnnotationMetadata = presetAnnotationMetadata;
@@ -165,19 +177,31 @@ public class ScalaMethodElement extends AbstractScalaMemberElement implements Me
 
     @Override
     public MethodElement withParameters(ParameterElement... newParameters) {
-        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, methodData, visitorContext, getAnnotationMetadata());
+        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, owningType, methodData, visitorContext, getAnnotationMetadata());
         methodElement.replaceParameters(newParameters);
         return methodElement;
     }
 
     @Override
+    public MethodElement withNewOwningType(ClassElement owningType) {
+        ScalaMethodElement methodElement = new ScalaMethodElement(declaringType, owningType, methodData, visitorContext, getAnnotationMetadata());
+        methodElement.replaceParameters(parameters);
+        return methodElement;
+    }
+
+    @Override
     public MethodElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
-        return new ScalaMethodElement(declaringType, methodData, visitorContext, annotationMetadata);
+        return new ScalaMethodElement(declaringType, owningType, methodData, visitorContext, annotationMetadata);
     }
 
     @Override
     public boolean isDefault() {
         return !methodData.constructor() && declaringType.isInterface() && !isAbstract();
+    }
+
+    @Override
+    public ClassElement getOwningType() {
+        return owningType;
     }
 
     @Override

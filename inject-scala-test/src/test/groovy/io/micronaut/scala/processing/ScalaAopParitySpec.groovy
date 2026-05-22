@@ -19,7 +19,6 @@ import io.micronaut.aop.Intercepted
 import io.micronaut.context.event.ApplicationEventListener
 import io.micronaut.context.event.StartupEvent
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
-import spock.lang.PendingFeature
 
 class ScalaAopParitySpec extends AbstractScalaTypeElementSpec {
 
@@ -74,7 +73,6 @@ class DefaultWorker extends Worker
         context?.close()
     }
 
-    @PendingFeature
     void "supports Scala introduction with around advice and additional interfaces"() {
         when:
         def context = buildContext('''

@@ -178,9 +178,10 @@ Priority 2 adds AOP, lifecycle, and executable parity:
   advice on inherited Scala trait default methods is covered by modelling
   concrete Scala trait methods as JVM default interface methods and by making
   generated around-proxy bridge classes directly implement the interface they
-  invoke with `invokespecial`.
-- Introduction combined with around advice and additional interfaces remains
-  tracked as a pending feature test.
+  invoke with `invokespecial`. Introduction combined with around advice and
+  additional interfaces is covered by rebinding source Scala method owning
+  types while preserving their original declaring traits, matching the Java,
+  Groovy, Kotlin, and loaded-Scala method element contract.
 
 Priority 3 covers visitor-generated beans and build-time behavior:
 
@@ -279,18 +280,20 @@ Work the backlog in this order:
    - Targets:
      `ScalaAopParitySpec` and `ScalaEvaluatedExpressionParitySpec`.
    - Pending failures:
-     introduction combined with around advice and additional interfaces.
+     no current P2 `@PendingFeature` coverage remains in these specs.
    - Implementation direction:
      Around advice on inherited Scala trait default methods was resolved by
      marking concrete Scala trait methods as default methods in the Scala
      Element API and by ensuring the generated bridge class directly implements
      the invoked interface, producing a legal `InterfaceMethodref`
-     `invokespecial`. Continue with introduction plus around advice by
-     inspecting the generated proxy interfaces and introduction interceptor
-     binding before changing shared interceptor writers. Field-level expression
-     injection is now covered by propagating field-targeted `@Value` metadata
-     through the generated setter parameter, with a guard that keeps optional
-     value injection optional when the field also carries
+     `invokespecial`. Introduction plus around advice with additional
+     interfaces was resolved by allowing source `ScalaMethodElement` instances
+     to model a different owning type from the declaring type, which lets the
+     shared introduction proxy path process additional-interface methods
+     without changing interceptor writers. Field-level expression injection is
+     covered by propagating field-targeted `@Value` metadata through the
+     generated setter parameter, with a guard that keeps optional value
+     injection optional when the field also carries
      `@Inject(required = false)`. Scala `@Adapter` methods are covered by
      erasing Scala class-literal type arguments and exposing reflected
      classpath Java interface methods through the Scala visitor context, with

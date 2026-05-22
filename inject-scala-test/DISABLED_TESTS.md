@@ -168,7 +168,9 @@ advice on inherited Scala trait default methods is covered by modelling
 concrete Scala trait methods as JVM default interface methods and by making
 generated around-proxy bridge classes directly implement the interface they
 invoke with `invokespecial`. Introduction combined with around advice and
-additional interfaces remains a pending feature test.
+additional interfaces is covered by rebinding source Scala method owning types
+while preserving their original declaring traits, matching the Java, Groovy,
+Kotlin, and loaded-Scala method element contract.
 `ScalaBeanElementBuilderParitySpec` now records pending feature tests for
 visitor-created associated beans, associated factory beans, multiple generated
 factories, generated executable methods, and AOP on generated beans. These
@@ -350,7 +352,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/beans/IntroducedBeanVisitorSpec.groovy` - covered: Scala inherited introduction methods with generic return types, generic publisher parameters, resolved generic parameters, and `@InterceptorBean` bindings are covered by `ScalaIntroducedBeanVisitorSpec`
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/repeatable/IntroducedWithRepeatableAnnotationSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-java/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - candidate: partially covered for Scala introduction combined with around advice and additional interfaces; broader concrete-class scenarios remain comparison candidates
 - `inject-java/src/test/groovy/io/micronaut/aop/named2/NamedAopAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-java/src/test/groovy/io/micronaut/core/io/service/ServiceLoaderFeatureSpec.groovy` - covered: Scala evaluated expressions on bean definitions and executable methods are registered for Graal build-time initialization
 - `inject-java/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
@@ -495,7 +497,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/InterfaceIntroductionAdviceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/IntroductionAdviceWithNewInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionInnerInterfaceSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
-- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
+- `inject-groovy/src/test/groovy/io/micronaut/aop/introduction/with_around/IntroductionWithAroundOnConcreteClassSpec.groovy` - candidate: partially covered for Scala introduction combined with around advice and additional interfaces; broader concrete-class scenarios remain comparison candidates
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/annotation/GroovyAnnotationMetadataBuilderSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyBeanPropertiesSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyDocumentationSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
