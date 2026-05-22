@@ -260,9 +260,12 @@ Work the backlog in this order:
      `@Introspected(classes = ...)` is covered once the test uses the same
      long external introspection class name as the Java writer; continue with
      the remaining production-facing gaps.
-     Defer enum constants until it is clear whether the public
+     Keep enum constants pending until the public
      `EnumBeanIntrospection.EnumConstant` contract can represent Scala enum
-     values without Java `Enum` instances.
+     values without Java `Enum` instances. Reproducing the pending test shows
+     that Scala already generates `EnumConstantDynamicRef` entries, but
+     `getValue()` delegates to `Enum.valueOf(...)` and fails because Scala enum
+     classes are not Java enum classes.
    - Done when:
      at least one pending test is removed per commit, the disabled catalog is
      reclassified, and no broader bean-definition or introspection regression

@@ -64,7 +64,9 @@ Executable route methods inherited from source-defined Scala traits are covered.
 Scala enum bean introspection can instantiate enum values through Scala's
 emitted `valueOf(String)` method and expose enum constructor properties. Scala
 enum constants remain tracked as a pending parity test because
-`EnumBeanIntrospection.EnumConstant#getValue()` is currently Java-enum-bound.
+`EnumBeanIntrospection.EnumConstant#getValue()` is currently Java-enum-bound:
+the generated `EnumConstantDynamicRef` entries call `Enum.valueOf(...)`, which
+fails because Scala enum classes are not Java enum classes.
 Scala collection injection is covered for constructor, method, and field
 injection with common immutable and base collection types such as
 idiomatic `List`, `scala.collection.immutable.List`, `scala.collection.immutable.Set`,
