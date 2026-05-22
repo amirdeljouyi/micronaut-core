@@ -196,11 +196,11 @@ Priority 3 covers visitor-generated beans and build-time behavior:
 - Add evaluated-expression parity for `@Requires` expressions,
   context/property/environment expressions, expression injection, and
   annotation-level expressions.
-- Focused evaluated-expression parity now covers constructor, method, and
-  factory `@Value` expression injection, evaluated `@Requires` env/property
-  values, and context-value `@Requires` expressions. Field-level Scala
-  `@Value` expression injection remains a pending test because field-targeted
-  metadata is not propagated to the generated setter injection point.
+- Focused evaluated-expression parity now covers constructor, method, factory,
+  and field-level `@Value` expression injection, evaluated `@Requires`
+  env/property values, and context-value `@Requires` expressions. Field-targeted
+  `@Value` metadata is propagated to the generated Scala setter parameter while
+  preserving optional `@Inject(required = false)` value-injection behavior.
 
 Iteration rules:
 
@@ -276,14 +276,15 @@ Work the backlog in this order:
      `ScalaAopParitySpec` and `ScalaEvaluatedExpressionParitySpec`.
    - Pending failures:
      around advice on inherited Scala trait default methods, introduction
-     combined with around advice and additional interfaces, Scala `@Adapter`
-     methods, and field-level evaluated `@Value` expression injection.
+     combined with around advice and additional interfaces, and Scala
+     `@Adapter` methods.
    - Implementation direction:
      investigate inherited trait method metadata and generated proxy method
-     binding before changing interceptor writers. For field-level expression
-     injection, preserve field-targeted `@Value` metadata through the generated
-     setter injection point so Scala `var` injection matches the existing field
-     injection behavior.
+     binding before changing interceptor writers. Field-level expression
+     injection is now covered by propagating field-targeted `@Value` metadata
+     through the generated setter parameter, with a guard that keeps optional
+     value injection optional when the field also carries
+     `@Inject(required = false)`.
    - Done when:
      each removed pending test has a focused passing run for its spec and the
      existing `ScalaAopParitySpec`, `ScalaEvaluatedExpressionParitySpec`, and

@@ -238,10 +238,12 @@ public final class ScalaPropertyElement extends AbstractScalaMemberElement imple
         if (qualifierValues.isEmpty()) {
             return AnnotationMetadata.EMPTY_METADATA;
         }
+        boolean optionalInjection = !annotationMetadata.booleanValue(AnnotationUtil.INJECT, AnnotationUtil.MEMBER_REQUIRED)
+            .orElse(true);
         MutableAnnotationMetadata qualifierMetadata = new MutableAnnotationMetadata();
         for (AnnotationValue<Annotation> qualifierValue : qualifierValues) {
             String annotationName = qualifierValue.getAnnotationName();
-            if (VALUE_ANNOTATION.equals(annotationName)) {
+            if (optionalInjection && VALUE_ANNOTATION.equals(annotationName)) {
                 continue;
             }
             qualifierMetadata.addDeclaredAnnotation(annotationName, qualifierValue.getValues(), qualifierValue.getRetentionPolicy());

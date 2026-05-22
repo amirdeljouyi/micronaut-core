@@ -18,7 +18,6 @@ package io.micronaut.scala.processing
 import io.micronaut.context.exceptions.NoSuchBeanException
 import io.micronaut.scala.processing.test.AbstractScalaTypeElementSpec
 import io.micronaut.scala.processing.test.ScalaExpressionContextRegistrar
-import spock.lang.PendingFeature
 
 import java.util.function.Supplier
 
@@ -48,7 +47,6 @@ class Expr(
         context?.close()
     }
 
-    @PendingFeature
     void "supports evaluated expression field injection"() {
         when:
         def context = buildContext('''

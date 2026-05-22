@@ -3,7 +3,7 @@
 This file tracks parity source tests and Scala 3 adapter coverage status.
 It was generated from the current checkout by scanning direct subclasses of Java `AbstractTypeElementSpec`, Groovy `AbstractBeanDefinitionSpec`, and Kotlin `AbstractKotlinCompilerSpec`.
 
-Last refreshed: 2026-05-21.
+Last refreshed: 2026-05-22.
 
 The current grounding pass counted Java `194` specs / `1065` features,
 Groovy `86` specs / `473` features, Kotlin `19` specs / `194` features, and
@@ -45,12 +45,12 @@ Scala. Dynamic `RuntimeBeanDefinition` registration from Scala source is
 covered. Qualifier metadata on field-targeted Scala `var` injection is covered
 for property setter injection. Evaluated expressions on Scala bean definitions
 and executable methods are covered for Graal build-time initialization.
-Focused P3 expression parity now covers constructor, method, and factory
-`@Value` expression injection, `@Requires` env/property expression values, and
-context-value `@Requires` expressions through a test expression-context
-registrar. Field-level Scala `@Value` expression injection remains pending
-because field-targeted `@Value` metadata is not propagated to the generated
-Scala setter injection point. Constructor-copy
+Focused P3 expression parity now covers constructor, method, factory, and
+field-level `@Value` expression injection, `@Requires` env/property expression
+values, and context-value `@Requires` expressions through a test
+expression-context registrar. Field-targeted Scala `@Value` metadata is
+propagated to the generated setter parameter while preserving optional
+`@Inject(required = false)` value-injection behavior. Constructor-copy
 introspection through an abstract Scala superclass is covered. Bean-introspection
 constructor argument generics, generic array property/method return types, and
 deep property type-use annotation metadata are covered; superclass introspection
@@ -259,8 +259,8 @@ Bean import is documented as unsupported for Scala.
 - Add evaluated-expression parity for `@Requires` expressions,
   context/property/environment expressions, expression injection, and
   annotation-level expressions. Constructor, method, and factory expression
-  injection plus `@Requires` env/property/context expressions are now covered;
-  field expression injection remains a pending Scala setter metadata gap.
+  injection, field expression injection, and `@Requires` env/property/context
+  expressions are now covered.
 
 ## First Candidate Ports
 
@@ -499,7 +499,7 @@ Start with small tests that exercise already-supported Scala forms before the br
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyEnclosedElementsSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyEnumElementSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
 - `inject-groovy/src/test/groovy/io/micronaut/ast/groovy/visitor/GroovyReconstructionSpec.groovy` - scala-specific: language-specific Java/Groovy/Kotlin syntax or compiler behavior; replace with Scala-native coverage when relevant
-- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsInjectionSpec.groovy` - candidate: partially covered by Scala constructor, method, and factory `@Value` expression injection; field expression injection is pending because field-targeted `@Value` metadata is not propagated to the Scala setter injection point
+- `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsInjectionSpec.groovy` - candidate: partially covered by Scala constructor, method, factory, and field `@Value` expression injection; broader expression shapes such as static calls and factory context-value injection remain comparison candidates
 - `inject-groovy/src/test/groovy/io/micronaut/expressions/TestExpressionsUsageSpec.groovy` - covered: Scala covers evaluated `@Requires` env/property values, context-value expressions, and disabled bean behavior
 - `inject-groovy/src/test/groovy/io/micronaut/inject/aliasfor/AliasForQualifierSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
 - `inject-groovy/src/test/groovy/io/micronaut/inject/annotation/AnnotationMetadataWriterSpec.groovy` - candidate: not yet covered; prioritize by the gap buckets above
