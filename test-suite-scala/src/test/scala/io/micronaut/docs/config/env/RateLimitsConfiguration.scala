@@ -17,15 +17,17 @@ package io.micronaut.docs.config.env
 
 // tag::clazz[]
 import io.micronaut.context.annotation.EachProperty
+import io.micronaut.context.annotation.ConfigurationInject
 import io.micronaut.context.annotation.Parameter
 import io.micronaut.core.order.Ordered
 
 import java.time.Duration
 
 @EachProperty(value = "ratelimits", list = true) // <1>
-class RateLimitsConfiguration(@Parameter private val index: Int) extends Ordered: // <2> <3>
-  var period: Duration = Duration.ZERO
-  var limit: Int = 0
-
+case class RateLimitsConfiguration @ConfigurationInject() (
+    @Parameter private val index: Int, // <2> <3>
+    period: Duration,
+    limit: Int
+) extends Ordered:
   override def getOrder: Int = index
 // end::clazz[]

@@ -16,6 +16,7 @@
 package io.micronaut.docs.lifecycle
 
 import io.micronaut.context.ApplicationContext
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -35,3 +36,21 @@ class VehicleSpec:
       assertTrue(vehicle.engine.asInstanceOf[V8Engine].isInitialized)
     finally
       context.close()
+
+  @Test
+  def testPreDestroyBean(): Unit =
+    val context = ApplicationContext.run()
+    val bean = context.getBean(classOf[PreDestroyBean])
+    assertFalse(bean.stopped.get())
+
+    context.close()
+    assertTrue(bean.stopped.get())
+
+  @Test
+  def testConnectionPreDestroyMethod(): Unit =
+    val context = ApplicationContext.run()
+    val connection = context.getBean(classOf[Connection])
+    assertFalse(connection.stopped.get())
+
+    context.close()
+    assertTrue(connection.stopped.get())

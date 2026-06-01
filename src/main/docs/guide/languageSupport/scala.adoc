@@ -70,9 +70,9 @@ snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="dto",langua
 
 snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="configuration",language="scala",indent=0]
 
-Use a mutable class only when the feature requires mutable JavaBean-style properties. When a Java annotation must be placed on the emitted field rather than only on the Scala accessor, use Scala annotation target syntax:
+Validation and binding annotations can be applied directly to constructor parameters in constructor-bound configuration case classes:
 
-snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="mutableConfiguration",language="scala",indent=0]
+snippet::io.micronaut.docs.language.scalasupport.ScalaFeatures[tags="validatedConfiguration",language="scala",indent=0]
 
 == Additional Scala Notes
 

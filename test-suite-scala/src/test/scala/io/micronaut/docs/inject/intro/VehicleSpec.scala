@@ -23,9 +23,11 @@ class VehicleSpec:
 
   @Test
   def testStartVehicle(): Unit =
+    // tag::start[]
     val context = ApplicationContext.run()
     try
       val vehicle = context.getBean(classOf[Vehicle])
       assertEquals("Starting V8", vehicle.start())
     finally
       context.close()
+    // end::start[]

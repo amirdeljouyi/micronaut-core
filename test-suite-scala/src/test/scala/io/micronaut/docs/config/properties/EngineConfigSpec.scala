@@ -16,7 +16,7 @@
 package io.micronaut.docs.config.properties
 
 import io.micronaut.context.ApplicationContext
-import io.micronaut.context.exceptions.BeanInstantiationException
+import io.micronaut.context.exceptions.DependencyInjectionException
 import io.micronaut.inject.ValidatedBeanDefinition
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -28,17 +28,18 @@ import scala.jdk.CollectionConverters.*
 class EngineConfigSpec:
 
   @Test
-  def bindsMutableConfigurationProperties(): Unit =
+  def bindsConstructorBoundConfigurationProperties(): Unit =
     val context = ApplicationContext.run(
       Map[String, Object](
-        "engine.cylinders" -> Integer.valueOf(8),
-        "engine.manufacturer" -> "Ford"
+        "my.engine.cylinders" -> Integer.valueOf(8),
+        "my.engine.crank-shaft.rod-length" -> java.lang.Double.valueOf(6.0d)
       ).asJava
     )
     try
       val config = context.getBean(classOf[EngineConfig])
       assertEquals(8, config.cylinders)
       assertEquals("Ford", config.manufacturer)
+      assertEquals(java.lang.Double.valueOf(6.0d), config.crankShaft.rodLength)
     finally
       context.close()
 
@@ -76,20 +77,27 @@ class EngineConfigSpec:
       context.close()
 
   @Test
-  def validatesMutableConfigurationProperties(): Unit =
+  def validatesConstructorBoundConfigurationProperties(): Unit =
     val context = ApplicationContext.run(
       Map[String, Object](
-        "engine.cylinders" -> Integer.valueOf(0),
-        "engine.manufacturer" -> "Ford"
+        "my.engine.cylinders" -> Integer.valueOf(0),
+        "my.engine.manufacturer" -> "Ford",
+        "my.engine.crank-shaft.rod-length" -> java.lang.Double.valueOf(6.0d)
       ).asJava
     )
     try
       val definition = context.getBeanDefinition(classOf[EngineConfig])
       assertTrue(definition.isInstanceOf[ValidatedBeanDefinition[?]])
       val error = assertThrows(
-        classOf[BeanInstantiationException],
+        classOf[DependencyInjectionException],
         () => context.getBean(classOf[EngineConfig])
       )
-      assertTrue(error.getMessage.contains("must be greater than or equal to 1"))
+      assertTrue(hasMessage(error, "must be greater than or equal to 1"))
     finally
       context.close()
+
+  private def hasMessage(error: Throwable, text: String): Boolean =
+    Iterator
+      .iterate(error)(_.getCause)
+      .takeWhile(_ != null)
+      .exists(_.getMessage.contains(text))

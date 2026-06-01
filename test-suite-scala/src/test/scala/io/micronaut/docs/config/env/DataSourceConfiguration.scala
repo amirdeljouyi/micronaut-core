@@ -18,10 +18,13 @@ package io.micronaut.docs.config.env
 // tag::eachProperty[]
 import io.micronaut.context.annotation.EachProperty
 import io.micronaut.context.annotation.Parameter
+import io.micronaut.core.bind.annotation.Bindable
 
 import java.net.URI
 
 @EachProperty("test.datasource") // <1>
-class DataSourceConfiguration(@Parameter val name: String): // <2>
-  var url: URI = URI.create("localhost") // <3>
+case class DataSourceConfiguration(
+    @Parameter name: String, // <2>
+    @Bindable(defaultValue = "localhost") url: URI // <3>
+)
 // end::eachProperty[]

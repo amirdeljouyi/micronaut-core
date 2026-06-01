@@ -63,6 +63,15 @@ class IssuesControllerTest:
     }
 
   @Test
+  def testProgrammaticRoute(): Unit =
+    withClient { client =>
+      val body = client.toBlocking.retrieve("/issues/show/14")
+
+      assertNotNull(body)
+      assertEquals("Issue # 14!", body)
+    }
+
+  @Test
   def testShowWithInvalidInteger(): Unit =
     withClient { client =>
       val e = assertThrows(

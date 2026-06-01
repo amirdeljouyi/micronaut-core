@@ -20,8 +20,6 @@ import io.micronaut.context.annotation.Requires
 import io.micronaut.core.annotation.Introspected
 import jakarta.inject.Singleton
 import jakarta.validation.constraints.NotBlank
-import scala.annotation.meta.field
-import scala.compiletime.uninitialized
 
 // tag::dto[]
 @Introspected
@@ -37,12 +35,12 @@ case class ReaderConfig(
 )
 // end::configuration[]
 
-// tag::mutableConfiguration[]
-@ConfigurationProperties("mutable.reader")
-class MutableReaderConfig:
-  @(NotBlank @field)
-  var name: String = uninitialized
-// end::mutableConfiguration[]
+// tag::validatedConfiguration[]
+@ConfigurationProperties("validated.reader")
+case class ValidatedReaderConfig(
+    @NotBlank name: String
+)
+// end::validatedConfiguration[]
 
 trait Engine
 

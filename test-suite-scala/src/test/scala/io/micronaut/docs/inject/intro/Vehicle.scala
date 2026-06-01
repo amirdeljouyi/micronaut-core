@@ -17,6 +17,8 @@ package io.micronaut.docs.inject.intro
 
 import jakarta.inject.Singleton
 
+// tag::class[]
 @Singleton
 class Vehicle(private val engine: Engine):
   def start(): String = engine.start()
+// end::class[]

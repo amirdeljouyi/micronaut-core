@@ -16,12 +16,46 @@
 package io.micronaut.docs.basics
 
 import io.micronaut.context.annotation.Requires
+// tag::imports[]
+import io.micronaut.core.async.annotation.SingleResult
+import io.micronaut.http.HttpRequest.GET
+import io.micronaut.http.HttpStatus.CREATED
+import io.micronaut.http.MediaType.TEXT_PLAIN
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.Post
+import io.micronaut.http.annotation.Status
+import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
+import org.reactivestreams.Publisher
+import reactor.core.publisher.Mono
+// end::imports[]
 
 @Requires(property = "spec.name", value = "HelloControllerSpec")
-@Controller("/hello")
-class HelloController:
+@Controller("/")
+class HelloController(@Client("/endpoint") httpClient: HttpClient):
 
-  @Get("/{name}")
-  def hello(name: String): String = s"Hello $name"
+  // tag::nonblocking[]
+  @Get("/hello/{name}")
+  @SingleResult
+  def hello(name: String): Publisher[String] = // <1>
+    Mono.from(httpClient.retrieve(GET(s"/hello/$name"))) // <2>
+  // end::nonblocking[]
+
+  @Get("/endpoint/hello/{name}")
+  def helloEndpoint(name: String): String = s"Hello $name"
+
+  // tag::json[]
+  @Get("/greet/{name}")
+  def greet(name: String): Message =
+    Message(s"Hello $name")
+  // end::json[]
+
+  @Post("/greet")
+  @Status(CREATED)
+  def echo(@Body message: Message): Message = message
+
+  @Post(value = "/hello", consumes = Array(TEXT_PLAIN), produces = Array(TEXT_PLAIN))
+  @Status(CREATED)
+  def echoHello(@Body message: String): String = message

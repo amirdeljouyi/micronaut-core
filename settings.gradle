@@ -1,5 +1,30 @@
 pluginManagement {
+    def micronautBuildCheckout = providers.gradleProperty("micronautBuildCheckout")
+            .orElse(providers.environmentVariable("MICRONAUT_BUILD_CHECKOUT"))
+            .map { file(it) }
+            .getOrElse(file("../build"))
+    def micronautBuildPluginVersionOverride = providers.gradleProperty("micronautBuildPluginVersion")
+            .orElse(providers.environmentVariable("MICRONAUT_BUILD_PLUGIN_VERSION"))
+            .getOrElse("")
+
+    def useLocalMicronautBuild = file("${micronautBuildCheckout}/micronaut-gradle-plugins").directory
+
+    if (useLocalMicronautBuild) {
+        includeBuild(micronautBuildCheckout)
+    }
+
+    resolutionStrategy {
+        eachPlugin {
+            if (micronautBuildPluginVersionOverride && requested.id.id == 'io.micronaut.build.shared.settings') {
+                useModule("io.micronaut.build.internal:micronaut-gradle-plugins:${micronautBuildPluginVersionOverride}")
+            }
+        }
+    }
+
     repositories {
+        if (micronautBuildPluginVersionOverride) {
+            mavenLocal()
+        }
         gradlePluginPortal()
         mavenCentral()
     }

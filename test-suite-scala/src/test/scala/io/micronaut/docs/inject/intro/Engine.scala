@@ -15,5 +15,7 @@
  */
 package io.micronaut.docs.inject.intro
 
+// tag::class[]
 trait Engine:
   def start(): String
+// end::class[]

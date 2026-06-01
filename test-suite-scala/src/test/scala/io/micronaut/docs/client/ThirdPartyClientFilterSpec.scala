@@ -17,13 +17,22 @@ package io.micronaut.docs.client
 
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.annotation.Requires
+import io.micronaut.context.annotation.Value
+import io.micronaut.http.HttpRequest
+import io.micronaut.http.HttpResponse
+import io.micronaut.http.MutableHttpRequest
+import io.micronaut.http.annotation.ClientFilter
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Header
+import io.micronaut.http.annotation.RequestFilter
 import io.micronaut.http.client.HttpClient
+import io.micronaut.http.client.annotation.Client
 import io.micronaut.runtime.server.EmbeddedServer
+import jakarta.inject.Singleton
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import reactor.core.publisher.Flux
 
 import java.util.Base64
 import scala.jdk.CollectionConverters.*
@@ -67,3 +76,40 @@ class HeaderController:
   @Get("/grails")
   def echoAuthorization(@Header authorization: String): String =
     authorization
+
+/*
+// tag::bintrayApiConstants[]
+object BintrayApi:
+  final val URL = "https://api.bintray.com"
+// end::bintrayApiConstants[]
+*/
+
+object BintrayApi:
+  inline val URL = "/"
+
+// tag::bintrayService[]
+@Singleton
+class BintrayService(
+    @Client(BintrayApi.URL) client: HttpClient, // <1>
+    @Value("${bintray.organization}") org: String
+):
+
+  def fetchRepositories(): Flux[HttpResponse[String]] =
+    Flux.from(client.exchange(HttpRequest.GET[AnyRef](s"/repos/$org"), classOf[String])) // <2>
+
+  def fetchPackages(repo: String): Flux[HttpResponse[String]] =
+    Flux.from(client.exchange(HttpRequest.GET[AnyRef](s"/repos/$org/$repo/packages"), classOf[String])) // <2>
+// end::bintrayService[]
+
+@Requires(property = "spec.name", value = "ThirdPartyClientFilterSpec")
+// tag::bintrayFilter[]
+@ClientFilter(Array("/repos/**")) // <1>
+class BintrayFilter(
+    @Value("${bintray.username}") username: String, // <2>
+    @Value("${bintray.token}") token: String // <2>
+):
+
+  @RequestFilter
+  def filter(request: MutableHttpRequest[AnyRef]): Unit =
+    request.basicAuth(username, token) // <3>
+// end::bintrayFilter[]

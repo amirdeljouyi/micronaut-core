@@ -17,6 +17,8 @@ package io.micronaut.docs.inject.intro
 
 import jakarta.inject.Singleton
 
+// tag::class[]
 @Singleton
 class V8Engine extends Engine:
   override def start(): String = "Starting V8"
+// end::class[]

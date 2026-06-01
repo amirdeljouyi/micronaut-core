@@ -23,6 +23,8 @@ dependencies {
     api(projects.micronautCoreProcessor)
     api(libs.managed.scala3.library)
 
+    implementation(mnSourcegen.asm)
+
     compileOnly(libs.managed.scala3.compiler)
 
     testImplementation(projects.micronautContext)

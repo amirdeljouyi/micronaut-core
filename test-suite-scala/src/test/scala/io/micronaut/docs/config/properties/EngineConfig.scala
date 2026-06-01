@@ -15,19 +15,28 @@
  */
 package io.micronaut.docs.config.properties
 
+// tag::imports[]
 import io.micronaut.context.annotation.ConfigurationProperties
+import io.micronaut.core.bind.annotation.Bindable
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
-import scala.annotation.meta.field
-import scala.compiletime.uninitialized
+import org.jspecify.annotations.Nullable
+// end::imports[]
 
-@ConfigurationProperties("engine")
-class EngineConfig:
-  @(Min @field)(value = 1L)
-  var cylinders: Int = 0
+// tag::class[]
+@ConfigurationProperties("my.engine") // <1>
+case class EngineConfig(
+    @Bindable(defaultValue = "Ford") @NotBlank manufacturer: String, // <2> <3>
+    @Min(1L) cylinders: Int,
+    crankShaft: EngineConfig.CrankShaft // <4>
+)
 
-  @(NotBlank @field)
-  var manufacturer: String = uninitialized
+object EngineConfig:
+  @ConfigurationProperties("crank-shaft")
+  case class CrankShaft(
+      @Nullable rodLength: java.lang.Double | Null // <5>
+  )
+// end::class[]
 
 @ConfigurationProperties("immutable.engine")
 case class ImmutableEngineConfig(

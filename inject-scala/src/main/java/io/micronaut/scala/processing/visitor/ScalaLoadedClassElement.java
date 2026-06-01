@@ -15,6 +15,7 @@
  */
 package io.micronaut.scala.processing.visitor;
 
+import io.micronaut.context.annotation.BeanProperties;
 import io.micronaut.core.annotation.AnnotationMetadata;
 import io.micronaut.inject.annotation.MutableAnnotationMetadata;
 import io.micronaut.inject.ast.ArrayableClassElement;
@@ -29,20 +30,30 @@ import io.micronaut.inject.ast.MemberElement;
 import io.micronaut.inject.ast.MethodElement;
 import io.micronaut.inject.ast.ParameterElement;
 import io.micronaut.inject.ast.PrimitiveElement;
+import io.micronaut.inject.ast.PropertyElement;
+import io.micronaut.inject.ast.PropertyElementQuery;
 import io.micronaut.inject.ast.TypedElement;
+import io.micronaut.inject.ast.annotation.ElementAnnotationMetadata;
+import io.micronaut.inject.ast.annotation.PropertyElementAnnotationMetadata;
+import io.micronaut.inject.ast.utils.AstBeanPropertiesUtils;
 import org.jspecify.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -60,12 +71,17 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
     private final Class<?> type;
     private final Class<?> componentType;
     private final ScalaVisitorContext visitorContext;
+    private final Map<String, ClassElement> typeArguments;
 
     ScalaLoadedClassElement(Class<?> type, ScalaVisitorContext visitorContext) {
-        this(type, visitorContext, AnnotationMetadata.EMPTY_METADATA);
+        this(type, visitorContext, ClasspathAnnotationMetadataReader.classMetadata(componentType(type)), Map.of());
     }
 
-    private ScalaLoadedClassElement(Class<?> type, ScalaVisitorContext visitorContext, AnnotationMetadata annotationMetadata) {
+    private ScalaLoadedClassElement(
+        Class<?> type,
+        ScalaVisitorContext visitorContext,
+        AnnotationMetadata annotationMetadata,
+        Map<String, ClassElement> typeArguments) {
         super(
             componentType(type).getName(),
             type,
@@ -76,6 +92,7 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
         this.type = type;
         this.componentType = componentType(type);
         this.visitorContext = visitorContext;
+        this.typeArguments = Map.copyOf(typeArguments);
     }
 
     @Override
@@ -144,6 +161,9 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
 
     @Override
     public Map<String, ClassElement> getTypeArguments() {
+        if (!typeArguments.isEmpty()) {
+            return typeArguments;
+        }
         Type[] typeParameters = componentType.getTypeParameters();
         if (typeParameters.length == 0) {
             return Map.of();
@@ -212,34 +232,79 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
     }
 
     @Override
+    public List<PropertyElement> getBeanProperties() {
+        return getBeanProperties(PropertyElementQuery.of(getAnnotationMetadata()));
+    }
+
+    @Override
+    public List<PropertyElement> getBeanProperties(PropertyElementQuery propertyElementQuery) {
+        return AstBeanPropertiesUtils.resolveBeanProperties(
+            propertyElementQuery,
+            this,
+            () -> getEnclosedElements(ElementQuery.ALL_METHODS),
+            () -> getEnclosedElements(ElementQuery.ALL_FIELDS),
+            false,
+            Collections.emptySet(),
+            methodElement -> Optional.empty(),
+            methodElement -> Optional.empty(),
+            this::mapBeanPropertyElement
+        );
+    }
+
+    private @Nullable PropertyElement mapBeanPropertyElement(AstBeanPropertiesUtils.BeanPropertyData value) {
+        if (value.isExcluded) {
+            return null;
+        }
+        return new LoadedPropertyElement(
+            this,
+            value.type,
+            value.propertyName,
+            value.getter,
+            value.setter,
+            value.field,
+            accessKind(value.readAccessKind),
+            accessKind(value.writeAccessKind),
+            false,
+            visitorContext
+        );
+    }
+
+    private static PropertyElement.AccessKind accessKind(BeanProperties.AccessKind accessKind) {
+        if (accessKind == BeanProperties.AccessKind.FIELD) {
+            return PropertyElement.AccessKind.FIELD;
+        }
+        return PropertyElement.AccessKind.METHOD;
+    }
+
+    @Override
     public ClassElement withArrayDimensions(int arrayDimensions) {
         if (arrayDimensions == getArrayDimensions()) {
             return this;
         }
         if (arrayDimensions == 0) {
-            return new ScalaLoadedClassElement(componentType, visitorContext, getAnnotationMetadata());
+            return new ScalaLoadedClassElement(componentType, visitorContext, getAnnotationMetadata(), typeArguments);
         }
         int[] dimensions = new int[arrayDimensions];
         Class<?> arrayType = Array.newInstance(componentType, dimensions).getClass();
-        return new ScalaLoadedClassElement(arrayType, visitorContext, getAnnotationMetadata());
+        return new ScalaLoadedClassElement(arrayType, visitorContext, getAnnotationMetadata(), typeArguments);
     }
 
     @Override
     public ClassElement withTypeArguments(Map<String, ClassElement> typeArguments) {
-        return this;
+        return new ScalaLoadedClassElement(type, visitorContext, getAnnotationMetadata(), typeArguments);
     }
 
     @Override
     public ClassElement withAnnotationMetadata(AnnotationMetadata annotationMetadata) {
-        return new ScalaLoadedClassElement(type, visitorContext, annotationMetadata);
+        return new ScalaLoadedClassElement(type, visitorContext, annotationMetadata, typeArguments);
     }
 
     private LoadedMethodElement methodElement(Method method) {
-        return new LoadedMethodElement(this, this, method, parameters(method), visitorContext, AnnotationMetadata.EMPTY_METADATA);
+        return new LoadedMethodElement(this, this, method, parameters(method), visitorContext, ClasspathAnnotationMetadataReader.methodMetadata(method));
     }
 
     private LoadedConstructorElement constructorElement(Constructor<?> constructor) {
-        return new LoadedConstructorElement(this, this, constructor, parameters(constructor), visitorContext, AnnotationMetadata.EMPTY_METADATA);
+        return new LoadedConstructorElement(this, this, constructor, parameters(constructor), visitorContext, ClasspathAnnotationMetadataReader.constructorMetadata(constructor));
     }
 
     private LoadedFieldElement fieldElement(Field field) {
@@ -250,7 +315,7 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
             classElement(field.getType(), visitorContext),
             classElement(field.getGenericType(), field.getType(), visitorContext),
             visitorContext,
-            AnnotationMetadata.EMPTY_METADATA
+            ClasspathAnnotationMetadataReader.fieldMetadata(field)
         );
     }
 
@@ -268,7 +333,7 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
                 parameters[i],
                 parameters[i].getName(),
                 visitorContext,
-                AnnotationMetadata.EMPTY_METADATA
+                ClasspathAnnotationMetadataReader.parameterMetadata(executable, i)
             );
         }
         return parameterElements;
@@ -335,10 +400,53 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
             if (genericType instanceof Class<?> genericClass) {
                 return classElement(genericClass, visitorContext);
             }
+            if (genericType instanceof ParameterizedType parameterizedType && visitorContext != null) {
+                return classElement(erasedType, visitorContext)
+                    .withTypeArguments(typeArguments(erasedType, parameterizedType, visitorContext));
+            }
             return ClassElement.of(genericType);
         } catch (RuntimeException ignored) {
             return classElement(erasedType, visitorContext);
         }
+    }
+
+    private static Map<String, ClassElement> typeArguments(
+        Class<?> erasedType,
+        ParameterizedType parameterizedType,
+        ScalaVisitorContext visitorContext) {
+        TypeVariable<?>[] typeVariables = erasedType.getTypeParameters();
+        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        if (typeVariables.length == 0 || actualTypeArguments.length == 0) {
+            return Map.of();
+        }
+        Map<String, ClassElement> resolved = new LinkedHashMap<>(Math.min(typeVariables.length, actualTypeArguments.length));
+        for (int i = 0; i < typeVariables.length && i < actualTypeArguments.length; i++) {
+            Type actualType = actualTypeArguments[i];
+            resolved.put(
+                typeVariables[i].getName(),
+                classElement(actualType, erasedClass(actualType, Object.class), visitorContext)
+            );
+        }
+        return resolved;
+    }
+
+    private static Class<?> erasedClass(Type type, Class<?> fallback) {
+        if (type instanceof Class<?> clazz) {
+            return clazz;
+        }
+        if (type instanceof ParameterizedType parameterizedType && parameterizedType.getRawType() instanceof Class<?> clazz) {
+            return clazz;
+        }
+        if (type instanceof TypeVariable<?> typeVariable && typeVariable.getBounds().length > 0) {
+            return erasedClass(typeVariable.getBounds()[0], fallback);
+        }
+        if (type instanceof WildcardType wildcardType && wildcardType.getUpperBounds().length > 0) {
+            return erasedClass(wildcardType.getUpperBounds()[0], fallback);
+        }
+        if (type instanceof GenericArrayType genericArrayType) {
+            return Array.newInstance(erasedClass(genericArrayType.getGenericComponentType(), Object.class), 0).getClass();
+        }
+        return fallback;
     }
 
     private static ClassElement classElement(Class<?> type, @Nullable ScalaVisitorContext visitorContext) {
@@ -693,6 +801,132 @@ final class ScalaLoadedClassElement extends AbstractScalaElement implements Arra
                 visitorContext,
                 annotationMetadata
             );
+        }
+    }
+
+    private static final class LoadedPropertyElement extends AbstractScalaElement implements PropertyElement {
+
+        private final ClassElement declaringType;
+        private final ClassElement type;
+        private final @Nullable MethodElement readMethod;
+        private final @Nullable MethodElement writeMethod;
+        private final @Nullable FieldElement field;
+        private final AccessKind readAccessKind;
+        private final AccessKind writeAccessKind;
+        private final boolean excluded;
+        private final ElementAnnotationMetadata annotationMetadata;
+
+        private LoadedPropertyElement(
+            ClassElement declaringType,
+            ClassElement type,
+            String name,
+            @Nullable MethodElement readMethod,
+            @Nullable MethodElement writeMethod,
+            @Nullable FieldElement field,
+            AccessKind readAccessKind,
+            AccessKind writeAccessKind,
+            boolean excluded,
+            ScalaVisitorContext visitorContext) {
+            super(
+                name,
+                selectNativeType(readMethod, writeMethod, field),
+                selectModifiers(readMethod, writeMethod, field),
+                MutableAnnotationMetadata.of(AnnotationMetadata.EMPTY_METADATA),
+                visitorContext.getScalaAnnotationMetadataBuilder()
+            );
+            this.declaringType = declaringType;
+            this.type = type;
+            this.readMethod = readMethod;
+            this.writeMethod = writeMethod;
+            this.field = field;
+            this.readAccessKind = readAccessKind;
+            this.writeAccessKind = writeAccessKind;
+            this.excluded = excluded;
+            this.annotationMetadata = new PropertyElementAnnotationMetadata(
+                this,
+                readMethod,
+                writeMethod,
+                field,
+                null,
+                AnnotationMetadata.EMPTY_METADATA,
+                true
+            );
+        }
+
+        @Override
+        public ClassElement getType() {
+            return type;
+        }
+
+        @Override
+        public Optional<FieldElement> getField() {
+            return Optional.ofNullable(field);
+        }
+
+        @Override
+        public Optional<MethodElement> getWriteMethod() {
+            return Optional.ofNullable(writeMethod);
+        }
+
+        @Override
+        public Optional<MethodElement> getReadMethod() {
+            return Optional.ofNullable(readMethod);
+        }
+
+        @Override
+        public AccessKind getReadAccessKind() {
+            return readAccessKind;
+        }
+
+        @Override
+        public AccessKind getWriteAccessKind() {
+            return writeAccessKind;
+        }
+
+        @Override
+        public boolean isExcluded() {
+            return excluded;
+        }
+
+        @Override
+        public ClassElement getDeclaringType() {
+            return declaringType;
+        }
+
+        @Override
+        public ClassElement getOwningType() {
+            return declaringType;
+        }
+
+        @Override
+        public AnnotationMetadata getAnnotationMetadata() {
+            return annotationMetadata.getAnnotationMetadata();
+        }
+
+        private static Object selectNativeType(
+            @Nullable MethodElement readMethod,
+            @Nullable MethodElement writeMethod,
+            @Nullable FieldElement field) {
+            if (readMethod != null) {
+                return readMethod.getNativeType();
+            }
+            if (writeMethod != null) {
+                return writeMethod.getNativeType();
+            }
+            return field == null ? Object.class : field.getNativeType();
+        }
+
+        private static Set<ElementModifier> selectModifiers(
+            @Nullable MethodElement readMethod,
+            @Nullable MethodElement writeMethod,
+            @Nullable FieldElement field) {
+            if (readMethod != null) {
+                return readMethod.getModifiers();
+            }
+            if (writeMethod != null) {
+                return writeMethod.getModifiers();
+            }
+            return field == null ? Set.of(ElementModifier.PUBLIC) : field.getModifiers();
         }
     }
 }

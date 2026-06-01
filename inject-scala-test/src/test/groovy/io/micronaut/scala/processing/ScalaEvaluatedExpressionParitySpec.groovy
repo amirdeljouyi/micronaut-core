@@ -143,6 +143,27 @@ class Expr
         context?.close()
     }
 
+    void "supports route condition expression context from classpath annotation metadata"() {
+        when:
+        def definition = buildBeanDefinition('expressionparity.RouteConditionController', '''
+package expressionparity
+
+import io.micronaut.http.annotation.Controller
+import io.micronaut.http.annotation.Get
+import io.micronaut.http.annotation.RouteCondition
+
+@Controller("/api")
+class RouteConditionController:
+
+  @Get("/hello")
+  @RouteCondition("#{request.parameters.getFirst('v').orElse(null) == '2'}")
+  def helloV2(): String = "Hello v2"
+''')
+
+        then:
+        definition != null
+    }
+
     void "supports evaluated requires expressions against context values"() {
         when:
         def enabled = ScalaExpressionContextRegistrar.withContextClasses(['expressionparity.Context'], {
